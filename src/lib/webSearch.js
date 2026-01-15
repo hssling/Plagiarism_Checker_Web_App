@@ -149,26 +149,124 @@ const searchResearchGate = (phrase) => searchTargetedSite(phrase, 'researchgate.
 const searchScholar = (phrase) => searchTargetedSite(phrase, 'scholar.google.com', 'Scholarly Article', 'Google Scholar');
 
 /**
- * Search academic databases (CrossRef, Semantic Scholar, OpenAlex, Europe PMC, Google Books, Open Library, GitHub, etc.)
+ * Search arXiv API (Preprints)
+ * Returns Atom XML - requires parsing
+ */
+async function searchArxiv(phrase) {
+    try {
+        const encodedQuery = encodeURIComponent(`all:"${phrase}"`);
+        const url = `https://export.arxiv.org/api/query?search_query=${encodedQuery}&start=0&max_results=3`;
+
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), SEARCH_TIMEOUT);
+
+        const response = await fetch(url, { signal: controller.signal });
+        clearTimeout(timeout);
+
+        if (!response.ok) return null;
+
+        const text = await response.text();
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(text, "text/xml");
+        const entries = xmlDoc.getElementsByTagName("entry");
+
+        return Array.from(entries).map(entry => {
+            const title = entry.getElementsByTagName("title")[0]?.textContent?.trim().replace(/\n/g, ' ');
+            const summary = entry.getElementsByTagName("summary")[0]?.textContent?.trim().replace(/\n/g, ' ');
+            const id = entry.getElementsByTagName("id")[0]?.textContent;
+
+            return {
+                title: title,
+                url: id,
+                snippet: summary ? summary.substring(0, 300) : '',
+                source: 'arXiv (Preprint)',
+                type: 'Preprint'
+            };
+        });
+    } catch (err) {
+        return null;
+    }
+}
+
+/**
+ * Search StackExchange API (StackOverflow)
+ * Great for code plagiarism checks
+ */
+async function searchStackExchange(phrase) {
+    try {
+        const encodedQuery = encodeURIComponent(phrase);
+        const url = `https://api.stackexchange.com/2.3/search?order=desc&sort=relevance&intitle=${encodedQuery}&site=stackoverflow`;
+
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), SEARCH_TIMEOUT);
+
+        const response = await fetch(url, { signal: controller.signal });
+        clearTimeout(timeout);
+
+        if (!response.ok) return null;
+
+        const data = await response.json();
+
+        return (data.items || []).slice(0, 3).map(item => ({
+            title: item.title,
+            url: item.link,
+            snippet: `Discussion by user ${item.owner?.display_name} (Score: ${item.score}). Tags: ${item.tags?.join(', ')}`,
+            source: 'StackOverflow',
+            type: 'Developer Q&A'
+        }));
+    } catch (err) {
+        return null;
+    }
+}
+
+/**
+ * Search CORE API (Open Access Aggregator)
+ * Note: strict rate limits without key, might fail silently
+ */
+async function searchCore(phrase) {
+    try {
+        // Fallback to simple site search if API key missing (common case)
+        return await searchTargetedSite(phrase, 'core.ac.uk', 'Open Access Paper', 'CORE Aggregator');
+    } catch (err) {
+        return null;
+    }
+}
+
+// Additional Targeted Searches
+const searchIEEE = (phrase) => searchTargetedSite(phrase, 'ieeexplore.ieee.org', 'Engineering Std', 'IEEE Xplore');
+const searchSpringer = (phrase) => searchTargetedSite(phrase, 'link.springer.com', 'Journal Article', 'Springer Link');
+const searchArchive = (phrase) => searchTargetedSite(phrase, 'archive.org', 'Archived Web', 'Internet Archive');
+
+/**
+ * Search academic databases (16 Parallel Strategies)
  */
 async function searchAcademic(phrase) {
     const results = [];
 
-    // executed in parallel for speed
+    // All Searches Executed in Parallel
     const searchPromises = [
+        // 1. Core Academic APIs
         searchSemanticScholar(phrase),
-        searchEuropePMC(phrase), // Medical/Bio
-        searchOpenAlex(phrase),  // General Academic
-        searchGoogleBooks(phrase), // Books (Google)
-        searchOpenLibrary(phrase), // Books (Open Library)
-        searchResearchGate(phrase), // Targeted Research
-        // Conditional: Only check GitHub if phrase looks like code or technical terms? 
-        // For now, we include it as requested for broad coverage.
-        searchGitHub(phrase),
+        searchOpenAlex(phrase),
+        searchCrossRef(phrase),
 
-        // Fallback or supplementary
-        results.length < 2 ? searchCrossRef(phrase) : Promise.resolve(null),
-        results.length < 2 ? searchScholar(phrase) : Promise.resolve(null)
+        // 2. Specialized APIs
+        searchEuropePMC(phrase), // Medical
+        searchArxiv(phrase),     // Preprints
+        searchStackExchange(phrase), // Code
+
+        // 3. Books
+        searchGoogleBooks(phrase),
+        searchOpenLibrary(phrase),
+
+        // 4. Targeted Site Searches (Deep Web)
+        searchResearchGate(phrase),
+        searchScholar(phrase),
+        searchGitHub(phrase),
+        searchCore(phrase), // Using site:core.ac.uk fallback
+        searchIEEE(phrase),
+        searchSpringer(phrase),
+        searchArchive(phrase)
     ];
 
     const searchResults = await Promise.allSettled(searchPromises);
