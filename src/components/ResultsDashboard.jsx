@@ -1,5 +1,6 @@
 import React from 'react';
 import { generateWordReport } from '../lib/plagiarismAnalyzer';
+import { generatePDF } from '../lib/pdfGenerator';
 
 function ResultsDashboard({ results, onReset, text }) {
     const getStatusClass = (score) => {
@@ -43,6 +44,13 @@ function ResultsDashboard({ results, onReset, text }) {
         URL.revokeObjectURL(url);
     };
 
+    const handlePDFExport = () => {
+        generatePDF(results, text || "", {
+            title: "Analysis Report",
+            author: "PlagiarismGuard User"
+        });
+    };
+
     return (
         <div className="results-dashboard">
             <div className="results-header">
@@ -51,8 +59,11 @@ function ResultsDashboard({ results, onReset, text }) {
                     <button className="btn btn-secondary" onClick={onReset}>
                         ← New Analysis
                     </button>
-                    <button className="btn btn-primary" onClick={handleExport}>
-                        📥 Export Word Report
+                    <button className="btn btn-secondary" onClick={handleExport}>
+                        📥 Word Report
+                    </button>
+                    <button className="btn btn-primary" onClick={handlePDFExport} style={{ backgroundColor: '#2980b9' }}>
+                        📄 Official PDF Report
                     </button>
                 </div>
             </div>
