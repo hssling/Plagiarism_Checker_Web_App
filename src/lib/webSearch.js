@@ -1,25 +1,26 @@
 /**
- * Web Search Module - Aggregated Search Architecture
- * Fixes CORS and Rate Limits by using Google CSE as a unified proxy
+ * Web Search Module - Omni-Search Architecture
+ * Strategy: Broad Google Searches + Smart Post-Classification
+ * Fixes: "Zero Results" bug from over-complex site filters
  */
 
 const SEARCH_TIMEOUT = 10000; // 10 seconds
 
 /**
- * Search for exact phrase using Consolidated Hubs
+ * Search for exact phrase using Omni-Search strategy
  */
 export async function searchPhrase(phrase, options = {}) {
     const results = [];
 
-    // Execute Hub Searches in Parallel
-    // This reduces 16+ separate API calls to just 3 highly targeted Google calls per phrase
-    const hubPromises = [
-        searchAcademicHub(phrase),  // Papers (Scholar, Semantic, OpenAlex, ResearchGate)
-        searchPreprintHub(phrase),  // Preprints (ArXiv, BioRxiv, PubMed)
-        searchCodeLegacyHub(phrase) // Code & Books (GitHub, SO, Archive, OpenLibrary)
+    // Strategy: 
+    // 1. Broad Web Search (Captures everything: arXiv, GitHub, Blogs, etc.)
+    // 2. Academic Keyword Search (Bubbles up papers/journals)
+    const searchPromises = [
+        searchGoogleWithContext(phrase, ''), // General Web
+        searchGoogleWithContext(phrase, 'research OR journal OR paper OR code OR thesis') // Academic/Code Bias
     ];
 
-    const searchResults = await Promise.allSettled(hubPromises);
+    const searchResults = await Promise.allSettled(searchPromises);
 
     searchResults.forEach(result => {
         if (result.status === 'fulfilled' && result.value) {
@@ -27,99 +28,85 @@ export async function searchPhrase(phrase, options = {}) {
         }
     });
 
-    // Also include general web search for non-academic hits
-    const webResults = await searchGoogleWeb(phrase);
-    if (webResults) {
-        results.push(...webResults);
+    // Deduplicate by URL
+    const uniqueResults = [];
+    const seenUrls = new Set();
+
+    for (const res of results) {
+        if (seenUrls.has(res.url)) continue;
+        seenUrls.add(res.url);
+
+        // Enhance classification
+        const classification = classifySource(res.url, res.snippet, res.title);
+        uniqueResults.push({
+            ...res,
+            source: classification.source,
+            type: classification.type
+        });
     }
 
     return {
         phrase,
-        found: results.length > 0,
-        matches: results,
-        source: results.length > 0 ? results[0].source : null
+        found: uniqueResults.length > 0,
+        matches: uniqueResults,
+        source: uniqueResults.length > 0 ? uniqueResults[0].source : null
     };
 }
 
 /**
- * Hub 1: Core Academic Search
- * Targets: Semantic Scholar, OpenAlex, ResearchGate, Academia, Springer, IEEE, CrossRef
+ * Robust Source Classification
+ * Detects 18+ specific academic/code sources from URL patterns
  */
-async function searchAcademicHub(phrase) {
-    // Powerful OR query to check all major academic repositories at once
-    const sites = [
-        'semanticscholar.org',
-        'openalex.org',
-        'researchgate.net',
-        'academia.edu',
-        'link.springer.com',
-        'ieeexplore.ieee.org',
-        'crossref.org',
-        'scholar.google.com',
-        'core.ac.uk'
-    ];
+function classifySource(url, snippet, title) {
+    const u = url.toLowerCase();
 
-    // Construct query: "phrase" (site:A OR site:B ...)
-    const siteQuery = sites.map(s => `site:${s}`).join(' OR ');
-    return searchGoogleAggregated(phrase, siteQuery, 'Academic Paper', 'Academic Database');
-}
+    // 1. Core Academic
+    if (u.includes('semanticscholar.org')) return { source: 'Semantic Scholar', type: 'Academic Paper' };
+    if (u.includes('scholar.google')) return { source: 'Google Scholar', type: 'Scholarly Article' };
+    if (u.includes('researchgate.net')) return { source: 'ResearchGate', type: 'Research Paper' };
+    if (u.includes('academia.edu')) return { source: 'Academia.edu', type: 'Academic Paper' };
+    if (u.includes('openalex.org')) return { source: 'OpenAlex', type: 'Scholarly Work' };
+    if (u.includes('core.ac.uk')) return { source: 'CORE', type: 'Open Access Paper' };
+    if (u.includes('crossref.org') || u.includes('doi.org')) return { source: 'CrossRef', type: 'Metadata' };
+    if (u.includes('link.springer.com') || u.includes('nature.com')) return { source: 'Springer/Nature', type: 'Journal Article' };
+    if (u.includes('ieeexplore.ieee.org')) return { source: 'IEEE Xplore', type: 'Engineering Std' };
+    if (u.includes('sciencedirect.com')) return { source: 'ScienceDirect', type: 'Journal Article' };
+    if (u.includes('ncbi.nlm.nih.gov') || u.includes('pubmed')) return { source: 'PubMed/NCBI', type: 'Medical Research' };
 
-/**
- * Hub 2: Preprints & Medical
- * Targets: arXiv, EuropePMC, BioRxiv, MedRxiv
- */
-async function searchPreprintHub(phrase) {
-    const sites = [
-        'arxiv.org',
-        'europepmc.org',
-        'biorxiv.org',
-        'medrxiv.org'
-    ];
+    // 2. Preprints
+    if (u.includes('arxiv.org')) return { source: 'arXiv', type: 'Preprint' };
+    if (u.includes('biorxiv.org')) return { source: 'BioRxiv', type: 'Preprint' };
+    if (u.includes('medrxiv.org')) return { source: 'MedRxiv', type: 'Preprint' };
+    if (u.includes('europepmc.org')) return { source: 'Europe PMC', type: 'Medical Research' };
 
-    const siteQuery = sites.map(s => `site:${s}`).join(' OR ');
-    return searchGoogleAggregated(phrase, siteQuery, 'Preprint', 'Preprint Server');
-}
+    // 3. Code & Books
+    if (u.includes('github.com')) return { source: 'GitHub', type: 'Source Code' };
+    if (u.includes('stackoverflow.com')) return { source: 'StackOverflow', type: 'Developer Q&A' };
+    if (u.includes('archive.org')) return { source: 'Internet Archive', type: 'Archived Web' };
+    if (u.includes('openlibrary.org')) return { source: 'Open Library', type: 'Book' };
+    if (u.includes('books.google')) return { source: 'Google Books', type: 'Book' };
 
-/**
- * Hub 3: Code, Books & Legacy
- * Targets: GitHub, StackOverflow, Internet Archive, Open Library, Google Books
- */
-async function searchCodeLegacyHub(phrase) {
-    const sites = [
-        'github.com',
-        'stackoverflow.com',
-        'archive.org',
-        'openlibrary.org',
-        'books.google.com'
-    ];
+    // Default Fallback
+    if (u.includes('.edu')) return { source: 'University Website', type: 'Academic Web' };
+    if (u.includes('.gov')) return { source: 'Government Site', type: 'Official Document' };
 
-    const siteQuery = sites.map(s => `site:${s}`).join(' OR ');
-    return searchGoogleAggregated(phrase, siteQuery, 'Source Code/Book', 'Code/Book DB');
-}
-
-/**
- * General Web Search (Fallback)
- * Excludes the sites we already checked to avoid duplicates? 
- * Actually, redundancy is fine, but we keep it simple.
- */
-async function searchGoogleWeb(phrase) {
-    return searchGoogleAggregated(phrase, '', 'Web Result', 'Google Web');
+    return { source: 'General Web', type: 'Web Result' };
 }
 
 /**
  * Core Google Search Function
  */
-async function searchGoogleAggregated(phrase, siteFilters, defaultType, defaultSource) {
+async function searchGoogleWithContext(phrase, extraTerms) {
     const apiKey = import.meta.env.VITE_GOOGLE_API_KEY;
     const cseId = import.meta.env.VITE_GOOGLE_CSE_ID;
 
     if (!apiKey || !cseId) return null;
 
     try {
-        // Construct advanced query
+        // Construct query: "phrase" extraTerms
         let q = `"${phrase}"`;
-        if (siteFilters) {
-            q += ` (${siteFilters})`;
+        if (extraTerms) {
+            q += ` ${extraTerms}`;
         }
 
         const encodedQuery = encodeURIComponent(q);
@@ -135,37 +122,13 @@ async function searchGoogleAggregated(phrase, siteFilters, defaultType, defaultS
 
         const data = await response.json();
 
-        return (data.items || []).map(item => {
-            // Smart Source Detection based on URL
-            let source = defaultSource;
-            let type = defaultType;
-
-            if (item.link.includes('arxiv.org')) { source = 'arXiv'; type = 'Preprint'; }
-            else if (item.link.includes('github.com')) { source = 'GitHub'; type = 'Source Code'; }
-            else if (item.link.includes('stackoverflow.com')) { source = 'StackOverflow'; type = 'Developer Q&A'; }
-            else if (item.link.includes('semanticscholar.org')) { source = 'Semantic Scholar'; type = 'Academic Paper'; }
-            else if (item.link.includes('ieeexplore')) { source = 'IEEE Xplore'; type = 'Engineering Std'; }
-            else if (item.link.includes('books.google')) { source = 'Google Books'; type = 'Book'; }
-            else if (item.link.includes('openlibrary.org')) { source = 'Open Library'; type = 'Book'; }
-            else if (item.link.includes('researchgate')) { source = 'ResearchGate'; type = 'Research Paper'; }
-            else if (item.link.includes('core.ac.uk')) { source = 'CORE'; type = 'Open Access Paper'; }
-            else if (item.link.includes('link.springer.com')) { source = 'Springer'; type = 'Journal Article'; }
-            else if (item.link.includes('archive.org')) { source = 'Internet Archive'; type = 'Archived Web'; }
-            else if (item.link.includes('europepmc.org')) { source = 'Europe PMC'; type = 'Medical Research'; }
-            else if (item.link.includes('openalex.org')) { source = 'OpenAlex'; type = 'Scholarly Work'; }
-            else if (item.link.includes('academia.edu')) { source = 'Academia.edu'; type = 'Academic Paper'; }
-            else if (item.link.includes('biorxiv.org')) { source = 'BioRxiv'; type = 'Preprint'; }
-            else if (item.link.includes('medrxiv.org')) { source = 'MedRxiv'; type = 'Preprint'; }
-            else if (item.link.includes('crossref.org')) { source = 'CrossRef'; type = 'Metadata'; }
-
-            return {
-                title: item.title,
-                url: item.link,
-                snippet: item.snippet,
-                source: source,
-                type: type
-            };
-        });
+        return (data.items || []).map(item => ({
+            title: item.title,
+            url: item.link,
+            snippet: item.snippet,
+            source: 'Google', // Will be re-classified later
+            type: 'Web'
+        }));
     } catch (err) {
         return null;
     }
