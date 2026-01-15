@@ -1,6 +1,6 @@
 import React from 'react';
 
-function Header() {
+function Header({ onOpenSettings }) {
     return (
         <header className="header">
             <div className="header-content">
@@ -11,7 +11,16 @@ function Header() {
                         <p className="logo-tagline">Academic Plagiarism Checker</p>
                     </div>
                 </div>
-                <span className="header-badge">v1.0 - Open Source</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <span className="header-badge">v1.0 - Open Source</span>
+                    <button
+                        onClick={onOpenSettings}
+                        style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '1.2rem', padding: '0.5rem' }}
+                        title="Settings"
+                    >
+                        ⚙️
+                    </button>
+                </div>
             </div>
         </header>
     );

@@ -7,6 +7,8 @@ import { analyzePlagiarism } from './lib/plagiarismAnalyzer';
 import { calculateCodeSimilarity } from './lib/codePlagiarism';
 import { generateImageHash, calculateImageSimilarity } from './lib/imagePlagiarism';
 import ImageUpload from './components/ImageUpload';
+import SettingsModal from './components/SettingsModal';
+import { initializeAI } from './lib/llmService';
 
 function App() {
     // Mode: 'text' | 'code' | 'image'
@@ -28,7 +30,15 @@ function App() {
     const [progress, setProgress] = useState(0);
     const [results, setResults] = useState(null); // Text Results
     const [comparisonResult, setComparisonResult] = useState(null); // Code/Image Results
+    const [comparisonResult, setComparisonResult] = useState(null); // Code/Image Results
     const [error, setError] = useState(null);
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+    // Initialize AI on load
+    React.useEffect(() => {
+        const apiKey = localStorage.getItem('gemini_api_key');
+        if (apiKey) initializeAI(apiKey);
+    }, []);
 
     // ... (Handlers for Text Mode) ...
     const handleFileUpload = (uploadedFile, extractedText) => {
@@ -94,7 +104,7 @@ function App() {
 
     return (
         <div className="app">
-            <Header />
+            <Header onOpenSettings={() => setIsSettingsOpen(true)} />
 
             <main className="main-content">
                 {/* MODE TABS */}
@@ -227,6 +237,12 @@ function App() {
                     </a>
                 </div>
             </footer>
+
+            <SettingsModal
+                isOpen={isSettingsOpen}
+                onClose={() => setIsSettingsOpen(false)}
+                onSave={(key) => initializeAI(key)}
+            />
         </div>
     );
 }

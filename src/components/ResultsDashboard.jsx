@@ -2,7 +2,28 @@ import React from 'react';
 import { generateWordReport } from '../lib/plagiarismAnalyzer';
 import { generatePDF } from '../lib/pdfGenerator';
 
+import { checkAIAuthorship, generateSummary } from '../lib/llmService';
+
 function ResultsDashboard({ results, onReset, text }) {
+    const [aiAnalysis, setAIAnalysis] = React.useState(null);
+    const [aiLoading, setAILoading] = React.useState(false);
+
+    React.useEffect(() => {
+        const runAI = async () => {
+            const apiKey = localStorage.getItem('gemini_api_key');
+            if (!apiKey) return;
+
+            setAILoading(true);
+            const [authorship, summary] = await Promise.all([
+                checkAIAuthorship(text),
+                generateSummary(text)
+            ]);
+            setAIAnalysis({ authorship, summary });
+            setAILoading(false);
+        };
+        runAI();
+    }, [text]);
+
     const getStatusClass = (score) => {
         if (score < 10) return 'status-excellent';
         if (score < 20) return 'status-good';
@@ -98,6 +119,50 @@ function ResultsDashboard({ results, onReset, text }) {
                         <div className="value">{results.sourcesChecked}</div>
                     </div>
                 </div>
+            </div>
+
+            {/* AI INSIGHTS CARD */}
+            <div className="score-card" style={{ marginBottom: '2rem', border: '1px solid var(--primary)', background: 'rgba(37, 99, 235, 0.03)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                    <h3 style={{ color: 'var(--primary)', margin: 0 }}>🧠 Cognitive AI Insights</h3>
+                    {!aiAnalysis && !aiLoading && <small style={{ color: 'var(--text-muted)' }}>(Configure API Key in Settings to enable)</small>}
+                    {aiLoading && <small>Thinking...</small>}
+                </div>
+
+                {aiAnalysis ? (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+                        {/* Authorship */}
+                        <div>
+                            <h4 style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>AI Authorship Detection</h4>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                <div style={{
+                                    fontSize: '2rem',
+                                    fontWeight: 'bold',
+                                    color: aiAnalysis.authorship.confidence > 50 ? 'var(--warning)' : 'var(--success)'
+                                }}>
+                                    {aiAnalysis.authorship.confidence || 0}%
+                                </div>
+                                <div style={{ fontSize: '0.9rem' }}>
+                                    Probability of AI Generation<br />
+                                    <span style={{ color: 'var(--text-muted)' }}>{aiAnalysis.authorship.reasoning}</span>
+                                </div>
+                            </div>
+                        </div>
+                        {/* Summary */}
+                        <div>
+                            <h4 style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Smart Summary</h4>
+                            <div style={{ fontSize: '0.9rem', lineHeight: '1.5' }}>
+                                {aiAnalysis.summary ? aiAnalysis.summary.split('\n').map((line, i) => (
+                                    <div key={i}>{line}</div>
+                                )) : 'Generating summary...'}
+                            </div>
+                        </div>
+                    </div>
+                ) : (
+                    !aiLoading && <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                        Enable the "Omni-Brain" by adding your Google Gemini API Key in Settings ⚙️.
+                    </div>
+                )}
             </div>
 
             {/* SPLIT VIEW COMPARISON (THE AUDITOR UI) */}
