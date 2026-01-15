@@ -23,17 +23,15 @@ PlagiarismGuard operates on a **Serverless Proxy Architecture**, ensuring that y
 
 ```mermaid
 graph TD
-    User[User Document] -->|Encrypted Chunks| Client[Client Engine (React)]
+    User[User Document] -->|Encrypted Chunks| Client[Client Engine React]
     
-    subgraph "The Omni-Scanner"
-        Client -->|Safe Requests| Proxy[Serverless Proxy (API)]
-        Proxy -->|Query| S1[Semantic Scholar]
-        Proxy -->|Query| S2[OpenAlex]
-        Proxy -->|Query| S3[arXiv]
-        Proxy -->|Query| S4[PubMed / EuropePMC]
-        Proxy -->|Query| S5[CrossRef]
-        Proxy -->|Query| S6[IEEE Xplore]
-    end
+    Client -->|Safe Requests| Proxy[Serverless Proxy API]
+    Proxy -->|Query| S1[Semantic Scholar]
+    Proxy -->|Query| S2[OpenAlex]
+    Proxy -->|Query| S3[arXiv]
+    Proxy -->|Query| S4[PubMed EuropePMC]
+    Proxy -->|Query| S5[CrossRef]
+    Proxy -->|Query| S6[IEEE Xplore]
 
     S1 -->|Results| Proxy
     S2 -->|Results| Proxy
