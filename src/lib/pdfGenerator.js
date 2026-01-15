@@ -20,8 +20,8 @@ export const generatePDF = (results, text, metadata = {}) => {
     doc.setFont('helvetica', 'normal');
     doc.text("OFFICIAL VERIFICATION REPORT", pageWidth / 2, 30, { align: 'center' });
 
-    // 2. The Badge (Score)
-    const score = results.totalScore || 0;
+    // 2. The Badge (Score) - Use the same field as dashboard
+    const score = results.overallScore || 0;
     const isHigh = score > 15;
     const badgeColor = isHigh ? [231, 76, 60] : [39, 174, 96]; // Red vs Green
 
