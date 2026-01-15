@@ -6,6 +6,7 @@ import ResultsDashboard from './components/ResultsDashboard';
 import { analyzePlagiarism } from './lib/plagiarismAnalyzer';
 import { calculateCodeSimilarity } from './lib/codePlagiarism';
 import { generateImageHash, calculateImageSimilarity } from './lib/imagePlagiarism';
+import ImageUpload from './components/ImageUpload';
 
 function App() {
     // Mode: 'text' | 'code' | 'image'
@@ -143,24 +144,20 @@ function App() {
                 {/* IMAGE MODE UI */}
                 {mode === 'image' && !comparisonResult && (
                     <div className="comparison-inputs" style={{ marginBottom: '2rem' }}>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                            <input
-                                type="text"
-                                placeholder="Image URL 1 (e.g., https://example.com/img1.jpg)"
-                                value={imgUrl1}
-                                onChange={e => setImgUrl1(e.target.value)}
-                                className="text-input"
+                        <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
+                            <ImageUpload
+                                label="Reference Image (Original)"
+                                imageSrc={imgUrl1}
+                                onImageSelect={setImgUrl1}
                             />
-                            <input
-                                type="text"
-                                placeholder="Image URL 2"
-                                value={imgUrl2}
-                                onChange={e => setImgUrl2(e.target.value)}
-                                className="text-input"
+                            <ImageUpload
+                                label="Suspect Image (To Check)"
+                                imageSrc={imgUrl2}
+                                onImageSelect={setImgUrl2}
                             />
                         </div>
-                        <p style={{ textAlign: 'center', marginTop: '1rem', color: 'var(--text-muted)' }}>
-                            Note: Uses Perceptual Hashing (pHash) to detect visual similarity.
+                        <p style={{ textAlign: 'center', marginTop: '2rem', color: 'var(--text-muted)' }}>
+                            Note: Uses Perceptual Hashing (pHash) to detect visual similarity. Resized or slightly modified images will still match.
                         </p>
                     </div>
                 )}
