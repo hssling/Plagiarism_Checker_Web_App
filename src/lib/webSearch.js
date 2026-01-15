@@ -76,7 +76,80 @@ async function searchGoogle(phrase) {
 }
 
 /**
- * Search academic databases (CrossRef, Semantic Scholar, OpenAlex, Europe PMC, Google Books)
+ * Search Open Library API
+ * Accesses millions of books and texts
+ */
+async function searchOpenLibrary(phrase) {
+    try {
+        const encodedQuery = encodeURIComponent(phrase);
+        const url = `https://openlibrary.org/search.json?q=${encodedQuery}&limit=3`;
+
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), SEARCH_TIMEOUT);
+
+        const response = await fetch(url, { signal: controller.signal });
+        clearTimeout(timeout);
+
+        if (!response.ok) return null;
+
+        const data = await response.json();
+
+        return (data.docs || []).map(doc => ({
+            title: doc.title,
+            url: `https://openlibrary.org${doc.key}`,
+            snippet: doc.first_sentence ? doc.first_sentence.join(' ').substring(0, 300) : (doc.author_name ? `By ${doc.author_name.join(', ')}` : ''),
+            source: 'Open Library',
+            type: 'Book'
+        }));
+    } catch (err) {
+        return null;
+    }
+}
+
+/**
+ * Perform a targeted Google Search (site:)
+ * Helper to reuse the Google API for specific domains
+ */
+async function searchTargetedSite(phrase, site, type, sourceName) {
+    const apiKey = import.meta.env.VITE_GOOGLE_API_KEY;
+    const cseId = import.meta.env.VITE_GOOGLE_CSE_ID;
+
+    if (!apiKey || !cseId) return null;
+
+    try {
+        const query = `site:${site} "${phrase}"`;
+        const encodedQuery = encodeURIComponent(query);
+        const url = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${cseId}&q=${encodedQuery}`;
+
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), SEARCH_TIMEOUT);
+
+        const response = await fetch(url, { signal: controller.signal });
+        clearTimeout(timeout);
+
+        if (!response.ok) return null;
+
+        const data = await response.json();
+
+        return (data.items || []).map(item => ({
+            title: item.title,
+            url: item.link,
+            snippet: item.snippet,
+            source: sourceName,
+            type: type
+        }));
+    } catch (err) {
+        return null;
+    }
+}
+
+// Targeted Search Wrappers
+const searchGitHub = (phrase) => searchTargetedSite(phrase, 'github.com', 'Codebase', 'GitHub');
+const searchResearchGate = (phrase) => searchTargetedSite(phrase, 'researchgate.net', 'Research Paper', 'ResearchGate');
+const searchScholar = (phrase) => searchTargetedSite(phrase, 'scholar.google.com', 'Scholarly Article', 'Google Scholar');
+
+/**
+ * Search academic databases (CrossRef, Semantic Scholar, OpenAlex, Europe PMC, Google Books, Open Library, GitHub, etc.)
  */
 async function searchAcademic(phrase) {
     const results = [];
@@ -86,9 +159,16 @@ async function searchAcademic(phrase) {
         searchSemanticScholar(phrase),
         searchEuropePMC(phrase), // Medical/Bio
         searchOpenAlex(phrase),  // General Academic
-        searchGoogleBooks(phrase), // Books & Literature
+        searchGoogleBooks(phrase), // Books (Google)
+        searchOpenLibrary(phrase), // Books (Open Library)
+        searchResearchGate(phrase), // Targeted Research
+        // Conditional: Only check GitHub if phrase looks like code or technical terms? 
+        // For now, we include it as requested for broad coverage.
+        searchGitHub(phrase),
+
         // Fallback or supplementary
-        results.length < 2 ? searchCrossRef(phrase) : Promise.resolve(null)
+        results.length < 2 ? searchCrossRef(phrase) : Promise.resolve(null),
+        results.length < 2 ? searchScholar(phrase) : Promise.resolve(null)
     ];
 
     const searchResults = await Promise.allSettled(searchPromises);
@@ -102,9 +182,7 @@ async function searchAcademic(phrase) {
     return results.length > 0 ? results : null;
 }
 
-/**
- * Search Google Books API
- */
+// ... existing searchGoogleBooks ...
 async function searchGoogleBooks(phrase) {
     try {
         const apiKey = import.meta.env.VITE_GOOGLE_API_KEY || '';
