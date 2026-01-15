@@ -18,7 +18,7 @@ export const supabase = supabaseUrl && supabaseAnonKey
  */
 export async function logAnalysis(data) {
     if (!supabase) {
-        console.log('Supabase not configured - skipping analytics');
+        // Supabase not configured - analytics disabled
         return null;
     }
 
