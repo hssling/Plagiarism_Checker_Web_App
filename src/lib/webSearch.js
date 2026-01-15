@@ -148,6 +148,15 @@ async function searchGoogleAggregated(phrase, siteFilters, defaultType, defaultS
             else if (item.link.includes('books.google')) { source = 'Google Books'; type = 'Book'; }
             else if (item.link.includes('openlibrary.org')) { source = 'Open Library'; type = 'Book'; }
             else if (item.link.includes('researchgate')) { source = 'ResearchGate'; type = 'Research Paper'; }
+            else if (item.link.includes('core.ac.uk')) { source = 'CORE'; type = 'Open Access Paper'; }
+            else if (item.link.includes('link.springer.com')) { source = 'Springer'; type = 'Journal Article'; }
+            else if (item.link.includes('archive.org')) { source = 'Internet Archive'; type = 'Archived Web'; }
+            else if (item.link.includes('europepmc.org')) { source = 'Europe PMC'; type = 'Medical Research'; }
+            else if (item.link.includes('openalex.org')) { source = 'OpenAlex'; type = 'Scholarly Work'; }
+            else if (item.link.includes('academia.edu')) { source = 'Academia.edu'; type = 'Academic Paper'; }
+            else if (item.link.includes('biorxiv.org')) { source = 'BioRxiv'; type = 'Preprint'; }
+            else if (item.link.includes('medrxiv.org')) { source = 'MedRxiv'; type = 'Preprint'; }
+            else if (item.link.includes('crossref.org')) { source = 'CrossRef'; type = 'Metadata'; }
 
             return {
                 title: item.title,
