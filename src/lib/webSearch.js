@@ -96,7 +96,8 @@ async function executeDeepSearches(phrase) {
         const batchResults = await Promise.allSettled(batch);
 
         batchResults.forEach(res => {
-            if (res.status === 'fulfilled' && res.value) {
+            // FIX: Check if res.value is actually an array before spreading
+            if (res.status === 'fulfilled' && Array.isArray(res.value)) {
                 allResults.push(...res.value);
             }
         });
@@ -112,6 +113,7 @@ async function searchTargetedSite(phrase, site, type, sourceName) {
     const apiKey = import.meta.env.VITE_GOOGLE_API_KEY;
     const cseId = import.meta.env.VITE_GOOGLE_CSE_ID;
 
+    // Fail gracefully if keys are missing
     if (!apiKey || !cseId) return null;
 
     const url = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${cseId}&q=${encodeURIComponent('site:' + site + ' "' + phrase + '"')}`;
@@ -288,6 +290,10 @@ async function searchStackExchange(phrase) {
 // ==========================================
 async function searchGoogleBooks(phrase) {
     const apiKey = import.meta.env.VITE_GOOGLE_API_KEY;
+
+    // FIX: Check API key before request to avoid 400 Bad Request
+    if (!apiKey) return searchTargetedSite(phrase, 'books.google.com', 'Book', 'Google Books');
+
     const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(phrase)}&maxResults=3&key=${apiKey}`;
 
     const res = await safeFetch(url);
