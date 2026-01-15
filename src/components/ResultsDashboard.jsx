@@ -1,6 +1,7 @@
 import React from 'react';
+import { generateWordReport } from '../lib/plagiarismAnalyzer';
 
-function ResultsDashboard({ results, onReset }) {
+function ResultsDashboard({ results, onReset, text }) {
     const getStatusClass = (score) => {
         if (score < 10) return 'status-excellent';
         if (score < 20) return 'status-good';
@@ -21,6 +22,21 @@ function ResultsDashboard({ results, onReset }) {
         return 'var(--danger)';
     };
 
+    const handleExport = () => {
+        const reportContent = generateWordReport(results, text || "");
+
+        // Create a blob and triggers download
+        const blob = new Blob([reportContent], { type: 'application/msword' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Plagiarism_Report_${new Date().toISOString().slice(0, 10)}.doc`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    };
+
     return (
         <div className="results-dashboard">
             <div className="results-header">
@@ -29,8 +45,8 @@ function ResultsDashboard({ results, onReset }) {
                     <button className="btn btn-secondary" onClick={onReset}>
                         ← New Analysis
                     </button>
-                    <button className="btn btn-primary" onClick={() => window.print()}>
-                        📥 Export Report
+                    <button className="btn btn-primary" onClick={handleExport}>
+                        📥 Export Word Report
                     </button>
                 </div>
             </div>
