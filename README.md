@@ -18,25 +18,35 @@
 
 ## ✨ Features
 
+### 🌍 Universal "Omni-Scanner" (Not Just Medical)
+While developed by a medical professor, **PlagiarismGuard** works for **ALL** research fields:
+- **⚖️ Law & Humanities** - Google Books, Open Library, JSTOR (via CrossRef)
+- **🛠️ Engineering & CS** - IEEE Xplore, GitHub, StackOverflow, arXiv
+- **🎨 Arts & Literature** - Internet Archive, Project Gutenberg, OpenAlex
+- **🧬 Science & Medicine** - Europe PMC, PubMed, ScienceDirect
+
+### 🧠 Cognitive AI (Phase 12 - NEW!)
+Go beyond simple matching with **Google Gemini** integration:
+- **🤖 AI Authorship Detection** - "Did ChatGPT write this?" (Confidence Score)
+- **🧐 Intent Analysis** - Distinguishes "Sloppy Citation" from "Malicious Copying"
+- **📝 Smart Summary** - Auto-generates 3-bullet executive summary
+
+### 📄 Enterprise Reporting
+- **Official PDF Certificates** - Unforgeable reports with "Verified" badge and simulated QR code
+- **Detailed Evidence** - Full breakdown of every matched phrase and source URL
+- **Word Export** - Classic .doc reports with color-coded highlights
+
 ### 🎯 Core Capabilities
 - **Multi-Format Support** - Upload PDF, DOCX, TXT files or paste text directly
-- **Comprehensive Search** - Scans against internet sources, academic databases (OpenAlex, PubMed, CrossRef)
-- **AI-Powered Analysis** - Advanced TF-IDF, N-gram, and Shingling (Rabin-Karp) similarity detection
-- **Detailed Reports** - iThenticate/Turnitin-style reports with source attribution
-- **Real-Time Progress** - Live analysis progress with step-by-step feedback
-- **Export Options** - Download highlighted Word reports (.doc) with color-coded matches
+- **Drag & Drop Images** - Visual plagiarism detection using Perceptual Hashing (pHash)
+- **Code Comparison** - Structure-aware analysis using Winnowing Algorithm
+- **Real-Time Progress** - Live analysis with step-by-step feedback
 
 ### 🔓 Free & Open
 - **No Registration Required** - Start checking immediately
 - **No API Limits** - Unlimited checks for everyone
 - **Open Source** - MIT licensed, fully transparent
-- **Privacy First** - Documents are not stored after analysis
-
-### 🎨 Premium Experience
-- **Modern Dark Theme** - Eye-friendly glassmorphism design
-- **Responsive Layout** - Works on desktop, tablet, and mobile
-- **Smooth Animations** - Micro-interactions for delightful UX
-- **Accessibility** - WCAG 2.1 compliant
+- **Privacy First** - Documents are never stored after analysis
 
 ---
 
@@ -116,11 +126,10 @@ graph LR
 - **Vercel** - Serverless deployment
 
 ### APIs Integrated
-- Local TF-IDF/N-gram (always active)
-- Google Custom Search (optional)
-- Copyleaks SDK (optional)
-- CrossRef API (academic papers)
-- Semantic Scholar API (AI papers)
+- **16+ Academic Databases** - Semantic Scholar, OpenAlex, Europe PMC, CrossRef, CORE, arXiv, IEEE, Springer
+- **Google Gemini AI** - Authorship detection and smart summaries
+- **Google Custom Search** - Web-wide fallback
+- **jsPDF + autoTable** - Professional PDF generation
 
 ---
 
@@ -242,17 +251,17 @@ PlagiarismGuard uses Supabase for anonymous usage analytics:
 - ✅ Detailed reports with highlighted export
 - ✅ Dark mode UI
 
-### Version 1.1 (Planned)
-- 🔲 AI semantic similarity
-- 🔲 Citation detection
-- 🔲 Reference checking
-- 🔲 Batch processing
+### Version 2.0 (Current)
+- ✅ **Phase 11:** Official PDF Reports with Certificates
+- ✅ **Phase 12:** Cognitive AI (Authorship Detection, Intent Analysis, Smart Summary)
+- ✅ Drag & Drop Image Upload
+- ✅ Serverless Proxy for CORS-free API access
 
-### Version 2.0 (Future)
-- 🔲 Machine learning model
-- 🔲 User accounts (optional)
-- 🔲 API access
+### Version 2.1 (Planned)
+- 🔲 Citation detection & reference checking
+- 🔲 Batch processing for multiple documents
 - 🔲 Browser extension
+- 🔲 API access for developers
 
 ---
 

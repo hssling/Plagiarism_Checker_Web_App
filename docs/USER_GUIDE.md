@@ -4,6 +4,19 @@ Welcome to **PlagiarismGuard**, industry-standard software for advanced plagiari
 
 ---
 
+## 🌍 Universal Applicability (Not Just Medical)
+
+While Dr. Siddalingaiah is a medical professor, **PlagiarismGuard** is a universal engine designed for **ALL** research fields. It adapts its search strategy based on the content.
+
+| Field | Technologies & Sources Used |
+| :--- | :--- |
+| **⚖️ Law & Humanities** | **Google Books**, **Open Library**, **JSTOR** (via CrossRef) |
+| **🛠️ Engineering & CS** | **IEEE Xplore**, **GitHub**, **StackExchange**, **arXiv** |
+| **🎨 Arts & Literature** | **Internet Archive**, **Project Gutenberg**, **OpenAlex** |
+| **🧬 Science & Medicine** | **Europe PMC**, **PubMed**, **ScienceDirect** |
+
+---
+
 ## 🧭 System Architecture
 
 PlagiarismGuard operates on a **Serverless Proxy Architecture**, ensuring that your search for truth is never blocked by browser restrictions or firewall policies.
@@ -50,6 +63,16 @@ Code plagiarism is harder to detect because variable names (`int x` vs `int coun
 Images, charts, and diagrams are often stolen in academic papers. Standard byte-comparison fails if an image is resized or compressed.
 *   **Method:** We generate a **Perceptual Hash (pHash)**—a "fingerprint" based on the visual frequency content of the image, not its file data.
 *   **Benefit:** Detects the same image even if it has been resized, cropped, or saved in a different format (e.g., PNG vs JPG).
+
+### 4. 🧠 Cognitive AI Analysis (Phase 12)
+We integrate **Google Gemini (LLM)** to go beyond simple matching:
+*   **🤖 AI Authorship Detection:** Analyzes stylometrics (burstiness/perplexity) to estimate if text was written by AI like ChatGPT.
+*   **🧐 Intent Analysis:** The AI reviews the context of a match to determine if it is "Accidental" (common phrase) or "Malicious" (direct copy).
+*   **📝 Smart Summary:** Automatically generates a 3-bullet executive summary of the document.
+
+### 5. 📄 Enterprise Reporting
+*   **Official Certification:** Generates a secure PDF with a "Verified" badge and simulated QR code.
+*   **Detailed Evidence:** The report includes a page-by-page breakdown of every matched phrase and its source URL.
 
 ---
 
