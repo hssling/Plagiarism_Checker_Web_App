@@ -1,5 +1,5 @@
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 
 export const generatePDF = (results, text, metadata = {}) => {
     const doc = new jsPDF();
@@ -79,7 +79,7 @@ export const generatePDF = (results, text, metadata = {}) => {
         m.url || 'N/A'
     ]) : [['No plagiarism detected.', '-', '-', '-']];
 
-    doc.autoTable({
+    autoTable(doc, {
         startY: 30,
         head: [['Suspect Text', 'Match %', 'Source', 'URL']],
         body: tableData,
