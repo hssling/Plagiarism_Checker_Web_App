@@ -76,35 +76,95 @@ async function searchGoogle(phrase) {
 }
 
 /**
- * Search academic databases (CrossRef, Semantic Scholar)
+ * Search academic databases (CrossRef, Semantic Scholar, OpenAlex, Europe PMC)
  */
 async function searchAcademic(phrase) {
     const results = [];
 
-    // Semantic Scholar API (High quality, abstracts available)
-    try {
-        const ssResults = await searchSemanticScholar(phrase);
-        if (ssResults) {
-            results.push(...ssResults);
-        }
-    } catch (err) {
-        console.warn('Semantic Scholar search failed:', err.message);
-    }
+    // executed in parallel for speed
+    const searchPromises = [
+        searchSemanticScholar(phrase),
+        searchEuropePMC(phrase), // Best for medical/biological (User's domain)
+        searchOpenAlex(phrase),  // Massive coverage (250M+ works)
+        // Fallback or supplementary
+        results.length < 2 ? searchCrossRef(phrase) : Promise.resolve(null)
+    ];
 
-    // CrossRef API (Broad coverage)
-    // Only search if we need more results or as fallback
-    if (results.length < 3) {
-        try {
-            const crossRefResults = await searchCrossRef(phrase);
-            if (crossRefResults) {
-                results.push(...crossRefResults);
-            }
-        } catch (err) {
-            console.warn('CrossRef search failed:', err.message);
+    const searchResults = await Promise.allSettled(searchPromises);
+
+    searchResults.forEach(result => {
+        if (result.status === 'fulfilled' && result.value) {
+            results.push(...result.value);
         }
-    }
+    });
 
     return results.length > 0 ? results : null;
+}
+
+/**
+ * Search Europe PMC (PubMed) - Excellent for medical/health research
+ */
+async function searchEuropePMC(phrase) {
+    try {
+        const encodedQuery = encodeURIComponent(`"${phrase}"`); // Exact phrase search
+        const url = `https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=${encodedQuery}&format=json&pageSize=3&resultType=core`;
+
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), SEARCH_TIMEOUT);
+
+        const response = await fetch(url, { signal: controller.signal });
+        clearTimeout(timeout);
+
+        if (!response.ok) return null;
+
+        const data = await response.json();
+
+        return (data.resultList?.result || []).map(item => ({
+            title: item.title,
+            url: `https://europepmc.org/article/${item.source}/${item.id}`,
+            snippet: item.abstractText ? item.abstractText.replace(/<[^>]*>/g, '').substring(0, 300) : '',
+            source: 'Europe PMC (PubMed)',
+            type: 'Medical Research'
+        }));
+    } catch (err) {
+        // console.warn('Europe PMC search failed:', err.message);
+        return null;
+    }
+}
+
+/**
+ * Search OpenAlex - Huge index of global scholarship
+ */
+async function searchOpenAlex(phrase) {
+    try {
+        // OpenAlex encourages polite pool usage with email
+        const email = 'plagiarismguard@example.com';
+        const encodedQuery = encodeURIComponent(phrase);
+        const url = `https://api.openalex.org/works?search=${encodedQuery}&per-page=3&mailto=${email}`;
+
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), SEARCH_TIMEOUT);
+
+        const response = await fetch(url, { signal: controller.signal });
+        clearTimeout(timeout);
+
+        if (!response.ok) return null;
+
+        const data = await response.json();
+
+        return (data.results || []).map(item => {
+            return {
+                title: item.title || item.display_name,
+                url: item.doi || (item.ids ? item.ids.openalex : null),
+                snippet: item.type ? `${item.type} published in ${item.publication_year}` : '',
+                source: 'OpenAlex',
+                type: 'Scholarly Work'
+            };
+        });
+    } catch (err) {
+        // console.warn('OpenAlex search failed:', err.message);
+        return null;
+    }
 }
 
 /**

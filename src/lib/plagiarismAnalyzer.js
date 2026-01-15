@@ -108,32 +108,75 @@ function calculateNgramOverlap(text1, text2, n = 3) {
 }
 
 /**
- * Extract key phrases for web search
+ * SHINGLING ALGORITHM (Rabin-Karp inspired)
+ * Breaks text into overlapping chunks (shingles) to find exact reuse.
+ * Much more robust than simple n-grams or TF-IDF.
  */
-function extractKeyPhrases(text, minWords = 6, maxPhrases = 15) {
-    const sentences = text.split(/[.!?]/).filter(s => s.trim().length > 0);
-    const phrases = [];
-
-    for (const sentence of sentences) {
-        const words = sentence.trim().split(/\s+/).filter(w => w.length > 0);
-        if (words.length >= minWords) {
-            const phrase = words.slice(0, minWords).join(' ');
-            if (phrase.length > 20 && !phrases.includes(phrase)) {
-                phrases.push(phrase);
-                if (phrases.length >= maxPhrases) break;
-            }
-        }
+function calculateShingleOverlap(text1, text2, k = 4) {
+    const shingles1 = new Set();
+    const words1 = cleanText(text1).split(' ');
+    for (let i = 0; i <= words1.length - k; i++) {
+        shingles1.add(words1.slice(i, i + k).join(' '));
     }
 
-    return phrases;
+    const shingles2 = new Set();
+    const words2 = cleanText(text2).split(' ');
+    for (let i = 0; i <= words2.length - k; i++) {
+        shingles2.add(words2.slice(i, i + k).join(' '));
+    }
+
+    if (shingles1.size === 0 || shingles2.size === 0) return 0;
+
+    let interaction = 0;
+    for (const s of shingles1) {
+        if (shingles2.has(s)) interaction++;
+    }
+
+    // Jaccard Similarity
+    const union = new Set([...shingles1, ...shingles2]).size;
+    return (interaction / union) * 100;
 }
 
 /**
- * Generate n-grams from text
+ * SMART PHRASE EXTRACTION
+ * Selects phrases with "rare" words to avoid common academic fluff.
  */
+function extractSmartPhrases(text, maxPhrases = 8) {
+    const sentences = text.split(/[.!?]/).filter(s => s.trim().length > 15);
+    const complexPhrases = [];
+
+    // Common stop words to ignore in "rareness" check
+    const stopWords = new Set(['the', 'and', 'was', 'for', 'that', 'with', 'from', 'this', 'are', 'not']);
+
+    for (const sentence of sentences) {
+        const words = sentence.trim().split(/\s+/).filter(w => w.length > 0);
+
+        // We want phrases of length 6-9
+        if (words.length >= 6) {
+            // Score sentence by complexity (avg word length + rare words)
+            let score = 0;
+            words.forEach(w => {
+                if (w.length > 6) score += 2;
+                if (!stopWords.has(w.toLowerCase())) score += 1;
+            });
+
+            // Take a chunk from the middle or beginning
+            const start = Math.floor(Math.random() * (words.length - 6));
+            const phrase = words.slice(start, start + 7).join(' ');
+
+            complexPhrases.push({ phrase, score });
+        }
+    }
+
+    // Sort by complexity score to pick the "meatiest" phrases
+    complexPhrases.sort((a, b) => b.score - a.score);
+
+    // Return the top N unique phrases
+    return [...new Set(complexPhrases.map(p => p.phrase))].slice(0, maxPhrases);
+}
 
 /**
- * Main plagiarism analysis function
+ * Main plagiarism analysis function (ENHANCED)
  */
 export async function analyzePlagiarism(text, onProgress) {
     const results = {
@@ -147,33 +190,27 @@ export async function analyzePlagiarism(text, onProgress) {
         ngramMatches: []
     };
 
-    // Step 1: Preprocessing (0-10%)
+    // Step 1: Preprocessing
     onProgress(5);
     const words = cleanText(text).split(/\s+/).filter(w => w.length > 0);
     results.wordCount = words.length;
     results.uniqueWords = new Set(words.map(w => w.toLowerCase())).size;
 
-    await new Promise(resolve => setTimeout(resolve, 300));
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    // Step 2: Smart Phrase Selection
     onProgress(10);
-
-    // Step 2: Extract Key Phrases for Search (10-20%)
+    const keyPhrases = extractSmartPhrases(text, 8);
     onProgress(15);
-    // Extract unique, significant phrases
-    const keyPhrases = extractKeyPhrases(text, 7, 8); // Slightly longer phrases for better specificity
 
+    // Step 3: Deep Web Search (OpenAlex, PubMed, etc.)
     onProgress(20);
+    const potentialSources = new Map();
 
-    // Step 3: Real-time Web & Academic Search (20-80%)
-    onProgress(25);
-
-    // Store potential sources found from web search
-    const potentialSources = new Map(); // Use Map to deduplicate by URL/DOI
-
-    // Search for each phrase
     for (let i = 0; i < keyPhrases.length; i++) {
         const phrase = keyPhrases[i];
 
-        // Search using our webSearch module (CrossRef, Semantic Scholar)
+        // Multi-API search
         const searchResult = await searchPhrase(phrase);
 
         results.keyPhrases.push({
@@ -184,54 +221,53 @@ export async function analyzePlagiarism(text, onProgress) {
 
         if (searchResult.found && searchResult.matches) {
             searchResult.matches.forEach(match => {
-                // Key by URL or Title to avoid duplicates
                 const key = match.url || match.title;
                 if (!potentialSources.has(key)) {
                     potentialSources.set(key, {
                         id: 'src_' + Math.random().toString(36).substr(2, 9),
                         name: match.title || 'Unknown Source',
-                        type: match.type || match.source,
-                        text: (match.snippet || '') + ' ' + (match.title || ''), // Text to compare against
+                        type: match.type || match.source,     // e.g. "Medical Research"
+                        text: (match.snippet || '') + ' ' + (match.title || ''),
                         url: match.url,
                         matches: 0
                     });
                 }
-                // Increment match count for this source
                 potentialSources.get(key).matches++;
             });
         }
 
-        // Update progress dynamically
-        onProgress(25 + ((i + 1) / keyPhrases.length) * 55);
-
-        // Rate limiting to be polite to APIs
-        await new Promise(resolve => setTimeout(resolve, 500));
+        onProgress(20 + ((i + 1) / keyPhrases.length) * 60); // Up to 80%
+        await new Promise(resolve => setTimeout(resolve, 300)); // Rate limiting
     }
 
     onProgress(80);
 
-    // Step 4: Analyze Found Sources (80-95%)
+    // Step 4: Advanced Source Analysis (Shingling & TF-IDF)
     const sourcesArray = Array.from(potentialSources.values());
     results.sourcesChecked = sourcesArray.length;
 
     for (let i = 0; i < sourcesArray.length; i++) {
         const source = sourcesArray[i];
 
-        // Calculate similarity between user text and source snippet/abstract
-        // Note: With free APIs, we often only get abstracts, so similarity might be lower than full text.
-        // We boost the score slightly if multiple phrases matched this source.
+        // 1. Shingling (Exact/Near-Exact Copy Detection) - Weight: 60%
+        const shingleScore = calculateShingleOverlap(text, source.text, 3);
 
+        // 2. TF-IDF (Topic/Keyword Similarity) - Weight: 20%
         const tfidfScore = calculateTFIDFSimilarity(text, source.text);
-        const ngramScore = calculateNgramOverlap(text, source.text, 3);
 
-        // Weighted score: TF-IDF + N-gram + Boost from phrase matches
-        let combinedScore = (tfidfScore * 0.4) + (ngramScore * 0.4) + (Math.min(source.matches, 5) * 4);
+        // 3. Phrase Hits Boost - Weight: 20%
+        // If we found this source via 3 different searches, it's very likely a match.
+        const matchesBoost = Math.min(source.matches * 10, 30);
 
-        // Cap at 100%
-        combinedScore = Math.min(combinedScore, 100);
+        // Combined Score
+        // We prioritize Shingling because it proves structural similarity (plagiarism)
+        // rather than just topical similarity.
+        let combinedScore = (shingleScore * 2.5) + (tfidfScore * 0.3) + matchesBoost;
 
-        // Only include relevant sources
-        if (combinedScore > 5) {
+        // Normalization & Cap
+        if (combinedScore > 100) combinedScore = 100;
+
+        if (combinedScore > 8) { // Threshold
             results.sources.push({
                 id: source.id,
                 name: source.name,
@@ -246,24 +282,19 @@ export async function analyzePlagiarism(text, onProgress) {
         }
     }
 
-    onProgress(95);
+    onProgress(90);
 
-    // Step 5: Final Scoring (95-100%)
-
-    // Sort sources by similarity
+    // Step 5: Final Scoring
     results.sources.sort((a, b) => b.similarity - a.similarity);
-
-    // Take top 10 sources for overall score calculation
     const topSources = results.sources.slice(0, 10);
 
     if (topSources.length > 0) {
-        // Average of top matches
-        const totalSim = topSources.reduce((sum, s) => sum + s.similarity, 0);
-        results.overallScore = totalSim / topSources.length; // Simple average
-        // Normalize: If fewer sources, don't artificially lower score too much, but don't exaggerate either.
-        // Adjust logic: Score is primarily driven by how much IS copied. 
-        // If max match is high, overall score should reflect that risk.
-        results.overallScore = Math.max(results.overallScore, results.maxMatch * 0.8);
+        // Blended Scoring: Max match (most critical) + Weighted Average of others
+        const maxScore = results.maxMatch;
+        const avgScore = topSources.reduce((sum, s) => sum + s.similarity, 0) / topSources.length;
+
+        // Final score leans heavily on the worst offender (max match)
+        results.overallScore = (maxScore * 0.7) + (avgScore * 0.3);
     } else {
         results.overallScore = 0;
     }
@@ -384,4 +415,3 @@ export function exportReportHTML(results) {
     // ... existing function implementation if needed, or redirect to new one ...
     return generateWordReport(results, "");
 }
-
