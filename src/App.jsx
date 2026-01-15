@@ -217,6 +217,14 @@ function App() {
                 </div>
                 <div className="footer-meta">
                     <p>PlagiarismGuard v1.0 | Open Source Academic Plagiarism Checker</p>
+                    <a
+                        href="https://github.com/hssling/Plagiarism_Checker_Web_App/blob/main/docs/USER_GUIDE.md"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: 'var(--text-muted)', textDecoration: 'underline', marginTop: '0.5rem', display: 'inline-block' }}
+                    >
+                        📘 How it Works (User Guide)
+                    </a>
                 </div>
             </footer>
         </div>
