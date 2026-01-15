@@ -100,6 +100,7 @@ function App() {
                     <ResultsDashboard
                         results={results}
                         onReset={handleReset}
+                        text={text}
                     />
                 )}
             </main>
