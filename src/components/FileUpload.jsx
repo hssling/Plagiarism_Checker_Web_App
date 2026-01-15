@@ -39,12 +39,89 @@ function FileUpload({ onFileUpload, onTextInput, file, text }) {
     };
 
     const processFile = async (uploadedFile) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const content = e.target.result;
+        const extension = uploadedFile.name.split('.').pop().toLowerCase();
+
+        try {
+            let content = '';
+
+            if (extension === 'txt') {
+                // Plain text - read directly
+                content = await readAsText(uploadedFile);
+            } else if (extension === 'docx') {
+                // DOCX - use mammoth
+                content = await parseDocx(uploadedFile);
+            } else if (extension === 'pdf') {
+                // PDF - use pdf.js
+                content = await parsePdf(uploadedFile);
+            } else if (extension === 'doc') {
+                // Legacy .doc - try as text, may not work
+                content = 'Error: Legacy .doc format is not fully supported. Please save as .docx and try again.';
+            } else {
+                content = 'Error: Unsupported file format.';
+            }
+
             onFileUpload(uploadedFile, content);
-        };
-        reader.readAsText(uploadedFile);
+        } catch (error) {
+            console.error('File parsing error:', error);
+            onFileUpload(uploadedFile, `Error parsing file: ${error.message}`);
+        }
+    };
+
+    const readAsText = (file) => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target.result);
+            reader.onerror = () => reject(new Error('Failed to read file'));
+            reader.readAsText(file);
+        });
+    };
+
+    const parseDocx = async (file) => {
+        const mammoth = await import('mammoth');
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const arrayBuffer = e.target.result;
+                    const result = await mammoth.extractRawText({ arrayBuffer });
+                    resolve(result.value);
+                } catch (err) {
+                    reject(new Error('Failed to parse DOCX: ' + err.message));
+                }
+            };
+            reader.onerror = () => reject(new Error('Failed to read DOCX file'));
+            reader.readAsArrayBuffer(file);
+        });
+    };
+
+    const parsePdf = async (file) => {
+        const pdfjsLib = await import('pdfjs-dist/build/pdf');
+        pdfjsLib.GlobalWorkerOptions.workerSrc =
+            'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const typedArray = new Uint8Array(e.target.result);
+                    const pdf = await pdfjsLib.getDocument(typedArray).promise;
+
+                    let fullText = '';
+                    for (let i = 1; i <= pdf.numPages; i++) {
+                        const page = await pdf.getPage(i);
+                        const textContent = await page.getTextContent();
+                        const pageText = textContent.items.map(item => item.str).join(' ');
+                        fullText += pageText + '\n';
+                    }
+
+                    resolve(fullText.trim());
+                } catch (err) {
+                    reject(new Error('Failed to parse PDF: ' + err.message));
+                }
+            };
+            reader.onerror = () => reject(new Error('Failed to read PDF file'));
+            reader.readAsArrayBuffer(file);
+        });
     };
 
     const handleTextChange = (e) => {
