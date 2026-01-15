@@ -30,7 +30,6 @@ function App() {
     const [progress, setProgress] = useState(0);
     const [results, setResults] = useState(null); // Text Results
     const [comparisonResult, setComparisonResult] = useState(null); // Code/Image Results
-    const [comparisonResult, setComparisonResult] = useState(null); // Code/Image Results
     const [error, setError] = useState(null);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
