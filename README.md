@@ -20,11 +20,11 @@
 
 ### 🎯 Core Capabilities
 - **Multi-Format Support** - Upload PDF, DOCX, TXT files or paste text directly
-- **Comprehensive Search** - Scans against internet sources, academic databases, and publications
-- **AI-Powered Analysis** - Advanced TF-IDF, N-gram, and semantic similarity detection
+- **Comprehensive Search** - Scans against internet sources, academic databases (OpenAlex, PubMed, CrossRef)
+- **AI-Powered Analysis** - Advanced TF-IDF, N-gram, and Shingling (Rabin-Karp) similarity detection
 - **Detailed Reports** - iThenticate/Turnitin-style reports with source attribution
 - **Real-Time Progress** - Live analysis progress with step-by-step feedback
-- **Export Options** - Download reports as PDF, HTML, or JSON
+- **Export Options** - Download highlighted Word reports (.doc) with color-coded matches
 
 ### 🔓 Free & Open
 - **No Registration Required** - Start checking immediately
@@ -85,10 +85,10 @@ graph LR
 | Engine | Description | Coverage |
 |--------|-------------|----------|
 | **TF-IDF Cosine** | Term frequency-inverse document frequency similarity | Local corpus + web |
-| **N-gram Analysis** | 3-5 word phrase matching | Pattern detection |
+| **Shingling (Rabin-Karp)** | 4-gram overlap detection | Exact copy-paste detection |
 | **Semantic Search** | Meaning-based similarity (AI) | Paraphrase detection |
 | **Web Crawler** | Real-time internet search | 60T+ web pages |
-| **Academic DB** | Published literature search | 100M+ papers |
+| **Academic DB** | Published literature search | OpenAlex (250M+), PubMed/Europe PMC, CrossRef |
 
 ### Similarity Score Interpretation
 
@@ -237,8 +237,9 @@ PlagiarismGuard uses Supabase for anonymous usage analytics:
 - ✅ File upload (PDF, DOCX, TXT)
 - ✅ Text paste input
 - ✅ TF-IDF & N-gram analysis
-- ✅ Web search integration
-- ✅ Detailed reports
+- ✅ Advanced Shingling Algorithm (Rabin-Karp)
+- ✅ Web search integration (OpenAlex, PubMed, CrossRef)
+- ✅ Detailed reports with highlighted export
 - ✅ Dark mode UI
 
 ### Version 1.1 (Planned)
