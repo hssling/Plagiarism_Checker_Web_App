@@ -140,8 +140,9 @@ function calculateShingleOverlap(text1, text2, k = 4) {
 /**
  * SMART PHRASE EXTRACTION
  * Selects phrases with "rare" words to avoid common academic fluff.
+ * Dynamic depth based on text length.
  */
-function extractSmartPhrases(text, maxPhrases = 8) {
+function extractSmartPhrases(text, maxPhrases = 12) {
     const sentences = text.split(/[.!?]/).filter(s => s.trim().length > 15);
     const complexPhrases = [];
 
@@ -171,7 +172,7 @@ function extractSmartPhrases(text, maxPhrases = 8) {
     // Sort by complexity score to pick the "meatiest" phrases
     complexPhrases.sort((a, b) => b.score - a.score);
 
-    // Return the top N unique phrases
+    // Return unique phrases
     return [...new Set(complexPhrases.map(p => p.phrase))].slice(0, maxPhrases);
 }
 
@@ -200,7 +201,9 @@ export async function analyzePlagiarism(text, onProgress) {
 
     // Step 2: Smart Phrase Selection
     onProgress(10);
-    const keyPhrases = extractSmartPhrases(text, 8);
+    // Dynamic depth: check 1 phrase for every 40 words, min 8, max 30
+    const dynamicMax = Math.min(Math.max(8, Math.ceil(words.length / 40)), 30);
+    const keyPhrases = extractSmartPhrases(text, dynamicMax);
     onProgress(15);
 
     // Step 3: Deep Web Search (OpenAlex, PubMed, etc.)
@@ -232,6 +235,12 @@ export async function analyzePlagiarism(text, onProgress) {
                         matches: 0
                     });
                 }
+
+                // Prioritize 'Book' type if found later
+                if (match.type === 'Book') {
+                    potentialSources.get(key).type = 'Book';
+                }
+
                 potentialSources.get(key).matches++;
             });
         }

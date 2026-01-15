@@ -4,55 +4,91 @@ import FileUpload from './components/FileUpload';
 import AnalysisProgress from './components/AnalysisProgress';
 import ResultsDashboard from './components/ResultsDashboard';
 import { analyzePlagiarism } from './lib/plagiarismAnalyzer';
+import { calculateCodeSimilarity } from './lib/codePlagiarism';
+import { generateImageHash, calculateImageSimilarity } from './lib/imagePlagiarism';
 
 function App() {
+    // Mode: 'text' | 'code' | 'image'
+    const [mode, setMode] = useState('text');
+
+    // Text Mode State
     const [file, setFile] = useState(null);
     const [text, setText] = useState('');
+
+    // Code Mode State
+    const [code1, setCode1] = useState('');
+    const [code2, setCode2] = useState('');
+
+    // Image Mode State
+    const [imgUrl1, setImgUrl1] = useState('');
+    const [imgUrl2, setImgUrl2] = useState('');
+
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [progress, setProgress] = useState(0);
-    const [results, setResults] = useState(null);
+    const [results, setResults] = useState(null); // Text Results
+    const [comparisonResult, setComparisonResult] = useState(null); // Code/Image Results
     const [error, setError] = useState(null);
 
+    // ... (Handlers for Text Mode) ...
     const handleFileUpload = (uploadedFile, extractedText) => {
         setFile(uploadedFile);
         setText(extractedText);
         setResults(null);
-        setError(null);
     };
 
     const handleTextInput = (inputText) => {
         setText(inputText);
-        setFile(null);
         setResults(null);
-        setError(null);
-    };
-
-    const handleAnalyze = async () => {
-        if (!text.trim()) {
-            setError('Please upload a file or enter text to analyze.');
-            return;
-        }
-
-        setIsAnalyzing(true);
-        setProgress(0);
-        setError(null);
-
-        try {
-            const analysisResults = await analyzePlagiarism(text, (p) => setProgress(p));
-            setResults(analysisResults);
-        } catch (err) {
-            setError(err.message || 'Analysis failed. Please try again.');
-        } finally {
-            setIsAnalyzing(false);
-        }
     };
 
     const handleReset = () => {
         setFile(null);
         setText('');
+        setCode1(''); setCode2('');
+        setImgUrl1(''); setImgUrl2('');
         setResults(null);
+        setComparisonResult(null);
         setError(null);
         setProgress(0);
+    };
+
+    // Main Analysis Router
+    const handleAnalyze = async () => {
+        setIsAnalyzing(true);
+        setProgress(10);
+        setError(null);
+        setResults(null);
+        setComparisonResult(null);
+
+        try {
+            if (mode === 'text') {
+                if (!text.trim()) throw new Error('Please enter text to analyze.');
+                const analysisResults = await analyzePlagiarism(text, (p) => setProgress(p));
+                setResults(analysisResults);
+            }
+            else if (mode === 'code') {
+                if (!code1.trim() || !code2.trim()) throw new Error('Please enter both code snippets.');
+                setProgress(50);
+                await new Promise(r => setTimeout(r, 500)); // Fake visual delay
+                const score = calculateCodeSimilarity(code1, code2);
+                setComparisonResult({ score, type: 'Code' });
+                setProgress(100);
+            }
+            else if (mode === 'image') {
+                if (!imgUrl1.trim() || !imgUrl2.trim()) throw new Error('Please enter both image URLs.');
+                setProgress(30);
+                const hash1 = await generateImageHash(imgUrl1);
+                setProgress(60);
+                const hash2 = await generateImageHash(imgUrl2);
+                const score = calculateImageSimilarity(hash1, hash2);
+                setComparisonResult({ score, type: 'Image' });
+                setProgress(100);
+            }
+        } catch (err) {
+            setError(err.message || 'Analysis failed.');
+        } finally {
+            setIsAnalyzing(false);
+        }
     };
 
     return (
@@ -60,7 +96,22 @@ function App() {
             <Header />
 
             <main className="main-content">
-                {!results ? (
+                {/* MODE TABS */}
+                <div className="tabs" style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', justifyContent: 'center' }}>
+                    {['text', 'code', 'image'].map(m => (
+                        <button
+                            key={m}
+                            onClick={() => { setMode(m); handleReset(); }}
+                            className={`btn ${mode === m ? 'btn-primary' : 'btn-secondary'}`}
+                            style={{ textTransform: 'capitalize', minWidth: '120px' }}
+                        >
+                            {m === 'text' ? '📄 Text' : m === 'code' ? '💻 Code' : '🖼️ Image'}
+                        </button>
+                    ))}
+                </div>
+
+                {/* TEXT MODE UI */}
+                {mode === 'text' && !results && (
                     <div className="upload-section">
                         <FileUpload
                             onFileUpload={handleFileUpload}
@@ -68,40 +119,89 @@ function App() {
                             file={file}
                             text={text}
                         />
-
-                        {text && !isAnalyzing && (
-                            <div className="action-buttons">
-                                <button
-                                    className="btn btn-primary"
-                                    onClick={handleAnalyze}
-                                >
-                                    🔍 Analyze for Plagiarism
-                                </button>
-                                <button
-                                    className="btn btn-secondary"
-                                    onClick={handleReset}
-                                >
-                                    Clear
-                                </button>
-                            </div>
-                        )}
-
-                        {isAnalyzing && (
-                            <AnalysisProgress progress={progress} />
-                        )}
-
-                        {error && (
-                            <div className="error-message">
-                                ❌ {error}
-                            </div>
-                        )}
                     </div>
-                ) : (
-                    <ResultsDashboard
-                        results={results}
-                        onReset={handleReset}
-                        text={text}
-                    />
+                )}
+
+                {/* CODE MODE UI */}
+                {mode === 'code' && !comparisonResult && (
+                    <div className="comparison-inputs" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '2rem' }}>
+                        <textarea
+                            placeholder="Paste Original Code Here..."
+                            value={code1}
+                            onChange={e => setCode1(e.target.value)}
+                            style={{ height: '300px', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', fontFamily: 'monospace' }}
+                        />
+                        <textarea
+                            placeholder="Paste Suspect Code Here..."
+                            value={code2}
+                            onChange={e => setCode2(e.target.value)}
+                            style={{ height: '300px', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', fontFamily: 'monospace' }}
+                        />
+                    </div>
+                )}
+
+                {/* IMAGE MODE UI */}
+                {mode === 'image' && !comparisonResult && (
+                    <div className="comparison-inputs" style={{ marginBottom: '2rem' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                            <input
+                                type="text"
+                                placeholder="Image URL 1 (e.g., https://example.com/img1.jpg)"
+                                value={imgUrl1}
+                                onChange={e => setImgUrl1(e.target.value)}
+                                className="text-input"
+                            />
+                            <input
+                                type="text"
+                                placeholder="Image URL 2"
+                                value={imgUrl2}
+                                onChange={e => setImgUrl2(e.target.value)}
+                                className="text-input"
+                            />
+                        </div>
+                        <p style={{ textAlign: 'center', marginTop: '1rem', color: 'var(--text-muted)' }}>
+                            Note: Uses Perceptual Hashing (pHash) to detect visual similarity.
+                        </p>
+                    </div>
+                )}
+
+                {/* ANALYZE BUTTON */}
+                {((mode === 'text' && text) || (mode !== 'text' && !comparisonResult)) && !isAnalyzing && (
+                    <div className="action-buttons" style={{ textAlign: 'center', marginTop: '1rem' }}>
+                        <button className="btn btn-primary" onClick={handleAnalyze}>
+                            🔍 Analyze {mode === 'text' ? 'Internet' : 'Similarity'}
+                        </button>
+                        <button className="btn btn-secondary" onClick={handleReset} style={{ marginLeft: '1rem' }}>
+                            Reset
+                        </button>
+                    </div>
+                )}
+
+                {/* PROGRESS & ERROR */}
+                {isAnalyzing && <AnalysisProgress progress={progress} />}
+                {error && <div className="error-message">❌ {error}</div>}
+
+                {/* RESULTS DASHBOARD (TEXT) */}
+                {mode === 'text' && results && (
+                    <ResultsDashboard results={results} onReset={handleReset} text={text} />
+                )}
+
+                {/* COMPARISON RESULTS (CODE/IMAGE) */}
+                {comparisonResult && (
+                    <div className="score-card" style={{ maxWidth: '600px', margin: '2rem auto', textAlign: 'center' }}>
+                        <h2>{comparisonResult.type} Similarity Analysis</h2>
+                        <div className="main-score" style={{ margin: '2rem 0' }}>
+                            <div className="value" style={{ fontSize: '4rem', color: comparisonResult.score > 50 ? 'var(--danger)' : 'var(--success)' }}>
+                                {comparisonResult.score.toFixed(1)}%
+                            </div>
+                            <div className="label">Similarity Score</div>
+                        </div>
+                        <p>
+                            {comparisonResult.score > 80 ? '🔴 High Probability of Plagiarism' :
+                                comparisonResult.score > 40 ? '🟡 Moderate Similarity' : '🟢 Low Similarity'}
+                        </p>
+                        <button className="btn btn-secondary" onClick={handleReset}>New Analysis</button>
+                    </div>
                 )}
             </main>
 

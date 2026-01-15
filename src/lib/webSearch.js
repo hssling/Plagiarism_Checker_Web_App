@@ -76,7 +76,7 @@ async function searchGoogle(phrase) {
 }
 
 /**
- * Search academic databases (CrossRef, Semantic Scholar, OpenAlex, Europe PMC)
+ * Search academic databases (CrossRef, Semantic Scholar, OpenAlex, Europe PMC, Google Books)
  */
 async function searchAcademic(phrase) {
     const results = [];
@@ -84,8 +84,9 @@ async function searchAcademic(phrase) {
     // executed in parallel for speed
     const searchPromises = [
         searchSemanticScholar(phrase),
-        searchEuropePMC(phrase), // Best for medical/biological (User's domain)
-        searchOpenAlex(phrase),  // Massive coverage (250M+ works)
+        searchEuropePMC(phrase), // Medical/Bio
+        searchOpenAlex(phrase),  // General Academic
+        searchGoogleBooks(phrase), // Books & Literature
         // Fallback or supplementary
         results.length < 2 ? searchCrossRef(phrase) : Promise.resolve(null)
     ];
@@ -99,6 +100,42 @@ async function searchAcademic(phrase) {
     });
 
     return results.length > 0 ? results : null;
+}
+
+/**
+ * Search Google Books API
+ */
+async function searchGoogleBooks(phrase) {
+    try {
+        const apiKey = import.meta.env.VITE_GOOGLE_API_KEY || '';
+        const encodedQuery = encodeURIComponent(`"${phrase}"`); // Exact phrase
+        // Use key if available, otherwise anonymous (rate limited but works for demo)
+        const url = `https://www.googleapis.com/books/v1/volumes?q=${encodedQuery}&maxResults=3${apiKey ? `&key=${apiKey}` : ''}`;
+
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), SEARCH_TIMEOUT);
+
+        const response = await fetch(url, { signal: controller.signal });
+        clearTimeout(timeout);
+
+        if (!response.ok) return null;
+
+        const data = await response.json();
+
+        return (data.items || []).map(item => {
+            const info = item.volumeInfo || {};
+            return {
+                title: info.title,
+                url: info.previewLink || info.infoLink,
+                snippet: info.description ? info.description.substring(0, 300) : (info.authors ? `By ${info.authors.join(', ')}` : ''),
+                source: 'Google Books',
+                type: 'Book'
+            };
+        });
+    } catch (err) {
+        // console.warn('Google Books search failed:', err.message);
+        return null;
+    }
 }
 
 /**
