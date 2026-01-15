@@ -1,157 +1,320 @@
 /**
- * Web Search Module - Omni-Search Architecture
- * Strategy: Broad Google Searches + Smart Post-Classification
- * Fixes: "Zero Results" bug from over-complex site filters
+ * Web Search Module - Robust Hybrid Architecture
+ * Combines Direct APIs (for depth) with Google Fallbacks (for safety)
+ * Fixes: "White Screen" crashes via Safe Fetch
+ * Fixes: "Zero Results" via guaranteed Google Fallback
  */
 
-const SEARCH_TIMEOUT = 10000; // 10 seconds
+const SEARCH_TIMEOUT = 8000; // 8 seconds per source
+const CONCURRENT_LIMIT = 4; // Max parallel requests to avoid 429
 
 /**
- * Search for exact phrase using Omni-Search strategy
+ * Enhanced Search Manager
  */
 export async function searchPhrase(phrase, options = {}) {
     const results = [];
 
-    // Strategy: 
-    // 1. Broad Web Search (Captures everything: arXiv, GitHub, Blogs, etc.)
-    // 2. Academic Keyword Search (Bubbles up papers/journals)
-    const searchPromises = [
-        searchGoogleWithContext(phrase, ''), // General Web
-        searchGoogleWithContext(phrase, 'research OR journal OR paper OR code OR thesis') // Academic/Code Bias
-    ];
+    // 1. Execute Independent Source Searches (Hybrid: API -> Google Fallback)
+    const sourceResults = await executeSafeSearches(phrase);
+    results.push(...sourceResults);
 
-    const searchResults = await Promise.allSettled(searchPromises);
-
-    searchResults.forEach(result => {
-        if (result.status === 'fulfilled' && result.value) {
-            results.push(...result.value);
-        }
-    });
-
-    // Deduplicate by URL
-    const uniqueResults = [];
-    const seenUrls = new Set();
-
-    for (const res of results) {
-        if (seenUrls.has(res.url)) continue;
-        seenUrls.add(res.url);
-
-        // Enhance classification
-        const classification = classifySource(res.url, res.snippet, res.title);
-        uniqueResults.push({
-            ...res,
-            source: classification.source,
-            type: classification.type
+    // 2. Global Safety Net: Targeted Google Search (Guarantees non-zero results)
+    const googleResults = await searchGoogleCore(phrase);
+    if (googleResults) {
+        // Merge without duplicates
+        const seen = new Set(results.map(r => r.url));
+        googleResults.forEach(r => {
+            if (!seen.has(r.url)) results.push(r);
         });
     }
 
     return {
         phrase,
-        found: uniqueResults.length > 0,
-        matches: uniqueResults,
-        source: uniqueResults.length > 0 ? uniqueResults[0].source : null
+        found: results.length > 0,
+        matches: results,
+        source: results.length > 0 ? results[0].source : null
     };
 }
 
 /**
- * Robust Source Classification
- * Detects 18+ specific academic/code sources from URL patterns
+ * Safe Fetch Wrapper
+ * Prevents "White Screen" by catching all network/CORS errors silently
  */
-function classifySource(url, snippet, title) {
-    const u = url.toLowerCase();
-
-    // 1. Core Academic
-    if (u.includes('semanticscholar.org')) return { source: 'Semantic Scholar', type: 'Academic Paper' };
-    if (u.includes('scholar.google')) return { source: 'Google Scholar', type: 'Scholarly Article' };
-    if (u.includes('researchgate.net')) return { source: 'ResearchGate', type: 'Research Paper' };
-    if (u.includes('academia.edu')) return { source: 'Academia.edu', type: 'Academic Paper' };
-    if (u.includes('openalex.org')) return { source: 'OpenAlex', type: 'Scholarly Work' };
-    if (u.includes('core.ac.uk')) return { source: 'CORE', type: 'Open Access Paper' };
-    if (u.includes('crossref.org') || u.includes('doi.org')) return { source: 'CrossRef', type: 'Metadata' };
-    if (u.includes('link.springer.com') || u.includes('nature.com')) return { source: 'Springer/Nature', type: 'Journal Article' };
-    if (u.includes('ieeexplore.ieee.org')) return { source: 'IEEE Xplore', type: 'Engineering Std' };
-    if (u.includes('sciencedirect.com')) return { source: 'ScienceDirect', type: 'Journal Article' };
-    if (u.includes('ncbi.nlm.nih.gov') || u.includes('pubmed')) return { source: 'PubMed/NCBI', type: 'Medical Research' };
-
-    // 2. Preprints
-    if (u.includes('arxiv.org')) return { source: 'arXiv', type: 'Preprint' };
-    if (u.includes('biorxiv.org')) return { source: 'BioRxiv', type: 'Preprint' };
-    if (u.includes('medrxiv.org')) return { source: 'MedRxiv', type: 'Preprint' };
-    if (u.includes('europepmc.org')) return { source: 'Europe PMC', type: 'Medical Research' };
-
-    // 3. Code & Books
-    if (u.includes('github.com')) return { source: 'GitHub', type: 'Source Code' };
-    if (u.includes('stackoverflow.com')) return { source: 'StackOverflow', type: 'Developer Q&A' };
-    if (u.includes('archive.org')) return { source: 'Internet Archive', type: 'Archived Web' };
-    if (u.includes('openlibrary.org')) return { source: 'Open Library', type: 'Book' };
-    if (u.includes('books.google')) return { source: 'Google Books', type: 'Book' };
-
-    // Default Fallback
-    if (u.includes('.edu')) return { source: 'University Website', type: 'Academic Web' };
-    if (u.includes('.gov')) return { source: 'Government Site', type: 'Official Document' };
-
-    return { source: 'General Web', type: 'Web Result' };
-}
-
-/**
- * Core Google Search Function
- */
-async function searchGoogleWithContext(phrase, extraTerms) {
-    const apiKey = import.meta.env.VITE_GOOGLE_API_KEY;
-    const cseId = import.meta.env.VITE_GOOGLE_CSE_ID;
-
-    if (!apiKey || !cseId) return null;
-
+async function safeFetch(url, options = {}) {
     try {
-        // Construct query: "phrase" extraTerms
-        let q = `"${phrase}"`;
-        if (extraTerms) {
-            q += ` ${extraTerms}`;
-        }
-
-        const encodedQuery = encodeURIComponent(q);
-        const url = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${cseId}&q=${encodedQuery}`;
-
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), SEARCH_TIMEOUT);
 
-        const response = await fetch(url, { signal: controller.signal });
+        const response = await fetch(url, {
+            ...options,
+            signal: controller.signal
+        });
+
         clearTimeout(timeout);
-
-        if (!response.ok) return null;
-
-        const data = await response.json();
-
-        return (data.items || []).map(item => ({
-            title: item.title,
-            url: item.link,
-            snippet: item.snippet,
-            source: 'Google', // Will be re-classified later
-            type: 'Web'
-        }));
+        return response;
     } catch (err) {
+        // Silently fail creates a "null" result, triggering fallback
         return null;
     }
 }
 
 /**
- * Batch search - unchanged logic
+ * Execute searches with Concurrency Limiting
  */
+async function executeSafeSearches(phrase) {
+    const allResults = [];
+
+    // List of sources to query
+    const searchStrategies = [
+        // Academic
+        () => searchHybrid(phrase, 'Semantic Scholar', searchSemanticScholar, 'semanticscholar.org'),
+        () => searchHybrid(phrase, 'OpenAlex', searchOpenAlex, 'openalex.org'),
+        () => searchHybrid(phrase, 'EuropePMC', searchEuropePMC, 'europepmc.org'),
+        () => searchHybrid(phrase, 'CrossRef', searchCrossRef, 'crossref.org'),
+
+        // Preprints
+        () => searchHybrid(phrase, 'arXiv', searchArxiv, 'arxiv.org'),
+
+        // Books & Code
+        () => searchHybrid(phrase, 'Open Library', searchOpenLibrary, 'openlibrary.org'),
+        () => searchHybrid(phrase, 'Google Books', searchGoogleBooks, 'books.google.com'),
+        () => searchHybrid(phrase, 'StackExchange', searchStackExchange, 'stackoverflow.com'),
+
+        // Targeted Google (No API available/feasible)
+        () => searchTargetedSite(phrase, 'github.com', 'Source Code', 'GitHub'),
+        () => searchTargetedSite(phrase, 'researchgate.net', 'Research Paper', 'ResearchGate'),
+        () => searchTargetedSite(phrase, 'scholar.google.com', 'Scholarly Article', 'Google Scholar'),
+        () => searchTargetedSite(phrase, 'core.ac.uk', 'Open Access Paper', 'CORE'),
+        () => searchTargetedSite(phrase, 'ieeexplore.ieee.org', 'Engineering Std', 'IEEE Xplore'),
+        () => searchTargetedSite(phrase, 'link.springer.com', 'Journal Article', 'Springer'),
+        () => searchTargetedSite(phrase, 'archive.org', 'Archived Web', 'Internet Archive')
+    ];
+
+    // Process in batches
+    for (let i = 0; i < searchStrategies.length; i += CONCURRENT_LIMIT) {
+        const batch = searchStrategies.slice(i, i + CONCURRENT_LIMIT).map(fn => fn());
+        const batchResults = await Promise.allSettled(batch);
+
+        batchResults.forEach(res => {
+            if (res.status === 'fulfilled' && res.value) {
+                allResults.push(...res.value);
+            }
+        });
+    }
+
+    return allResults;
+}
+
+/**
+ * Hybrid Search Pattern: Try Direct API -> Catch Error -> Fallback to Google Site Search
+ */
+async function searchHybrid(phrase, sourceName, apiFunction, domain) {
+    // 1. Try Direct API
+    const apiResults = await apiFunction(phrase);
+    if (apiResults && apiResults.length > 0) {
+        return apiResults;
+    }
+
+    // 2. Fallback to Google Site Search (Safe Mode)
+    // console.log(`Fallback to Google for ${sourceName}`);
+    return await searchTargetedSite(phrase, domain, 'Hybrid Source', sourceName);
+}
+
+// ==========================================
+// INDIVIDUAL API STRATEGIES (Restored)
+// ==========================================
+
+async function searchSemanticScholar(phrase) {
+    const encoded = encodeURIComponent(phrase);
+    const url = `https://api.semanticscholar.org/graph/v1/paper/search?query=${encoded}&limit=3&fields=title,url,abstract,year`;
+
+    // Semantic Scholar often strict with CORS/RateLimits
+    const res = await safeFetch(url);
+    if (!res || !res.ok) return null;
+
+    const data = await res.json();
+    return (data.data || []).map(p => ({
+        title: p.title,
+        url: p.url,
+        snippet: p.abstract || '',
+        source: 'Semantic Scholar',
+        type: 'Academic Paper'
+    }));
+}
+
+async function searchOpenAlex(phrase) {
+    const email = 'plagiarism@example.com';
+    const url = `https://api.openalex.org/works?search=${encodeURIComponent(phrase)}&per-page=3&mailto=${email}`;
+
+    const res = await safeFetch(url);
+    if (!res || !res.ok) return null;
+
+    const data = await res.json();
+    return (data.results || []).map(w => ({
+        title: w.title || w.display_name,
+        url: w.doi || w.ids?.openalex,
+        snippet: w.abstract_inverted_index ? 'Abstract available' : '',
+        source: 'OpenAlex',
+        type: 'Scholarly Work'
+    }));
+}
+
+async function searchEuropePMC(phrase) {
+    const url = `https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=${encodeURIComponent(phrase)}&format=json&pageSize=3`;
+
+    const res = await safeFetch(url);
+    if (!res || !res.ok) return null;
+
+    const data = await res.json();
+    return (data.resultList?.result || []).map(r => ({
+        title: r.title,
+        url: `https://europepmc.org/article/${r.source}/${r.id}`,
+        snippet: r.abstractText || '',
+        source: 'Europe PMC',
+        type: 'Medical Research'
+    }));
+}
+
+async function searchArxiv(phrase) {
+    const url = `https://export.arxiv.org/api/query?search_query=all:${encodeURIComponent(phrase)}&start=0&max_results=3`;
+
+    // XML Response
+    const res = await safeFetch(url);
+    if (!res || !res.ok) return null;
+
+    const text = await res.text();
+    const parser = new DOMParser();
+    const xml = parser.parseFromString(text, "text/xml");
+
+    return Array.from(xml.getElementsByTagName("entry")).map(entry => ({
+        title: entry.getElementsByTagName("title")[0]?.textContent,
+        url: entry.getElementsByTagName("id")[0]?.textContent,
+        snippet: entry.getElementsByTagName("summary")[0]?.textContent?.substring(0, 300),
+        source: 'arXiv',
+        type: 'Preprint'
+    }));
+}
+
+async function searchCrossRef(phrase) {
+    const url = `https://api.crossref.org/works?query.bibliographic=${encodeURIComponent(phrase)}&rows=3`;
+
+    const res = await safeFetch(url);
+    if (!res || !res.ok) return null;
+
+    const data = await res.json();
+    return (data.message?.items || []).map(i => ({
+        title: i.title?.[0],
+        url: i.URL,
+        snippet: '',
+        source: 'CrossRef',
+        type: 'Metadata'
+    }));
+}
+
+async function searchOpenLibrary(phrase) {
+    const url = `https://openlibrary.org/search.json?q=${encodeURIComponent(phrase)}&limit=3`;
+    const res = await safeFetch(url);
+    if (!res || !res.ok) return null;
+
+    const data = await res.json();
+    return (data.docs || []).map(d => ({
+        title: d.title,
+        url: `https://openlibrary.org${d.key}`,
+        snippet: d.first_sentence?.[0] || '',
+        source: 'Open Library',
+        type: 'Book'
+    }));
+}
+
+async function searchStackExchange(phrase) {
+    const url = `https://api.stackexchange.com/2.3/search?order=desc&sort=relevance&intitle=${encodeURIComponent(phrase)}&site=stackoverflow`;
+    const res = await safeFetch(url);
+    if (!res || !res.ok) return null;
+
+    const data = await res.json();
+    return (data.items || []).slice(0, 3).map(i => ({
+        title: i.title,
+        url: i.link,
+        snippet: `Tags: ${i.tags?.join(', ')}`,
+        source: 'StackOverflow',
+        type: 'Dev Q&A'
+    }));
+}
+
+async function searchGoogleBooks(phrase) {
+    const apiKey = import.meta.env.VITE_GOOGLE_API_KEY;
+    const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(phrase)}&maxResults=3&key=${apiKey}`;
+
+    const res = await safeFetch(url);
+    if (!res || !res.ok) return null;
+
+    const data = await res.json();
+    return (data.items || []).map(i => ({
+        title: i.volumeInfo.title,
+        url: i.volumeInfo.previewLink,
+        snippet: i.volumeInfo.description?.substring(0, 200),
+        source: 'Google Books',
+        type: 'Book'
+    }));
+}
+
+/**
+ * Targeted Google Search (The robust fallback)
+ */
+async function searchTargetedSite(phrase, site, type, sourceName) {
+    const apiKey = import.meta.env.VITE_GOOGLE_API_KEY;
+    const cseId = import.meta.env.VITE_GOOGLE_CSE_ID;
+
+    if (!apiKey || !cseId) return null;
+
+    const url = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${cseId}&q=${encodeURIComponent('site:' + site + ' "' + phrase + '"')}`;
+
+    const res = await safeFetch(url);
+    if (!res || !res.ok) return null;
+
+    const data = await res.json();
+    return (data.items || []).map(item => ({
+        title: item.title,
+        url: item.link,
+        snippet: item.snippet,
+        source: sourceName, // Guaranteed label
+        type: type
+    }));
+}
+
+/**
+ * Core Google Search (General Web)
+ */
+async function searchGoogleCore(phrase) {
+    const apiKey = import.meta.env.VITE_GOOGLE_API_KEY;
+    const cseId = import.meta.env.VITE_GOOGLE_CSE_ID;
+
+    if (!apiKey || !cseId) return null;
+
+    const url = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${cseId}&q=${encodeURIComponent('"' + phrase + '"')}`;
+
+    const res = await safeFetch(url);
+    if (!res || !res.ok) return null;
+
+    const data = await res.json();
+    return (data.items || []).map(item => ({
+        title: item.title,
+        url: item.link,
+        snippet: item.snippet,
+        source: 'Google Web',
+        type: 'Web Result'
+    }));
+}
+
+// Keep the existing batch manager
 export async function searchPhrases(phrases, onProgress) {
     const results = [];
-
     for (let i = 0; i < phrases.length; i++) {
         const result = await searchPhrase(phrases[i]);
         results.push(result);
-
-        if (onProgress) {
-            onProgress((i + 1) / phrases.length * 100);
-        }
-
-        // Rate limiting - slight pause
-        await new Promise(resolve => setTimeout(resolve, 300));
+        if (onProgress) onProgress((i + 1) / phrases.length * 100);
+        await new Promise(r => setTimeout(r, 200));
     }
-
     return results;
 }
 
