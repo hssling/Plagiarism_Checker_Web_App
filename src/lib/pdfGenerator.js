@@ -71,25 +71,27 @@ export const generatePDF = (results, text, metadata = {}) => {
     doc.setFont('helvetica', 'bold');
     doc.text("Detailed Findings", 15, 13);
 
-    // Matches Table
-    const tableData = results.found ? results.matches.map(m => [
-        m.phrase.substring(0, 60) + (m.phrase.length > 60 ? '...' : ''), // Truncate text
-        `${m.similarity}%`,
-        m.source || 'Unknown',
-        m.url || 'N/A'
+    // Matches Table - Use actual keyPhrases data
+    const foundPhrases = results.keyPhrases?.filter(p => p.found) || [];
+
+    const tableData = foundPhrases.length > 0 ? foundPhrases.map(p => [
+        (p.text || '').substring(0, 60) + (p.text?.length > 60 ? '...' : ''),
+        '100%', // Exact match (since it was found)
+        p.source || 'Web Search',
+        'See detailed report' // URLs are in the full results
     ]) : [['No plagiarism detected.', '-', '-', '-']];
 
     autoTable(doc, {
         startY: 30,
-        head: [['Suspect Text', 'Match %', 'Source', 'URL']],
+        head: [['Suspect Text', 'Match %', 'Source', 'Notes']],
         body: tableData,
         headStyles: { fillColor: [41, 128, 185] },
         styles: { fontSize: 8, overflow: 'linebreak' },
         columnStyles: {
-            0: { cellWidth: 70 }, // Text
+            0: { cellWidth: 80 }, // Text
             1: { cellWidth: 20 }, // Score
             2: { cellWidth: 40 }, // Source
-            3: { cellWidth: 50 }, // URL
+            3: { cellWidth: 40 }, // Notes
         }
     });
 
