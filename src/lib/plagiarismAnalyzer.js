@@ -153,53 +153,7 @@ async function searchPhrase(phrase) {
 /**
  * Academic reference database for comparison
  */
-const ACADEMIC_REFERENCES = [
-    {
-        id: 'WHO2024',
-        name: 'WHO Global TB Report 2024',
-        type: 'Official Report',
-        text: `Global tuberculosis report 2024. Tuberculosis remains one of the 
-      world's deadliest infectious diseases. India accounts for 26% of the global 
-      TB burden. Early diagnosis and prompt treatment are essential to end TB.`
-    },
-    {
-        id: 'Teo2021',
-        name: 'Teo et al. 2021 - TB Delays Review',
-        type: 'Meta-analysis',
-        text: `Duration and determinants of delayed tuberculosis diagnosis and treatment 
-      in high-burden countries: a mixed-methods systematic review and meta-analysis.`
-    },
-    {
-        id: 'Storla2008',
-        name: 'Storla et al. 2008 - Delay Review',
-        type: 'Systematic Review',
-        text: `A systematic review of delay in the diagnosis and treatment of tuberculosis.
-      Delayed diagnosis and treatment results in increased infectivity and poor outcomes.`
-    },
-    {
-        id: 'Sreeramareddy2009',
-        name: 'Sreeramareddy et al. 2009',
-        type: 'Systematic Review',
-        text: `Time delays in diagnosis of pulmonary tuberculosis: a systematic review.
-      Patient delay contributes significantly to the total delay.`
-    },
-    {
-        id: 'Subbaraman2016',
-        name: 'Subbaraman et al. 2016 - India TB Cascade',
-        type: 'Meta-analysis',
-        text: `The tuberculosis cascade of care in India's public sector: 
-      a systematic review and meta-analysis. India has the highest TB burden globally.`
-    },
-    {
-        id: 'CommonAcademic',
-        name: 'Academic Writing Patterns',
-        type: 'Pattern Library',
-        text: `This study aims to investigate the relationship between variables.
-      Our findings suggest that the intervention was effective.
-      The results indicate statistical significance.
-      Further research is needed to explore these findings.`
-    }
-];
+import { searchPhrase } from './webSearch';
 
 /**
  * Main plagiarism analysis function
@@ -218,100 +172,124 @@ export async function analyzePlagiarism(text, onProgress) {
 
     // Step 1: Preprocessing (0-10%)
     onProgress(5);
-    const words = text.split(/\s+/).filter(w => w.length > 0);
+    const words = cleanText(text).split(/\s+/).filter(w => w.length > 0);
     results.wordCount = words.length;
     results.uniqueWords = new Set(words.map(w => w.toLowerCase())).size;
 
     await new Promise(resolve => setTimeout(resolve, 300));
     onProgress(10);
 
-    // Step 2: TF-IDF Analysis (10-30%)
+    // Step 2: Extract Key Phrases for Search (10-20%)
     onProgress(15);
+    // Extract unique, significant phrases
+    const keyPhrases = extractKeyPhrases(text, 7, 8); // Slightly longer phrases for better specificity
 
-    for (let i = 0; i < ACADEMIC_REFERENCES.length; i++) {
-        const ref = ACADEMIC_REFERENCES[i];
-        const similarity = calculateTFIDFSimilarity(text, ref.text);
+    onProgress(20);
 
-        results.sources.push({
-            id: ref.id,
-            name: ref.name,
-            type: ref.type,
-            similarity: similarity
-        });
+    // Step 3: Real-time Web & Academic Search (20-80%)
+    onProgress(25);
 
-        if (similarity > results.maxMatch) {
-            results.maxMatch = similarity;
-        }
+    // Store potential sources found from web search
+    const potentialSources = new Map(); // Use Map to deduplicate by URL/DOI
 
-        results.sourcesChecked++;
-        onProgress(15 + (i + 1) * 2);
-        await new Promise(resolve => setTimeout(resolve, 100));
-    }
-
-    onProgress(30);
-
-    // Step 3: N-gram Analysis (30-50%)
-    onProgress(35);
-
-    for (const ref of ACADEMIC_REFERENCES) {
-        const ngramOverlap = calculateNgramOverlap(text, ref.text, 3);
-
-        // Update source with n-gram data
-        const sourceIndex = results.sources.findIndex(s => s.id === ref.id);
-        if (sourceIndex >= 0) {
-            // Combine TF-IDF and n-gram scores
-            const combinedScore = (results.sources[sourceIndex].similarity * 0.6) + (ngramOverlap * 0.4);
-            results.sources[sourceIndex].similarity = combinedScore;
-        }
-
-        await new Promise(resolve => setTimeout(resolve, 100));
-    }
-
-    onProgress(50);
-
-    // Step 4: Web/Phrase Search (50-70%)
-    onProgress(55);
-
-    const keyPhrases = extractKeyPhrases(text, 6, 10);
-
+    // Search for each phrase
     for (let i = 0; i < keyPhrases.length; i++) {
-        const result = await searchPhrase(keyPhrases[i]);
+        const phrase = keyPhrases[i];
+
+        // Search using our webSearch module (CrossRef, Semantic Scholar)
+        const searchResult = await searchPhrase(phrase);
+
         results.keyPhrases.push({
-            text: keyPhrases[i],
-            found: result.found,
-            source: result.source
+            text: phrase,
+            found: searchResult.found,
+            source: searchResult.source
         });
-        onProgress(55 + ((i + 1) / keyPhrases.length) * 15);
+
+        if (searchResult.found && searchResult.matches) {
+            searchResult.matches.forEach(match => {
+                // Key by URL or Title to avoid duplicates
+                const key = match.url || match.title;
+                if (!potentialSources.has(key)) {
+                    potentialSources.set(key, {
+                        id: 'src_' + Math.random().toString(36).substr(2, 9),
+                        name: match.title || 'Unknown Source',
+                        type: match.type || match.source,
+                        text: (match.snippet || '') + ' ' + (match.title || ''), // Text to compare against
+                        url: match.url,
+                        matches: 0
+                    });
+                }
+                // Increment match count for this source
+                potentialSources.get(key).matches++;
+            });
+        }
+
+        // Update progress dynamically
+        onProgress(25 + ((i + 1) / keyPhrases.length) * 55);
+
+        // Rate limiting to be polite to APIs
+        await new Promise(resolve => setTimeout(resolve, 500));
     }
 
-    onProgress(70);
+    onProgress(80);
 
-    // Step 5: API Checks (70-90%) - Simulated
-    onProgress(75);
+    // Step 4: Analyze Found Sources (80-95%)
+    const sourcesArray = Array.from(potentialSources.values());
+    results.sourcesChecked = sourcesArray.length;
 
-    // In production, these would be actual API calls
-    const apiChecks = [
-        { name: 'Copyleaks', status: 'Not configured' },
-        { name: 'ZeroGPT', status: 'Not configured' },
-        { name: 'Google Scholar', status: 'Rate limited' }
-    ];
+    for (let i = 0; i < sourcesArray.length; i++) {
+        const source = sourcesArray[i];
 
-    for (let i = 0; i < apiChecks.length; i++) {
-        await new Promise(resolve => setTimeout(resolve, 200));
-        onProgress(75 + ((i + 1) / apiChecks.length) * 15);
+        // Calculate similarity between user text and source snippet/abstract
+        // Note: With free APIs, we often only get abstracts, so similarity might be lower than full text.
+        // We boost the score slightly if multiple phrases matched this source.
+
+        const tfidfScore = calculateTFIDFSimilarity(text, source.text);
+        const ngramScore = calculateNgramOverlap(text, source.text, 3);
+
+        // Weighted score: TF-IDF + N-gram + Boost from phrase matches
+        let combinedScore = (tfidfScore * 0.4) + (ngramScore * 0.4) + (Math.min(source.matches, 5) * 4);
+
+        // Cap at 100%
+        combinedScore = Math.min(combinedScore, 100);
+
+        // Only include relevant sources
+        if (combinedScore > 5) {
+            results.sources.push({
+                id: source.id,
+                name: source.name,
+                type: source.type,
+                similarity: combinedScore,
+                url: source.url
+            });
+
+            if (combinedScore > results.maxMatch) {
+                results.maxMatch = combinedScore;
+            }
+        }
     }
 
-    onProgress(90);
-
-    // Step 6: Generate Report (90-100%)
     onProgress(95);
 
-    // Calculate overall score
-    const sourceScores = results.sources.map(s => s.similarity);
-    results.overallScore = sourceScores.reduce((a, b) => a + b, 0) / sourceScores.length;
+    // Step 5: Final Scoring (95-100%)
 
-    // Sort sources by similarity (highest first)
+    // Sort sources by similarity
     results.sources.sort((a, b) => b.similarity - a.similarity);
+
+    // Take top 10 sources for overall score calculation
+    const topSources = results.sources.slice(0, 10);
+
+    if (topSources.length > 0) {
+        // Average of top matches
+        const totalSim = topSources.reduce((sum, s) => sum + s.similarity, 0);
+        results.overallScore = totalSim / topSources.length; // Simple average
+        // Normalize: If fewer sources, don't artificially lower score too much, but don't exaggerate either.
+        // Adjust logic: Score is primarily driven by how much IS copied. 
+        // If max match is high, overall score should reflect that risk.
+        results.overallScore = Math.max(results.overallScore, results.maxMatch * 0.8);
+    } else {
+        results.overallScore = 0;
+    }
 
     await new Promise(resolve => setTimeout(resolve, 200));
     onProgress(100);

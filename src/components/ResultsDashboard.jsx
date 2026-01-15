@@ -83,7 +83,20 @@ function ResultsDashboard({ results, onReset }) {
                         {results.sources.map((source, index) => (
                             <tr key={index}>
                                 <td>
-                                    <strong>{source.name}</strong>
+                                    {source.url ? (
+                                        <a
+                                            href={source.url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: 600 }}
+                                            onMouseOver={(e) => e.target.style.textDecoration = 'underline'}
+                                            onMouseOut={(e) => e.target.style.textDecoration = 'none'}
+                                        >
+                                            {source.name} ↗
+                                        </a>
+                                    ) : (
+                                        <strong>{source.name}</strong>
+                                    )}
                                     {source.type && <span style={{ color: 'var(--text-muted)', marginLeft: '0.5rem' }}>({source.type})</span>}
                                 </td>
                                 <td>{source.similarity.toFixed(1)}%</td>

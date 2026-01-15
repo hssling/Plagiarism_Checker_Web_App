@@ -81,17 +81,7 @@ async function searchGoogle(phrase) {
 async function searchAcademic(phrase) {
     const results = [];
 
-    // CrossRef API (free, no key required)
-    try {
-        const crossRefResults = await searchCrossRef(phrase);
-        if (crossRefResults) {
-            results.push(...crossRefResults);
-        }
-    } catch (err) {
-        console.warn('CrossRef search failed:', err.message);
-    }
-
-    // Semantic Scholar API (free, no key required)
+    // Semantic Scholar API (High quality, abstracts available)
     try {
         const ssResults = await searchSemanticScholar(phrase);
         if (ssResults) {
@@ -99,6 +89,19 @@ async function searchAcademic(phrase) {
         }
     } catch (err) {
         console.warn('Semantic Scholar search failed:', err.message);
+    }
+
+    // CrossRef API (Broad coverage)
+    // Only search if we need more results or as fallback
+    if (results.length < 3) {
+        try {
+            const crossRefResults = await searchCrossRef(phrase);
+            if (crossRefResults) {
+                results.push(...crossRefResults);
+            }
+        } catch (err) {
+            console.warn('CrossRef search failed:', err.message);
+        }
     }
 
     return results.length > 0 ? results : null;
@@ -110,7 +113,8 @@ async function searchAcademic(phrase) {
 async function searchCrossRef(phrase) {
     try {
         const encodedQuery = encodeURIComponent(phrase);
-        const url = `https://api.crossref.org/works?query=${encodedQuery}&rows=5`;
+        // Request query using 'query.bibliographic' for better matching
+        const url = `https://api.crossref.org/works?query.bibliographic=${encodedQuery}&rows=3&select=title,DOI,URL,abstract,score`;
 
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), SEARCH_TIMEOUT);
@@ -128,14 +132,18 @@ async function searchCrossRef(phrase) {
         const data = await response.json();
 
         return (data.message?.items || [])
-            .filter(item => item.title)
-            .map(item => ({
-                title: Array.isArray(item.title) ? item.title[0] : item.title,
-                url: item.URL || `https://doi.org/${item.DOI}`,
-                doi: item.DOI,
-                source: 'CrossRef',
-                type: 'Academic Paper'
-            }));
+            .map(item => {
+                // CrossRef abstracts are often XML-escaped or missing
+                // We prioritize title match
+                return {
+                    title: Array.isArray(item.title) ? item.title[0] : item.title,
+                    url: item.URL || `https://doi.org/${item.DOI}`,
+                    doi: item.DOI,
+                    snippet: item.abstract ? item.abstract.substring(0, 300).replace(/<[^>]*>/g, '') : '', // Strip HTML tags
+                    source: 'CrossRef',
+                    type: 'Academic Paper'
+                };
+            });
     } catch (err) {
         return null;
     }
@@ -147,7 +155,8 @@ async function searchCrossRef(phrase) {
 async function searchSemanticScholar(phrase) {
     try {
         const encodedQuery = encodeURIComponent(phrase);
-        const url = `https://api.semanticscholar.org/graph/v1/paper/search?query=${encodedQuery}&limit=5&fields=title,url,abstract`;
+        // Request specific fields for efficiency: title, url, abstract, tldr
+        const url = `https://api.semanticscholar.org/graph/v1/paper/search?query=${encodedQuery}&limit=4&fields=title,url,abstract,tldr,year,venue`;
 
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), SEARCH_TIMEOUT);
@@ -159,13 +168,18 @@ async function searchSemanticScholar(phrase) {
 
         const data = await response.json();
 
-        return (data.data || []).map(paper => ({
-            title: paper.title,
-            url: paper.url,
-            snippet: paper.abstract?.substring(0, 200),
-            source: 'Semantic Scholar',
-            type: 'Academic Paper'
-        }));
+        return (data.data || []).map(paper => {
+            let snippet = paper.abstract || (paper.tldr ? paper.tldr.text : '');
+            if (!snippet && paper.title) snippet = paper.title;
+
+            return {
+                title: paper.title,
+                url: paper.url,
+                snippet: snippet ? snippet.substring(0, 400) : '',
+                source: 'Semantic Scholar',
+                type: 'Academic Paper'
+            };
+        });
     } catch (err) {
         return null;
     }
