@@ -1,24 +1,23 @@
 /**
- * Web Search Module - Robust Hybrid Architecture
- * Combines Direct APIs (for depth) with Google Fallbacks (for safety)
- * Fixes: "White Screen" crashes via Safe Fetch
- * Fixes: "Zero Results" via guaranteed Google Fallback
+ * Web Search Module - Comprehensive Multi-Source Architecture
+ * Strategy: Explicitly checks 16+ distinct sources via API or Google Fallback
+ * Features: SafeFetch (Anti-Crash), Concurrency Control, Deep Linking
  */
 
-const SEARCH_TIMEOUT = 8000; // 8 seconds per source
-const CONCURRENT_LIMIT = 4; // Max parallel requests to avoid 429
+const SEARCH_TIMEOUT = 10000; // 10 seconds
+const CONCURRENT_LIMIT = 4; // Batch size to prevent browser hang
 
 /**
- * Enhanced Search Manager
+ * Main Entry Point: Search for exact phrase
  */
 export async function searchPhrase(phrase, options = {}) {
     const results = [];
 
-    // 1. Execute Independent Source Searches (Hybrid: API -> Google Fallback)
-    const sourceResults = await executeSafeSearches(phrase);
+    // 1. Execute Independent Source Searches (Batch Processed)
+    const sourceResults = await executeDeepSearches(phrase);
     results.push(...sourceResults);
 
-    // 2. Global Safety Net: Targeted Google Search (Guarantees non-zero results)
+    // 2. Global Safety Net: General Web Search (Guarantees non-zero results)
     const googleResults = await searchGoogleCore(phrase);
     if (googleResults) {
         // Merge without duplicates
@@ -61,33 +60,34 @@ async function safeFetch(url, options = {}) {
 /**
  * Execute searches with Concurrency Limiting
  */
-async function executeSafeSearches(phrase) {
+async function executeDeepSearches(phrase) {
     const allResults = [];
 
-    // List of sources to query
+    // Explicit List of All 16 Search Strategies
     const searchStrategies = [
-        // Academic
-        () => searchHybrid(phrase, 'Semantic Scholar', searchSemanticScholar, 'semanticscholar.org'),
-        () => searchHybrid(phrase, 'OpenAlex', searchOpenAlex, 'openalex.org'),
-        () => searchHybrid(phrase, 'EuropePMC', searchEuropePMC, 'europepmc.org'),
-        () => searchHybrid(phrase, 'CrossRef', searchCrossRef, 'crossref.org'),
+        // 1. Core Academic APIs
+        () => searchSemanticScholar(phrase),
+        () => searchOpenAlex(phrase),
+        () => searchEuropePMC(phrase),
+        () => searchCrossRef(phrase),
 
-        // Preprints
-        () => searchHybrid(phrase, 'arXiv', searchArxiv, 'arxiv.org'),
+        // 2. Preprints
+        () => searchArxiv(phrase),
 
-        // Books & Code
-        () => searchHybrid(phrase, 'Open Library', searchOpenLibrary, 'openlibrary.org'),
-        () => searchHybrid(phrase, 'Google Books', searchGoogleBooks, 'books.google.com'),
-        () => searchHybrid(phrase, 'StackExchange', searchStackExchange, 'stackoverflow.com'),
+        // 3. Books & Code
+        () => searchOpenLibrary(phrase),
+        () => searchGoogleBooks(phrase),
+        () => searchStackExchange(phrase),
 
-        // Targeted Google (No API available/feasible)
-        () => searchTargetedSite(phrase, 'github.com', 'Source Code', 'GitHub'),
-        () => searchTargetedSite(phrase, 'researchgate.net', 'Research Paper', 'ResearchGate'),
-        () => searchTargetedSite(phrase, 'scholar.google.com', 'Scholarly Article', 'Google Scholar'),
-        () => searchTargetedSite(phrase, 'core.ac.uk', 'Open Access Paper', 'CORE'),
-        () => searchTargetedSite(phrase, 'ieeexplore.ieee.org', 'Engineering Std', 'IEEE Xplore'),
-        () => searchTargetedSite(phrase, 'link.springer.com', 'Journal Article', 'Springer'),
-        () => searchTargetedSite(phrase, 'archive.org', 'Archived Web', 'Internet Archive')
+        // 4. Deep Web / Targeted Site Searches (Explicit definitions)
+        () => searchGitHub(phrase),
+        () => searchResearchGate(phrase),
+        () => searchGoogleScholar(phrase),
+        () => searchCORE(phrase),
+        () => searchIEEE(phrase),
+        () => searchSpringer(phrase),
+        () => searchInternetArchive(phrase),
+        () => searchScienceDirect(phrase)
     ];
 
     // Process in batches
@@ -106,160 +106,7 @@ async function executeSafeSearches(phrase) {
 }
 
 /**
- * Hybrid Search Pattern: Try Direct API -> Catch Error -> Fallback to Google Site Search
- */
-async function searchHybrid(phrase, sourceName, apiFunction, domain) {
-    // 1. Try Direct API
-    const apiResults = await apiFunction(phrase);
-    if (apiResults && apiResults.length > 0) {
-        return apiResults;
-    }
-
-    // 2. Fallback to Google Site Search (Safe Mode)
-    // console.log(`Fallback to Google for ${sourceName}`);
-    return await searchTargetedSite(phrase, domain, 'Hybrid Source', sourceName);
-}
-
-// ==========================================
-// INDIVIDUAL API STRATEGIES (Restored)
-// ==========================================
-
-async function searchSemanticScholar(phrase) {
-    const encoded = encodeURIComponent(phrase);
-    const url = `https://api.semanticscholar.org/graph/v1/paper/search?query=${encoded}&limit=3&fields=title,url,abstract,year`;
-
-    // Semantic Scholar often strict with CORS/RateLimits
-    const res = await safeFetch(url);
-    if (!res || !res.ok) return null;
-
-    const data = await res.json();
-    return (data.data || []).map(p => ({
-        title: p.title,
-        url: p.url,
-        snippet: p.abstract || '',
-        source: 'Semantic Scholar',
-        type: 'Academic Paper'
-    }));
-}
-
-async function searchOpenAlex(phrase) {
-    const email = 'plagiarism@example.com';
-    const url = `https://api.openalex.org/works?search=${encodeURIComponent(phrase)}&per-page=3&mailto=${email}`;
-
-    const res = await safeFetch(url);
-    if (!res || !res.ok) return null;
-
-    const data = await res.json();
-    return (data.results || []).map(w => ({
-        title: w.title || w.display_name,
-        url: w.doi || w.ids?.openalex,
-        snippet: w.abstract_inverted_index ? 'Abstract available' : '',
-        source: 'OpenAlex',
-        type: 'Scholarly Work'
-    }));
-}
-
-async function searchEuropePMC(phrase) {
-    const url = `https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=${encodeURIComponent(phrase)}&format=json&pageSize=3`;
-
-    const res = await safeFetch(url);
-    if (!res || !res.ok) return null;
-
-    const data = await res.json();
-    return (data.resultList?.result || []).map(r => ({
-        title: r.title,
-        url: `https://europepmc.org/article/${r.source}/${r.id}`,
-        snippet: r.abstractText || '',
-        source: 'Europe PMC',
-        type: 'Medical Research'
-    }));
-}
-
-async function searchArxiv(phrase) {
-    const url = `https://export.arxiv.org/api/query?search_query=all:${encodeURIComponent(phrase)}&start=0&max_results=3`;
-
-    // XML Response
-    const res = await safeFetch(url);
-    if (!res || !res.ok) return null;
-
-    const text = await res.text();
-    const parser = new DOMParser();
-    const xml = parser.parseFromString(text, "text/xml");
-
-    return Array.from(xml.getElementsByTagName("entry")).map(entry => ({
-        title: entry.getElementsByTagName("title")[0]?.textContent,
-        url: entry.getElementsByTagName("id")[0]?.textContent,
-        snippet: entry.getElementsByTagName("summary")[0]?.textContent?.substring(0, 300),
-        source: 'arXiv',
-        type: 'Preprint'
-    }));
-}
-
-async function searchCrossRef(phrase) {
-    const url = `https://api.crossref.org/works?query.bibliographic=${encodeURIComponent(phrase)}&rows=3`;
-
-    const res = await safeFetch(url);
-    if (!res || !res.ok) return null;
-
-    const data = await res.json();
-    return (data.message?.items || []).map(i => ({
-        title: i.title?.[0],
-        url: i.URL,
-        snippet: '',
-        source: 'CrossRef',
-        type: 'Metadata'
-    }));
-}
-
-async function searchOpenLibrary(phrase) {
-    const url = `https://openlibrary.org/search.json?q=${encodeURIComponent(phrase)}&limit=3`;
-    const res = await safeFetch(url);
-    if (!res || !res.ok) return null;
-
-    const data = await res.json();
-    return (data.docs || []).map(d => ({
-        title: d.title,
-        url: `https://openlibrary.org${d.key}`,
-        snippet: d.first_sentence?.[0] || '',
-        source: 'Open Library',
-        type: 'Book'
-    }));
-}
-
-async function searchStackExchange(phrase) {
-    const url = `https://api.stackexchange.com/2.3/search?order=desc&sort=relevance&intitle=${encodeURIComponent(phrase)}&site=stackoverflow`;
-    const res = await safeFetch(url);
-    if (!res || !res.ok) return null;
-
-    const data = await res.json();
-    return (data.items || []).slice(0, 3).map(i => ({
-        title: i.title,
-        url: i.link,
-        snippet: `Tags: ${i.tags?.join(', ')}`,
-        source: 'StackOverflow',
-        type: 'Dev Q&A'
-    }));
-}
-
-async function searchGoogleBooks(phrase) {
-    const apiKey = import.meta.env.VITE_GOOGLE_API_KEY;
-    const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(phrase)}&maxResults=3&key=${apiKey}`;
-
-    const res = await safeFetch(url);
-    if (!res || !res.ok) return null;
-
-    const data = await res.json();
-    return (data.items || []).map(i => ({
-        title: i.volumeInfo.title,
-        url: i.volumeInfo.previewLink,
-        snippet: i.volumeInfo.description?.substring(0, 200),
-        source: 'Google Books',
-        type: 'Book'
-    }));
-}
-
-/**
- * Targeted Google Search (The robust fallback)
+ * Helper: Targeted Site Search via Google
  */
 async function searchTargetedSite(phrase, site, type, sourceName) {
     const apiKey = import.meta.env.VITE_GOOGLE_API_KEY;
@@ -277,9 +124,241 @@ async function searchTargetedSite(phrase, site, type, sourceName) {
         title: item.title,
         url: item.link,
         snippet: item.snippet,
-        source: sourceName, // Guaranteed label
+        source: sourceName,
         type: type
     }));
+}
+
+// ==========================================
+// SOURCE 1: Semantic Scholar
+// ==========================================
+async function searchSemanticScholar(phrase) {
+    const encoded = encodeURIComponent(phrase);
+    const url = `https://api.semanticscholar.org/graph/v1/paper/search?query=${encoded}&limit=3&fields=title,url,abstract,year`;
+
+    const res = await safeFetch(url);
+    if (res && res.ok) {
+        const data = await res.json();
+        const results = (data.data || []).map(p => ({
+            title: p.title,
+            url: p.url,
+            snippet: p.abstract || '',
+            source: 'Semantic Scholar',
+            type: 'Academic Paper'
+        }));
+        if (results.length > 0) return results;
+    }
+    // Fallback
+    return searchTargetedSite(phrase, 'semanticscholar.org', 'Academic Paper', 'Semantic Scholar');
+}
+
+// ==========================================
+// SOURCE 2: OpenAlex
+// ==========================================
+async function searchOpenAlex(phrase) {
+    const email = 'plagiarism@example.com';
+    const url = `https://api.openalex.org/works?search=${encodeURIComponent(phrase)}&per-page=3&mailto=${email}`;
+
+    const res = await safeFetch(url);
+    if (res && res.ok) {
+        const data = await res.json();
+        const results = (data.results || []).map(w => ({
+            title: w.title || w.display_name,
+            url: w.doi || w.ids?.openalex,
+            snippet: 'OpenAlex Scholarly Record',
+            source: 'OpenAlex',
+            type: 'Scholarly Work'
+        }));
+        if (results.length > 0) return results;
+    }
+    // Fallback
+    return searchTargetedSite(phrase, 'openalex.org', 'Scholarly Work', 'OpenAlex');
+}
+
+// ==========================================
+// SOURCE 3: Europe PMC
+// ==========================================
+async function searchEuropePMC(phrase) {
+    const url = `https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=${encodeURIComponent(phrase)}&format=json&pageSize=3`;
+
+    const res = await safeFetch(url);
+    if (res && res.ok) {
+        const data = await res.json();
+        const results = (data.resultList?.result || []).map(r => ({
+            title: r.title,
+            url: `https://europepmc.org/article/${r.source}/${r.id}`,
+            snippet: r.abstractText || '',
+            source: 'Europe PMC',
+            type: 'Medical Research'
+        }));
+        if (results.length > 0) return results;
+    }
+    // Fallback
+    return searchTargetedSite(phrase, 'europepmc.org', 'Medical Research', 'Europe PMC');
+}
+
+// ==========================================
+// SOURCE 4: CrossRef
+// ==========================================
+async function searchCrossRef(phrase) {
+    const url = `https://api.crossref.org/works?query.bibliographic=${encodeURIComponent(phrase)}&rows=3`;
+
+    const res = await safeFetch(url);
+    if (res && res.ok) {
+        const data = await res.json();
+        const results = (data.message?.items || []).map(i => ({
+            title: i.title?.[0],
+            url: i.URL,
+            snippet: '',
+            source: 'CrossRef',
+            type: 'Metadata'
+        }));
+        if (results.length > 0) return results;
+    }
+    return searchTargetedSite(phrase, 'crossref.org', 'Metadata', 'CrossRef');
+}
+
+// ==========================================
+// SOURCE 5: arXiv
+// ==========================================
+async function searchArxiv(phrase) {
+    const url = `https://export.arxiv.org/api/query?search_query=all:${encodeURIComponent(phrase)}&start=0&max_results=3`;
+
+    // XML Response
+    const res = await safeFetch(url);
+    if (res && res.ok) {
+        const text = await res.text();
+        const parser = new DOMParser();
+        const xml = parser.parseFromString(text, "text/xml");
+        const results = Array.from(xml.getElementsByTagName("entry")).map(entry => ({
+            title: entry.getElementsByTagName("title")[0]?.textContent,
+            url: entry.getElementsByTagName("id")[0]?.textContent,
+            snippet: entry.getElementsByTagName("summary")[0]?.textContent?.substring(0, 300),
+            source: 'arXiv',
+            type: 'Preprint'
+        }));
+        if (results.length > 0) return results;
+    }
+    // Fallback
+    return searchTargetedSite(phrase, 'arxiv.org', 'Preprint', 'arXiv');
+}
+
+// ==========================================
+// SOURCE 6: Open Library
+// ==========================================
+async function searchOpenLibrary(phrase) {
+    const url = `https://openlibrary.org/search.json?q=${encodeURIComponent(phrase)}&limit=3`;
+    const res = await safeFetch(url);
+    if (res && res.ok) {
+        const data = await res.json();
+        const results = (data.docs || []).map(d => ({
+            title: d.title,
+            url: `https://openlibrary.org${d.key}`,
+            snippet: d.first_sentence?.[0] || '',
+            source: 'Open Library',
+            type: 'Book'
+        }));
+        if (results.length > 0) return results;
+    }
+    return searchTargetedSite(phrase, 'openlibrary.org', 'Book', 'Open Library');
+}
+
+// ==========================================
+// SOURCE 7: StackExchange
+// ==========================================
+async function searchStackExchange(phrase) {
+    const url = `https://api.stackexchange.com/2.3/search?order=desc&sort=relevance&intitle=${encodeURIComponent(phrase)}&site=stackoverflow`;
+    const res = await safeFetch(url);
+    if (res && res.ok) {
+        const data = await res.json();
+        const results = (data.items || []).slice(0, 3).map(i => ({
+            title: i.title,
+            url: i.link,
+            snippet: `Tags: ${i.tags?.join(', ')}`,
+            source: 'StackOverflow',
+            type: 'Dev Q&A'
+        }));
+        if (results.length > 0) return results;
+    }
+    return searchTargetedSite(phrase, 'stackoverflow.com', 'Dev Q&A', 'StackOverflow');
+}
+
+// ==========================================
+// SOURCE 8: Google Books
+// ==========================================
+async function searchGoogleBooks(phrase) {
+    const apiKey = import.meta.env.VITE_GOOGLE_API_KEY;
+    const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(phrase)}&maxResults=3&key=${apiKey}`;
+
+    const res = await safeFetch(url);
+    if (res && res.ok) {
+        const data = await res.json();
+        const results = (data.items || []).map(i => ({
+            title: i.volumeInfo.title,
+            url: i.volumeInfo.previewLink,
+            snippet: i.volumeInfo.description?.substring(0, 200),
+            source: 'Google Books',
+            type: 'Book'
+        }));
+        if (results.length > 0) return results;
+    }
+    return searchTargetedSite(phrase, 'books.google.com', 'Book', 'Google Books');
+}
+
+// ==========================================
+// SOURCE 9: GitHub
+// ==========================================
+async function searchGitHub(phrase) {
+    return await searchTargetedSite(phrase, 'github.com', 'Source Code', 'GitHub');
+}
+
+// ==========================================
+// SOURCE 10: ResearchGate
+// ==========================================
+async function searchResearchGate(phrase) {
+    return await searchTargetedSite(phrase, 'researchgate.net', 'Research Paper', 'ResearchGate');
+}
+
+// ==========================================
+// SOURCE 11: Google Scholar
+// ==========================================
+async function searchGoogleScholar(phrase) {
+    return await searchTargetedSite(phrase, 'scholar.google.com', 'Scholarly Article', 'Google Scholar');
+}
+
+// ==========================================
+// SOURCE 12: CORE
+// ==========================================
+async function searchCORE(phrase) {
+    return await searchTargetedSite(phrase, 'core.ac.uk', 'Open Access Paper', 'CORE');
+}
+
+// ==========================================
+// SOURCE 13: IEEE Xplore
+// ==========================================
+async function searchIEEE(phrase) {
+    return await searchTargetedSite(phrase, 'ieeexplore.ieee.org', 'Engineering Std', 'IEEE Xplore');
+}
+
+// ==========================================
+// SOURCE 14: Springer Link
+// ==========================================
+async function searchSpringer(phrase) {
+    return await searchTargetedSite(phrase, 'link.springer.com', 'Journal Article', 'Springer');
+}
+
+// ==========================================
+// SOURCE 15: Internet Archive
+// ==========================================
+async function searchInternetArchive(phrase) {
+    return await searchTargetedSite(phrase, 'archive.org', 'Archived Web', 'Internet Archive');
+}
+
+// ==========================================
+// SOURCE 16: Science Direct (Bonus)
+// ==========================================
+async function searchScienceDirect(phrase) {
+    return await searchTargetedSite(phrase, 'sciencedirect.com', 'Journal Article', 'ScienceDirect');
 }
 
 /**
