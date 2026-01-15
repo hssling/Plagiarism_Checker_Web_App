@@ -55,7 +55,8 @@ async function searchAcademicHub(phrase) {
         'link.springer.com',
         'ieeexplore.ieee.org',
         'crossref.org',
-        'scholar.google.com'
+        'scholar.google.com',
+        'core.ac.uk'
     ];
 
     // Construct query: "phrase" (site:A OR site:B ...)
