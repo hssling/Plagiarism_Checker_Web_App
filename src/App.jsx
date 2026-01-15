@@ -105,8 +105,21 @@ function App() {
             </main>
 
             <footer className="footer">
-                <p>PlagiarismGuard v1.0 | Open Source Academic Plagiarism Checker</p>
-                <p>For official certification, use iThenticate or Turnitin</p>
+                <div className="developer-info">
+                    <p className="developed-by">Developed by</p>
+                    <h3 className="developer-name">Dr. Siddalingaiah H S</h3>
+                    <p className="developer-designation">Professor, Community Medicine</p>
+                    <p className="developer-institute">Shridevi Institute of Medical Sciences and Research Hospital</p>
+                    <p className="developer-address">NH-4, Sira Road, Tumkur - 572106, Karnataka, India</p>
+                    <div className="developer-contact">
+                        <a href="mailto:hssling@yahoo.com">hssling@yahoo.com</a>
+                        <span className="separator">•</span>
+                        <span>+91-8941087719</span>
+                    </div>
+                </div>
+                <div className="footer-meta">
+                    <p>PlagiarismGuard v1.0 | Open Source Academic Plagiarism Checker</p>
+                </div>
             </footer>
         </div>
     );

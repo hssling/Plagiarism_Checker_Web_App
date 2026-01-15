@@ -278,7 +278,9 @@ body {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .progress-bar-container {
@@ -539,14 +541,82 @@ body {
 /* Footer */
 .footer {
   text-align: center;
-  padding: 1.5rem 2rem;
+  padding: 3rem 2rem 2rem;
   color: var(--text-muted);
   border-top: 1px solid var(--border);
-  font-size: 0.85rem;
+  font-size: 0.9rem;
+  background: var(--bg-secondary);
+  margin-top: auto;
 }
 
-.footer p + p {
-  margin-top: 0.25rem;
+.developer-info {
+  margin-bottom: 2rem;
+}
+
+.developed-by {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+}
+
+.developer-name {
+  font-size: 1.25rem;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+  background: linear-gradient(135deg, var(--primary-light) 0%, #a855f7 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.developer-designation {
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+}
+
+.developer-institute {
+  color: var(--text-secondary);
+  margin-bottom: 0.25rem;
+}
+
+.developer-address {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 1rem;
+}
+
+.developer-contact {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  font-size: 0.9rem;
+  color: var(--primary);
+}
+
+.developer-contact a {
+  color: var(--primary-light);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.developer-contact a:hover {
+  color: var(--primary);
+  text-decoration: underline;
+}
+
+.separator {
+  color: var(--border);
+}
+
+.footer-meta {
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 0.8rem;
+  opacity: 0.7;
 }
 
 /* Responsive */
