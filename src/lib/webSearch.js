@@ -39,12 +39,18 @@ export async function searchPhrase(phrase, options = {}) {
  * Safe Fetch Wrapper
  * Prevents "White Screen" by catching all network/CORS errors silently
  */
-async function safeFetch(url, options = {}) {
+async function safeFetch(url, options = {}, useProxy = false) {
     try {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), SEARCH_TIMEOUT);
 
-        const response = await fetch(url, {
+        let fetchUrl = url;
+        if (useProxy) {
+            // Use local Vercel proxy to bypass CORS
+            fetchUrl = `/api/proxy?url=${encodeURIComponent(url)}`;
+        }
+
+        const response = await fetch(fetchUrl, {
             ...options,
             signal: controller.signal
         });
@@ -138,7 +144,8 @@ async function searchSemanticScholar(phrase) {
     const encoded = encodeURIComponent(phrase);
     const url = `https://api.semanticscholar.org/graph/v1/paper/search?query=${encoded}&limit=3&fields=title,url,abstract,year`;
 
-    const res = await safeFetch(url);
+    // Use Proxy (CORS blocked)
+    const res = await safeFetch(url, {}, true);
     if (res && res.ok) {
         const data = await res.json();
         const results = (data.data || []).map(p => ({
@@ -161,7 +168,8 @@ async function searchOpenAlex(phrase) {
     const email = 'plagiarism@example.com';
     const url = `https://api.openalex.org/works?search=${encodeURIComponent(phrase)}&per-page=3&mailto=${email}`;
 
-    const res = await safeFetch(url);
+    // Use Proxy (CORS blocked)
+    const res = await safeFetch(url, {}, true);
     if (res && res.ok) {
         const data = await res.json();
         const results = (data.results || []).map(w => ({
@@ -183,7 +191,8 @@ async function searchOpenAlex(phrase) {
 async function searchEuropePMC(phrase) {
     const url = `https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=${encodeURIComponent(phrase)}&format=json&pageSize=3`;
 
-    const res = await safeFetch(url);
+    // Use Proxy (CORS blocked)
+    const res = await safeFetch(url, {}, true);
     if (res && res.ok) {
         const data = await res.json();
         const results = (data.resultList?.result || []).map(r => ({
@@ -205,7 +214,8 @@ async function searchEuropePMC(phrase) {
 async function searchCrossRef(phrase) {
     const url = `https://api.crossref.org/works?query.bibliographic=${encodeURIComponent(phrase)}&rows=3`;
 
-    const res = await safeFetch(url);
+    // Use Proxy (CORS blocked)
+    const res = await safeFetch(url, {}, true);
     if (res && res.ok) {
         const data = await res.json();
         const results = (data.message?.items || []).map(i => ({
@@ -227,7 +237,7 @@ async function searchArxiv(phrase) {
     const url = `https://export.arxiv.org/api/query?search_query=all:${encodeURIComponent(phrase)}&start=0&max_results=3`;
 
     // XML Response
-    const res = await safeFetch(url);
+    const res = await safeFetch(url, {}, true);
     if (res && res.ok) {
         const text = await res.text();
         const parser = new DOMParser();
@@ -250,7 +260,9 @@ async function searchArxiv(phrase) {
 // ==========================================
 async function searchOpenLibrary(phrase) {
     const url = `https://openlibrary.org/search.json?q=${encodeURIComponent(phrase)}&limit=3`;
-    const res = await safeFetch(url);
+    // Use Proxy
+    // Use Proxy
+    const res = await safeFetch(url, {}, true);
     if (res && res.ok) {
         const data = await res.json();
         const results = (data.docs || []).map(d => ({
@@ -270,7 +282,9 @@ async function searchOpenLibrary(phrase) {
 // ==========================================
 async function searchStackExchange(phrase) {
     const url = `https://api.stackexchange.com/2.3/search?order=desc&sort=relevance&intitle=${encodeURIComponent(phrase)}&site=stackoverflow`;
-    const res = await safeFetch(url);
+    // Use Proxy
+    // Use Proxy
+    const res = await safeFetch(url, {}, true);
     if (res && res.ok) {
         const data = await res.json();
         const results = (data.items || []).slice(0, 3).map(i => ({
