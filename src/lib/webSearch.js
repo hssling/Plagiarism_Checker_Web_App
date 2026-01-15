@@ -56,6 +56,22 @@ async function safeFetch(url, options = {}, useProxy = false) {
         });
 
         clearTimeout(timeout);
+
+        // Handle Proxy Wrapper (if using proxy)
+        if (useProxy && response.ok) {
+            const wrapper = await response.json(); // The proxy ALWAYS returns JSON 200
+
+            // If the upstream failed (e.g. 404, 500, 429), treat as null to trigger fallback
+            if (!wrapper.upstreamOk) return null;
+
+            // Reconstruct a mock Response object for the caller
+            return new Response(wrapper.data, {
+                status: wrapper.upstreamStatus,
+                statusText: wrapper.upstreamStatusText,
+                headers: { 'Content-Type': wrapper.contentType || 'application/json' }
+            });
+        }
+
         return response;
     } catch (err) {
         // Silently fail creates a "null" result, triggering fallback
