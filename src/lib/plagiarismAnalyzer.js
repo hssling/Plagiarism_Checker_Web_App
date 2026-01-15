@@ -3,6 +3,8 @@
  * Multi-API plagiarism detection with local fallback
  */
 
+import { searchPhrase } from './webSearch';
+
 // Reference corpus for local analysis
 const REFERENCE_CORPUS = {
     academic: [
@@ -127,33 +129,8 @@ function extractKeyPhrases(text, minWords = 6, maxPhrases = 15) {
 }
 
 /**
- * Simulate web search for phrases (in production, use actual API)
+ * Generate n-grams from text
  */
-async function searchPhrase(phrase) {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 100));
-
-    // In production, this would call Google Custom Search API or similar
-    // For demo, return no match for most phrases
-    const commonPatterns = [
-        'the results show',
-        'in this study',
-        'we found that',
-        'according to',
-        'previous research'
-    ];
-
-    const found = commonPatterns.some(pattern =>
-        phrase.toLowerCase().includes(pattern)
-    );
-
-    return { phrase, found, source: found ? 'Common Academic Phrase' : null };
-}
-
-/**
- * Academic reference database for comparison
- */
-import { searchPhrase } from './webSearch';
 
 /**
  * Main plagiarism analysis function
