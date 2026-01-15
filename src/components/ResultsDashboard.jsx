@@ -192,7 +192,7 @@ function ResultsDashboard({ results, onReset, text }) {
                            Ideally, we'd use a regex here to inject highlights dynamically based on the selectedSource.
                            For simplicity in this version, we highlight ALL phrases found in results.
                         */}
-                        {text.split(new RegExp(`(${results.keyPhrases.filter(p => p.found && p.text).map(p => p.text.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&')).join('|')})`, 'gi')).map((part, i) => {
+                        {text.split(new RegExp(`(${results.keyPhrases.filter(p => p.found && p.text).map(p => p.text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`, 'gi')).map((part, i) => {
                             const isMatch = part && results.keyPhrases.some(p => p.found && p.text && p.text.toLowerCase() === part.toLowerCase());
                             return isMatch ?
                                 <span key={i} style={{ backgroundColor: 'rgba(253, 224, 71, 0.3)', borderBottom: '2px solid var(--warning)' }}>{part}</span>
