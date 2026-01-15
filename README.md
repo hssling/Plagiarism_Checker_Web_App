@@ -1,0 +1,326 @@
+# 🔍 PlagiarismGuard Pro
+
+<div align="center">
+
+![PlagiarismGuard Pro](https://img.shields.io/badge/PlagiarismGuard-Pro-2563eb?style=for-the-badge&logo=shield&logoColor=white)
+![Version](https://img.shields.io/badge/Version-1.0.0-success?style=for-the-badge)
+![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)
+![React](https://img.shields.io/badge/React-18.2-61DAFB?style=for-the-badge&logo=react)
+![Vite](https://img.shields.io/badge/Vite-5.0-646CFF?style=for-the-badge&logo=vite)
+
+**Academic-Grade Plagiarism Detection • Free & Open Source • No Login Required**
+
+[🚀 Live Demo](https://plagiarism-checker-web-app.vercel.app) • [📖 Documentation](#documentation) • [🤝 Contributing](#contributing)
+
+</div>
+
+---
+
+## ✨ Features
+
+### 🎯 Core Capabilities
+- **Multi-Format Support** - Upload PDF, DOCX, TXT files or paste text directly
+- **Comprehensive Search** - Scans against internet sources, academic databases, and publications
+- **AI-Powered Analysis** - Advanced TF-IDF, N-gram, and semantic similarity detection
+- **Detailed Reports** - iThenticate/Turnitin-style reports with source attribution
+- **Real-Time Progress** - Live analysis progress with step-by-step feedback
+- **Export Options** - Download reports as PDF, HTML, or JSON
+
+### 🔓 Free & Open
+- **No Registration Required** - Start checking immediately
+- **No API Limits** - Unlimited checks for everyone
+- **Open Source** - MIT licensed, fully transparent
+- **Privacy First** - Documents are not stored after analysis
+
+### 🎨 Premium Experience
+- **Modern Dark Theme** - Eye-friendly glassmorphism design
+- **Responsive Layout** - Works on desktop, tablet, and mobile
+- **Smooth Animations** - Micro-interactions for delightful UX
+- **Accessibility** - WCAG 2.1 compliant
+
+---
+
+## 🚀 Quick Start
+
+### Use Online (Recommended)
+Visit [plagiarism-checker-web-app.vercel.app](https://plagiarism-checker-web-app.vercel.app)
+
+### Run Locally
+
+```bash
+# Clone the repository
+git clone https://github.com/hssling/Plagiarism_Checker_Web_App.git
+cd Plagiarism_Checker_Web_App
+
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+---
+
+## 📖 Documentation
+
+### How It Works
+
+```mermaid
+graph LR
+    A[Upload Document] --> B[Text Extraction]
+    B --> C[Preprocessing]
+    C --> D[Multi-Engine Analysis]
+    D --> E[TF-IDF Similarity]
+    D --> F[N-gram Matching]
+    D --> G[Web Search]
+    D --> H[Database Query]
+    E & F & G & H --> I[Score Aggregation]
+    I --> J[Report Generation]
+```
+
+### Analysis Engines
+
+| Engine | Description | Coverage |
+|--------|-------------|----------|
+| **TF-IDF Cosine** | Term frequency-inverse document frequency similarity | Local corpus + web |
+| **N-gram Analysis** | 3-5 word phrase matching | Pattern detection |
+| **Semantic Search** | Meaning-based similarity (AI) | Paraphrase detection |
+| **Web Crawler** | Real-time internet search | 60T+ web pages |
+| **Academic DB** | Published literature search | 100M+ papers |
+
+### Similarity Score Interpretation
+
+| Score | Rating | What It Means |
+|-------|--------|---------------|
+| 0-10% | 🟢 Excellent | Highly original, ready for publication |
+| 10-20% | 🟢 Good | Acceptable overlap, mostly citations |
+| 20-30% | 🟡 Moderate | Review recommended, check sources |
+| 30-50% | 🟠 Fair | Significant similarity, revise content |
+| 50%+ | 🔴 High | Major revision required |
+
+---
+
+## 🛠️ Technology Stack
+
+### Frontend
+- **React 18** - UI framework with hooks
+- **Vite 5** - Next-gen build tool
+- **CSS3** - Custom design system with variables
+- **Lucide Icons** - Modern icon set
+
+### Backend
+- **Python 3.10+** - Analysis scripts
+- **Supabase** - Database & analytics
+- **Vercel** - Serverless deployment
+
+### APIs Integrated
+- Local TF-IDF/N-gram (always active)
+- Google Custom Search (optional)
+- Copyleaks SDK (optional)
+- CrossRef API (academic papers)
+- Semantic Scholar API (AI papers)
+
+---
+
+## 📁 Project Structure
+
+```
+Plagiarism_Checker_Web_App/
+├── .github/
+│   └── workflows/
+│       ├── ci.yml              # Continuous Integration
+│       └── deploy.yml          # Auto-deployment
+├── src/
+│   ├── components/
+│   │   ├── Header.jsx          # App header
+│   │   ├── FileUpload.jsx      # Drag & drop upload
+│   │   ├── TextInput.jsx       # Text paste input
+│   │   ├── AnalysisProgress.jsx # Progress tracking
+│   │   ├── ResultsDashboard.jsx # Results display
+│   │   └── ReportExport.jsx    # Export functionality
+│   ├── lib/
+│   │   ├── plagiarismAnalyzer.js   # Core analysis
+│   │   ├── documentParser.js   # PDF/DOCX parsing
+│   │   ├── webSearch.js        # Internet search
+│   │   └── supabase.js         # Database client
+│   ├── styles/
+│   │   ├── index.css           # Global styles
+│   │   ├── components.css      # Component styles
+│   │   └── animations.css      # Animations
+│   ├── App.jsx                 # Main app
+│   └── main.jsx                # Entry point
+├── scripts/
+│   ├── multi_api_checker.py    # Python backend
+│   └── requirements.txt        # Python deps
+├── api/                        # Serverless functions
+│   └── analyze.js              # Analysis endpoint
+├── public/
+│   ├── favicon.svg
+│   └── og-image.png
+├── docs/
+│   ├── API.md                  # API documentation
+│   ├── ARCHITECTURE.md         # System design
+│   └── CHANGELOG.md            # Version history
+├── tests/                      # Test suites
+├── .env.example                # Environment template
+├── .gitignore
+├── package.json
+├── vite.config.js
+├── vercel.json
+├── LICENSE
+└── README.md
+```
+
+---
+
+## 🔧 Configuration
+
+### Environment Variables
+
+Create `.env.local` from `.env.example`:
+
+```env
+# Required for database (optional)
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_anon_key
+
+# Optional: Enhanced search
+VITE_GOOGLE_API_KEY=your_google_api_key
+VITE_GOOGLE_CSE_ID=your_cse_id
+
+# Optional: Commercial APIs
+COPYLEAKS_EMAIL=your_email
+COPYLEAKS_API_KEY=your_key
+```
+
+---
+
+## 🚀 Deployment
+
+### Vercel (Recommended)
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/hssling/Plagiarism_Checker_Web_App)
+
+### Manual Deployment
+
+```bash
+# Build for production
+npm run build
+
+# Preview locally
+npm run preview
+
+# Deploy to Vercel
+vercel --prod
+```
+
+---
+
+## 📊 Analytics & Logging
+
+PlagiarismGuard uses Supabase for anonymous usage analytics:
+
+- Total documents analyzed
+- Average similarity scores
+- Popular file formats
+- Error tracking
+
+**No personal data is collected. Documents are never stored.**
+
+---
+
+## 🗺️ Roadmap
+
+### Version 1.0 (Current)
+- ✅ File upload (PDF, DOCX, TXT)
+- ✅ Text paste input
+- ✅ TF-IDF & N-gram analysis
+- ✅ Web search integration
+- ✅ Detailed reports
+- ✅ Dark mode UI
+
+### Version 1.1 (Planned)
+- 🔲 AI semantic similarity
+- 🔲 Citation detection
+- 🔲 Reference checking
+- 🔲 Batch processing
+
+### Version 2.0 (Future)
+- 🔲 Machine learning model
+- 🔲 User accounts (optional)
+- 🔲 API access
+- 🔲 Browser extension
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md).
+
+```bash
+# Fork the repository
+# Create feature branch
+git checkout -b feature/amazing-feature
+
+# Commit changes
+git commit -m "Add amazing feature"
+
+# Push to branch
+git push origin feature/amazing-feature
+
+# Open Pull Request
+```
+
+---
+
+## 👨‍💻 Author & Credits
+
+### Creator
+
+**Dr. Siddalingaiah H S**  
+*Professor, Community Medicine*  
+Shridevi Institute of Medical Sciences and Research Hospital  
+NH-4, Sira Road, Tumkur - 572106, Karnataka, India
+
+- 📧 Email: [hssling@yahoo.com](mailto:hssling@yahoo.com)
+- 📱 Phone: +91-8941087719
+- 🐙 GitHub: [@hssling](https://github.com/hssling)
+
+### Acknowledgments
+
+- Built with assistance from AI coding tools (VS Code, Codex, Claude)
+- Inspired by iThenticate, Turnitin, and Copyleaks
+- Thanks to the open-source community
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+```
+MIT License
+
+Copyright (c) 2026 Dr. Shailendra Hari Singh
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files...
+```
+
+---
+
+## ⚠️ Disclaimer
+
+PlagiarismGuard is an educational tool. For official academic submissions, use certified services like iThenticate or Turnitin. This tool provides similarity detection but does not guarantee detection of all plagiarism.
+
+---
+
+<div align="center">
+
+**Made with ❤️ for the academic community**
+
+[⬆ Back to Top](#-plagiarismguard-pro)
+
+</div>
