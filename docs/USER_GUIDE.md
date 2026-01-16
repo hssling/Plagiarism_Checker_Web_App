@@ -130,9 +130,9 @@ Our PDF report is designed for **journal submission** and **institutional verifi
 
 | Page | Contents |
 | :--- | :--- |
-| **Page 1** | Executive Dashboard with 8 metrics, score badge, QR code, verification statement |
-| **Page 2** | Detailed findings table, source contribution breakdown with percentages |
-| **Page 3** | Full sources list with clickable URLs, document fingerprint hash |
+| **Page 1** | Executive Dashboard (8 metrics), Score Badge, QR Code, Verification Statement |
+| **Page 2** | Citation Analysis (NEW), Detailed Findings Table, Source Contribution breakdown |
+| **Page 3** | Authorship Style Analysis, Fingerprinting Chart, Full Sources List |
 
 ### Report Features
 - ✅ **Unique Certificate ID** for verification
@@ -153,5 +153,5 @@ Our PDF report is designed for **journal submission** and **institutional verifi
 
 ---
 
-*Verified & Powered by PlagiarismGuard Engine v2.0*
+*Verified & Powered by PlagiarismGuard Engine v2.1 (Final Stable)*
 

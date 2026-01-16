@@ -3,7 +3,7 @@
 <div align="center">
 
 ![PlagiarismGuard Pro](https://img.shields.io/badge/PlagiarismGuard-Pro-2563eb?style=for-the-badge&logo=shield&logoColor=white)
-![Version](https://img.shields.io/badge/Version-1.0.0-success?style=for-the-badge)
+![Version](https://img.shields.io/badge/Version-2.1.0-success?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)
 ![React](https://img.shields.io/badge/React-18.2-61DAFB?style=for-the-badge&logo=react)
 ![Vite](https://img.shields.io/badge/Vite-5.0-646CFF?style=for-the-badge&logo=vite)
@@ -257,11 +257,16 @@ PlagiarismGuard uses Supabase for anonymous usage analytics:
 - ✅ Drag & Drop Image Upload
 - ✅ Serverless Proxy for CORS-free API access
 
-### Version 2.1 (Planned)
-- 🔲 Citation detection & reference checking
-- 🔲 Batch processing for multiple documents
-- 🔲 Browser extension
-- 🔲 API access for developers
+### Version 2.1 (Current)
+- ✅ **Citation Detection**: Automatic Vancouver/APA validation.
+- ✅ **Batch Processing**: Multi-document queued analysis.
+- ✅ **Advanced AI Enhancement**: Style fingerprinting and anomalies.
+- ✅ **Keyless Fallback**: Automated academic search mode.
+
+### Version 2.2 (Planned)
+- 🔲 Browser extension (Chrome/Edge)
+- 🔲 API documentation for institutional integration
+- 🔲 Enhanced image OCR for deep diagram analysis
 
 ---
 
