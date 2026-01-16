@@ -956,11 +956,30 @@ html {
   font-weight: 400;
 }
 
-.style-vancouver { background: rgba(168, 85, 247, 0.2); color: #c084fc; }
-.style-apa { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
-.style-mla { background: rgba(251, 146, 60, 0.2); color: #fb923c; }
-.style-chicago { background: rgba(236, 72, 153, 0.2); color: #f472b6; }
-.style-ieee { background: rgba(56, 189, 248, 0.2); color: #38bdf8; }
+.style-vancouver {
+  background: rgba(168, 85, 247, 0.2);
+  color: #c084fc;
+}
+
+.style-apa {
+  background: rgba(34, 197, 94, 0.2);
+  color: #4ade80;
+}
+
+.style-mla {
+  background: rgba(251, 146, 60, 0.2);
+  color: #fb923c;
+}
+
+.style-chicago {
+  background: rgba(236, 72, 153, 0.2);
+  color: #f472b6;
+}
+
+.style-ieee {
+  background: rgba(56, 189, 248, 0.2);
+  color: #38bdf8;
+}
 
 /* Stats Grid */
 .citation-stats-grid {
@@ -1053,10 +1072,25 @@ html {
   font-weight: 500;
 }
 
-.validation-stat.valid { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
-.validation-stat.partial { background: rgba(251, 191, 36, 0.2); color: #fbbf24; }
-.validation-stat.suspicious { background: rgba(239, 68, 68, 0.2); color: #f87171; }
-.validation-stat.unverified { background: rgba(148, 163, 184, 0.2); color: #94a3b8; }
+.validation-stat.valid {
+  background: rgba(34, 197, 94, 0.2);
+  color: #4ade80;
+}
+
+.validation-stat.partial {
+  background: rgba(251, 191, 36, 0.2);
+  color: #fbbf24;
+}
+
+.validation-stat.suspicious {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+}
+
+.validation-stat.unverified {
+  background: rgba(148, 163, 184, 0.2);
+  color: #94a3b8;
+}
 
 /* Issues Card */
 .citation-issues-card {
@@ -1313,10 +1347,21 @@ html {
 }
 
 /* Citation Status Colors */
-.citation-status-valid { color: #22c55e; }
-.citation-status-warning { color: #f59e0b; }
-.citation-status-error { color: #ef4444; }
-.citation-status-neutral { color: #94a3b8; }
+.citation-status-valid {
+  color: #22c55e;
+}
+
+.citation-status-warning {
+  color: #f59e0b;
+}
+
+.citation-status-error {
+  color: #ef4444;
+}
+
+.citation-status-neutral {
+  color: #94a3b8;
+}
 
 /* Mobile Responsive */
 @media (max-width: 768px) {
@@ -1347,6 +1392,7 @@ html {
     font-size: 0.85rem;
   }
 }
+
 /* ================================================
    BATCH PROCESSING STYLES
    ================================================ */
@@ -1520,7 +1566,7 @@ html {
   color: var(--text-muted);
 }
 
-.progress-container {
+.batch-progress-container {
   background: var(--bg-card);
   border-radius: 8px;
   height: 12px;
@@ -1564,10 +1610,21 @@ html {
   color: var(--text-muted);
 }
 
-.summary-card.high .summary-value { color: var(--danger); }
-.summary-card.moderate .summary-value { color: var(--warning); }
-.summary-card.low .summary-value { color: var(--success); }
-.summary-card.average .summary-value { color: var(--primary); }
+.summary-card.high .summary-value {
+  color: var(--danger);
+}
+
+.summary-card.moderate .summary-value {
+  color: var(--warning);
+}
+
+.summary-card.low .summary-value {
+  color: var(--success);
+}
+
+.summary-card.average .summary-value {
+  color: var(--primary);
+}
 
 /* Batch Table */
 .batch-table-container {
@@ -1614,9 +1671,20 @@ html {
   text-transform: capitalize;
 }
 
-.risk-high { color: var(--danger); background: rgba(220, 38, 38, 0.15); }
-.risk-moderate { color: var(--warning); background: rgba(245, 158, 11, 0.15); }
-.risk-low { color: var(--success); background: rgba(22, 163, 74, 0.15); }
+.risk-high {
+  color: var(--danger);
+  background: rgba(220, 38, 38, 0.15);
+}
+
+.risk-moderate {
+  color: var(--warning);
+  background: rgba(245, 158, 11, 0.15);
+}
+
+.risk-low {
+  color: var(--success);
+  background: rgba(22, 163, 74, 0.15);
+}
 
 /* Export Buttons */
 .batch-export {
@@ -1691,7 +1759,9 @@ html {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Responsive */
@@ -1699,7 +1769,7 @@ html {
   .batch-summary {
     grid-template-columns: repeat(3, 1fr);
   }
-  
+
   .batch-table th:nth-child(5),
   .batch-table td:nth-child(5),
   .batch-table th:nth-child(6),
@@ -1712,7 +1782,7 @@ html {
   .batch-summary {
     grid-template-columns: repeat(2, 1fr);
   }
-  
+
   .batch-export {
     flex-direction: column;
   }
@@ -1783,10 +1853,21 @@ html {
   margin-top: 0.25rem;
 }
 
-.consistency-score.excellent .score-value { color: var(--success); }
-.consistency-score.good .score-value { color: var(--success-light); }
-.consistency-score.moderate .score-value { color: var(--warning); }
-.consistency-score.low .score-value { color: var(--danger); }
+.consistency-score.excellent .score-value {
+  color: var(--success);
+}
+
+.consistency-score.good .score-value {
+  color: var(--success-light);
+}
+
+.consistency-score.moderate .score-value {
+  color: var(--warning);
+}
+
+.consistency-score.low .score-value {
+  color: var(--danger);
+}
 
 .consistency-desc {
   color: var(--text-muted);
@@ -2100,9 +2181,20 @@ html {
   text-transform: uppercase;
 }
 
-.artifact-severity.high { background: var(--danger); color: white; }
-.artifact-severity.medium { background: var(--warning); color: white; }
-.artifact-severity.low { background: var(--border); color: var(--text-secondary); }
+.artifact-severity.high {
+  background: var(--danger);
+  color: white;
+}
+
+.artifact-severity.medium {
+  background: var(--warning);
+  color: white;
+}
+
+.artifact-severity.low {
+  background: var(--border);
+  color: var(--text-secondary);
+}
 
 /* AI Analysis Box */
 .ai-analysis {
@@ -2129,11 +2221,11 @@ html {
   .style-metrics {
     grid-template-columns: repeat(2, 1fr);
   }
-  
+
   .fingerprint-bar {
     grid-template-columns: 100px 1fr 40px;
   }
-  
+
   .translation-status {
     flex-direction: column;
     text-align: center;

@@ -310,10 +310,15 @@ export async function analyzePlagiarism(text, onProgress) {
         // rather than just topical similarity.
         let combinedScore = (shingleScore * 2.5) + (tfidfScore * 0.3) + matchesBoost;
 
+        // Boost for short text (less than 200 words) where shingling is harder
+        if (words.length < 200) {
+            combinedScore *= 1.5;
+        }
+
         // Normalization & Cap
         if (combinedScore > 100) combinedScore = 100;
 
-        if (combinedScore > 8) { // Threshold
+        if (combinedScore > 3) { // Lowered Threshold for better sensitivity
             results.sources.push({
                 id: source.id,
                 name: source.name,

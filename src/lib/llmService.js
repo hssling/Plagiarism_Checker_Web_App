@@ -7,7 +7,7 @@ export const initializeAI = (apiKey) => {
     if (!apiKey) return false;
     try {
         genAI = new GoogleGenerativeAI(apiKey);
-        model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        model = genAI.getGenerativeModel({ model: "gemini-pro" });
         return true;
     } catch (e) {
         console.error("Failed to initialize AI:", e);
@@ -56,11 +56,34 @@ export const checkAIAuthorship = async (text) => {
     try {
         const result = await model.generateContent(prompt);
         const response = await result.response;
+
+        // Check for safety blocks
+        if (response.candidates && response.candidates[0].finishReason === "SAFETY") {
+            return { isAI: false, confidence: 0, reasoning: "Blocked by Safety Filters" };
+        }
+
         const text = response.text().replace(/```json|```/g, '').trim();
-        return JSON.parse(text);
+        try {
+            return JSON.parse(text);
+        } catch (parseError) {
+            console.error("JSON Parse Error:", text);
+            // Return raw text if it's short, otherwise generic error
+            const reason = text.length < 50 ? text : "Invalid JSON Response";
+            return { isAI: false, confidence: 0, reasoning: reason };
+        }
     } catch (e) {
         console.error("AI Authorship Check Failed:", e);
-        return { isAI: false, confidence: 0, reasoning: "AI Analysis Failed" };
+        let errorMsg = "AI Analysis Failed";
+
+        if (e.message) {
+            if (e.message.includes('API key')) errorMsg = "Invalid API Key";
+            else if (e.message.includes('403')) errorMsg = "Access Denied (403)";
+            else if (e.message.includes('429')) errorMsg = "Quota Exceeded";
+            else if (e.message.includes('404')) errorMsg = "Key lacks Gemini Access"; // Specific fix
+            else errorMsg = e.message.substring(0, 40) + "...";
+        }
+
+        return { isAI: false, confidence: 0, reasoning: errorMsg };
     }
 };
 
@@ -106,6 +129,6 @@ export const generateSummary = async (text) => {
         const result = await model.generateContent(`Summarize this text in 3 bullet points:\n\n${text.substring(0, 2000)}`);
         return result.response.text();
     } catch (e) {
-        return null;
+        return `Failed to generate summary: ${e.message || "Unknown error"}`;
     }
 };

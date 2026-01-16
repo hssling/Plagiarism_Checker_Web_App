@@ -218,7 +218,7 @@ async function searchOpenAlex(phrase) {
     const url = `https://api.openalex.org/works?search=${encodeURIComponent(phrase)}&per-page=3&mailto=${email}`;
 
     // Use Proxy (CORS blocked)
-    const res = await safeFetch(url, {}, true);
+    const res = await safeFetch(url, {}, false);
     if (res && res.ok) {
         const data = await res.json();
         const results = (data.results || []).map(w => ({
@@ -241,7 +241,7 @@ async function searchEuropePMC(phrase) {
     const url = `https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=${encodeURIComponent(phrase)}&format=json&pageSize=3`;
 
     // Use Proxy (CORS blocked)
-    const res = await safeFetch(url, {}, true);
+    const res = await safeFetch(url, {}, false);
     if (res && res.ok) {
         const data = await res.json();
         const results = (data.resultList?.result || []).map(r => ({
@@ -285,8 +285,8 @@ async function searchCrossRef(phrase) {
 async function searchArxiv(phrase) {
     const url = `https://export.arxiv.org/api/query?search_query=all:${encodeURIComponent(phrase)}&start=0&max_results=3`;
 
-    // XML Response
-    const res = await safeFetch(url, {}, true);
+    // Arxiv supports CORS
+    const res = await safeFetch(url, {}, false);
     if (res && res.ok) {
         const text = await res.text();
         const parser = new DOMParser();
@@ -310,8 +310,8 @@ async function searchArxiv(phrase) {
 async function searchOpenLibrary(phrase) {
     const url = `https://openlibrary.org/search.json?q=${encodeURIComponent(phrase)}&limit=3`;
     // Use Proxy
-    // Use Proxy
-    const res = await safeFetch(url, {}, true);
+    // Open Library supports CORS
+    const res = await safeFetch(url, {}, false);
     if (res && res.ok) {
         const data = await res.json();
         const results = (data.docs || []).map(d => ({

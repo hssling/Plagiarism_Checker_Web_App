@@ -63,7 +63,7 @@ function BatchResults({ results, summary, isProcessing, progress, currentDoc }) 
                     <p>{currentDoc || 'Initializing...'}</p>
                 </div>
 
-                <div className="progress-container">
+                <div className="batch-progress-container">
                     <div
                         className="progress-bar"
                         style={{ width: `${progress}%` }}

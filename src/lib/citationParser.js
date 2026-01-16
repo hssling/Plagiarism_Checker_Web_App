@@ -12,13 +12,14 @@
  */
 export function extractReferencesSection(text) {
     // Common headers for reference sections
+    // Common headers for reference sections - Relaxed regex (allows numbering, colons, case-insensitivity)
     const sectionHeaders = [
-        /\n\s*references?\s*\n/i,
-        /\n\s*bibliography\s*\n/i,
-        /\n\s*works?\s+cited\s*\n/i,
-        /\n\s*literature\s+cited\s*\n/i,
-        /\n\s*sources?\s*\n/i,
-        /\n\s*citations?\s*\n/i
+        /(?:^|\n)\s*(?:\d+\.?\s*)?references?(?:\s*:)?\s*(?:\n|$)/i,
+        /(?:^|\n)\s*(?:\d+\.?\s*)?bibliography(?:\s*:)?\s*(?:\n|$)/i,
+        /(?:^|\n)\s*(?:\d+\.?\s*)?works?\s+cited(?:\s*:)?\s*(?:\n|$)/i,
+        /(?:^|\n)\s*(?:\d+\.?\s*)?literature\s+cited(?:\s*:)?\s*(?:\n|$)/i,
+        /(?:^|\n)\s*(?:\d+\.?\s*)?sources?(?:\s*:)?\s*(?:\n|$)/i,
+        /(?:^|\n)\s*(?:\d+\.?\s*)?citations?(?:\s*:)?\s*(?:\n|$)/i
     ];
 
     let refStart = -1;
@@ -27,9 +28,12 @@ export function extractReferencesSection(text) {
     for (const pattern of sectionHeaders) {
         const match = text.match(pattern);
         if (match && match.index !== undefined) {
-            if (refStart === -1 || match.index > refStart) {
-                refStart = match.index;
-                matchedHeader = match[0].trim();
+            // If we found a match, ensure it's in the last 40% of the document to avoid false positives in TOC
+            if (match.index > text.length * 0.1) {
+                if (refStart === -1 || match.index > refStart) {
+                    refStart = match.index;
+                    matchedHeader = match[0].trim();
+                }
             }
         }
     }

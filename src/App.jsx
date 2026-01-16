@@ -360,7 +360,7 @@ function App() {
             <SettingsModal
                 isOpen={isSettingsOpen}
                 onClose={() => setIsSettingsOpen(false)}
-                onSave={(key) => initializeAI(key)}
+                onSave={({ apiKey }) => initializeAI(apiKey)}
             />
         </div>
     );
