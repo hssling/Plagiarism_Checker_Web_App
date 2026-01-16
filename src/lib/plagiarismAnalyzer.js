@@ -4,6 +4,7 @@
  */
 
 import { searchPhrase } from './webSearch';
+import { analyzeCitationsLocal } from './citationParser';
 
 // Reference corpus for local analysis
 const REFERENCE_CORPUS = {
@@ -188,7 +189,8 @@ export async function analyzePlagiarism(text, onProgress) {
         sourcesChecked: 0,
         sources: [],
         keyPhrases: [],
-        ngramMatches: []
+        ngramMatches: [],
+        citations: null  // Citation analysis results
     };
 
     // Step 1: Preprocessing
@@ -306,6 +308,15 @@ export async function analyzePlagiarism(text, onProgress) {
         results.overallScore = (maxScore * 0.7) + (avgScore * 0.3);
     } else {
         results.overallScore = 0;
+    }
+
+    // Step 6: Citation Analysis (runs in parallel-ish, non-blocking)
+    onProgress(92);
+    try {
+        results.citations = analyzeCitationsLocal(text);
+    } catch (err) {
+        console.warn('Citation analysis failed:', err);
+        results.citations = { found: false, error: err.message };
     }
 
     await new Promise(resolve => setTimeout(resolve, 200));
