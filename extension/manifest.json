@@ -1,0 +1,46 @@
+{
+    "manifest_version": 3,
+    "name": "PlagiarismGuard",
+    "version": "2.1.0",
+    "description": "Check for plagiarism on any webpage with a right-click. Academic-grade detection powered by AI.",
+    "permissions": [
+        "contextMenus",
+        "activeTab",
+        "storage"
+    ],
+    "host_permissions": [
+        "http://localhost:3000/*",
+        "https://plagiarism-checker-web-app.vercel.app/*"
+    ],
+    "background": {
+        "service_worker": "background.js"
+    },
+    "content_scripts": [
+        {
+            "matches": [
+                "<all_urls>"
+            ],
+            "js": [
+                "content/content.js"
+            ],
+            "css": [
+                "content/content.css"
+            ],
+            "run_at": "document_idle"
+        }
+    ],
+    "action": {
+        "default_popup": "popup/popup.html",
+        "default_icon": {
+            "16": "icons/icon16.png",
+            "48": "icons/icon48.png",
+            "128": "icons/icon128.png"
+        },
+        "default_title": "PlagiarismGuard - Check for Plagiarism"
+    },
+    "icons": {
+        "16": "icons/icon16.png",
+        "48": "icons/icon48.png",
+        "128": "icons/icon128.png"
+    }
+}

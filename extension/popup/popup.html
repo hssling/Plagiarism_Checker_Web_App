@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PlagiarismGuard</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-container">
+    <div class="popup-header">
+      <div class="logo">
+        <span class="logo-icon">🔍</span>
+        <span class="logo-text">PlagiarismGuard</span>
+      </div>
+      <div class="version">v2.1</div>
+    </div>
+
+    <div class="popup-body">
+      <div class="instruction">
+        <p><strong>How to use:</strong></p>
+        <ol>
+          <li>Select text on any webpage</li>
+          <li>Right-click and choose "Check for Plagiarism"</li>
+          <li>View results instantly</li>
+        </ol>
+      </div>
+
+      <div class="recent-checks" id="recent-checks">
+        <h3>Recent Checks</h3>
+        <div id="checks-list" class="checks-list">
+          <div class="empty-state">No recent checks</div>
+        </div>
+      </div>
+
+      <div class="settings">
+        <h3>Settings</h3>
+        <label class="setting-item">
+          <input type="checkbox" id="auto-highlight" checked>
+          <span>Auto-highlight matches</span>
+        </label>
+        <div class="setting-item">
+          <label for="highlight-color">Highlight color:</label>
+          <input type="color" id="highlight-color" value="#fef08a">
+        </div>
+      </div>
+    </div>
+
+    <div class="popup-footer">
+      <button id="open-app" class="btn btn-primary">Open Full App</button>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
