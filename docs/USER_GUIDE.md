@@ -105,13 +105,41 @@ We do not rely on a single database. Our engine aggregates data from the world's
 
 ---
 
-## 🛡️ Privacy by Design
+## 📱 Install as App (PWA)
 
-We believe your research belongs to you.
+PlagiarismGuard is a **Progressive Web App (PWA)**, meaning you can install it on any device for offline-like access.
 
-*   **Zero-Storage Policy:** Your documents are analyzed in **RAM** (Random Access Memory). Once you close the tab, the analysis is wiped. We **never** save your text to a database.
-*   **Ephemeral Queries:** When we search external databases, we only send small snippet hashes, never your full full manuscript.
-*   **Client-Side Processing:** The heavy lifting (hashing, comparison, report generation) happens right in your browser, keeping your data on your device.
+### Installation Instructions
+
+| Platform | Steps |
+| :--- | :--- |
+| **Android** | Chrome → Menu (⋮) → "Add to Home Screen" |
+| **iOS** | Safari → Share (⬆) → "Add to Home Screen" |
+| **Windows** | Edge/Chrome → Install icon (⊕) in address bar |
+| **Mac** | Chrome → Menu (⋮) → "Install PlagiarismGuard..." |
+
+Once installed, the app opens in its own window without browser UI, works faster, and can function with limited connectivity.
+
+---
+
+## 📄 Professional PDF Certificate
+
+Our PDF report is designed for **journal submission** and **institutional verification**, comparable to iThenticate/Turnitin reports.
+
+### 3-Page Report Structure
+
+| Page | Contents |
+| :--- | :--- |
+| **Page 1** | Executive Dashboard with 8 metrics, score badge, QR code, verification statement |
+| **Page 2** | Detailed findings table, source contribution breakdown with percentages |
+| **Page 3** | Full sources list with clickable URLs, document fingerprint hash |
+
+### Report Features
+- ✅ **Unique Certificate ID** for verification
+- ✅ **QR Code** containing scan metadata
+- ✅ **Source URLs** - Direct links to original content
+- ✅ **Match Classification** - Identical, Similar, Paraphrased
+- ✅ **Document Hash** - Fingerprint for authenticity verification
 
 ---
 
@@ -126,3 +154,4 @@ We believe your research belongs to you.
 ---
 
 *Verified & Powered by PlagiarismGuard Engine v2.0*
+
