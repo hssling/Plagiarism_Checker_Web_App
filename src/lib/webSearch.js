@@ -430,30 +430,7 @@ async function searchScienceDirect(phrase) {
     return await searchTargetedSite(phrase, 'sciencedirect.com', 'Journal Article', 'ScienceDirect');
 }
 
-/**
- * Core Google Search (General Web)
- */
-async function performGoogleCoreSearch(phrase) {
-    const { apiKey, cseId } = getSearchConfigs();
 
-    if (!apiKey || !cseId) {
-        throw new Error('Google Search API Key & Engine ID are required in Settings.');
-    }
-
-    const url = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${cseId}&q=${encodeURIComponent('"' + phrase + '"')}`;
-
-    const res = await safeFetch(url);
-    if (!res || !res.ok) return null;
-
-    const data = await res.json();
-    return (data.items || []).map(item => ({
-        title: item.title,
-        url: item.link,
-        snippet: item.snippet,
-        source: 'Google Web',
-        type: 'Web Result'
-    }));
-}
 
 // Keep the existing batch manager
 export async function searchPhrases(phrases, onProgress) {
