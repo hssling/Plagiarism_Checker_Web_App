@@ -288,7 +288,7 @@ function App() {
                 )}
 
                 {/* ANALYZE BUTTON */}
-                {((mode === 'text' && text) || (mode !== 'text' && !comparisonResult)) && !isAnalyzing && (
+                {((mode === 'text' && text) || (mode !== 'text' && !comparisonResult)) && !isAnalyzing && mode !== 'batch' && (
                     <div className="action-buttons" style={{ textAlign: 'center', marginTop: '1rem' }}>
                         <button className="btn btn-primary" onClick={handleAnalyze}>
                             🔍 Analyze {mode === 'text' ? 'Internet' : 'Similarity'}
@@ -301,7 +301,7 @@ function App() {
 
                 {/* PROGRESS & ERROR */}
                 {isAnalyzing && (
-                    <div id="analysis-progress-section">
+                    <div id="analysis-progress-section" style={{ margin: '2rem 0' }}>
                         <AnalysisProgress progress={progress} />
                     </div>
                 )}
