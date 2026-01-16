@@ -5,16 +5,7 @@
     "outputDirectory": "dist",
     "installCommand": "npm install",
     "devCommand": "npm run dev",
-    "functions": {
-        "api/*.js": {
-            "runtime": "@vercel/node@3"
-        }
-    },
     "rewrites": [
-        {
-            "source": "/api/:path*",
-            "destination": "/api/:path*"
-        },
         {
             "source": "/(.*)",
             "destination": "/index.html"
