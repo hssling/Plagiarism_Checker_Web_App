@@ -828,3 +828,63 @@ html {
     padding-top: 1rem;
   }
 }
+
+/* ============================================================
+   AUDITOR SPLIT VIEW - Mobile Responsiveness
+   ============================================================ */
+.auditor-split-view {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  height: 600px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+@media (max-width: 768px) {
+  .auditor-split-view {
+    grid-template-columns: 1fr !important;
+    grid-template-rows: auto auto;
+    height: auto !important;
+    max-height: none;
+  }
+
+  .auditor-split-view .left-pane,
+  .auditor-split-view .right-pane {
+    border-right: none !important;
+    border-bottom: 1px solid var(--border);
+    max-height: 400px;
+    overflow-y: auto;
+  }
+
+  .auditor-split-view .right-pane {
+    border-bottom: none;
+  }
+
+  /* Add visual separator between panes */
+  .auditor-split-view .left-pane::after {
+    content: '↓ Scroll down for matched source ↓';
+    display: block;
+    text-align: center;
+    padding: 0.5rem;
+    background: var(--primary);
+    color: white;
+    font-size: 0.8rem;
+    margin-top: 1rem;
+    border-radius: 4px;
+  }
+}
+
+@media (max-width: 480px) {
+
+  .auditor-split-view .left-pane,
+  .auditor-split-view .right-pane {
+    padding: 1rem;
+    max-height: 350px;
+  }
+
+  .auditor-split-view h3 {
+    font-size: 1rem;
+  }
+}
