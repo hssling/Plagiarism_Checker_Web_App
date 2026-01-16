@@ -50,16 +50,19 @@ export function getUserFromKey(apiKey) {
 
 /**
  * Extract API key from request headers
- * @param {Request} req - The incoming request
+ * @param {object} req - The incoming request (Node.js format)
  * @returns {string|null} - The API key or null
  */
 export function extractApiKey(req) {
+    // Node.js format: req.headers is a plain object with lowercase keys
+    const headers = req.headers || {};
+
     // Check X-API-Key header first
-    const headerKey = req.headers.get('x-api-key') || req.headers.get('X-API-Key');
+    const headerKey = headers['x-api-key'];
     if (headerKey) return headerKey;
 
     // Check Authorization header (Bearer token)
-    const authHeader = req.headers.get('authorization');
+    const authHeader = headers['authorization'];
     if (authHeader && authHeader.startsWith('Bearer ')) {
         return authHeader.slice(7);
     }
@@ -69,7 +72,7 @@ export function extractApiKey(req) {
 
 /**
  * Middleware to validate API key
- * @param {Request} req - The incoming request
+ * @param {object} req - The incoming request
  * @returns {object} - { valid: boolean, user: object|null, error: string|null }
  */
 export function validateRequest(req) {

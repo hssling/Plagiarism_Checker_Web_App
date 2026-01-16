@@ -3,18 +3,17 @@
  * Health check endpoint - no auth required
  */
 
-const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type'
-};
+export default function handler(req, res) {
+    // Set CORS headers
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-export default async function handler(req) {
     if (req.method === 'OPTIONS') {
-        return new Response(null, { status: 204, headers: corsHeaders });
+        return res.status(204).end();
     }
 
-    return new Response(JSON.stringify({
+    return res.status(200).json({
         status: 'healthy',
         version: '2.1.0',
         timestamp: new Date().toISOString(),
@@ -22,12 +21,5 @@ export default async function handler(req) {
             analyze: 'POST /api/analyze',
             health: 'GET /api/health'
         }
-    }), {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 }
-
-export const config = {
-    runtime: 'edge'
-};
