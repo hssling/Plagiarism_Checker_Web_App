@@ -65,8 +65,8 @@ function ResultsDashboard({ results, onReset, text }) {
         URL.revokeObjectURL(url);
     };
 
-    const handlePDFExport = () => {
-        generatePDF(results, text || "", {
+    const handlePDFExport = async () => {
+        await generatePDF(results, text || "", {
             title: "Analysis Report",
             author: "PlagiarismGuard User"
         });
