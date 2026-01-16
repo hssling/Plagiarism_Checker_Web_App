@@ -96,6 +96,7 @@ async function executeDeepSearches(phrase) {
         // 1. Core Academic APIs
         () => searchSemanticScholar(phrase),
         () => searchOpenAlex(phrase),
+        () => searchPubMed(phrase),
         () => searchEuropePMC(phrase),
         () => searchCrossRef(phrase),
 
@@ -235,20 +236,40 @@ async function searchOpenAlex(phrase) {
 }
 
 // ==========================================
-// SOURCE 3: Europe PMC
+// SOURCE 3: PubMed / Europe PMC
 // ==========================================
+async function searchPubMed(phrase) {
+    const url = `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=${encodeURIComponent(phrase)}&retmode=json&retmax=3`;
+
+    const res = await safeFetch(url, {}, true);
+    if (res && res.ok) {
+        const data = await res.json();
+        const ids = data.esearchresult?.idlist || [];
+        if (ids.length > 0) {
+            return ids.map(id => ({
+                title: `PubMed ID: ${id}`,
+                url: `https://pubmed.ncbi.nlm.nih.gov/${id}/`,
+                snippet: 'Click to view publication details on PubMed.',
+                source: 'PubMed',
+                type: 'Medical Research'
+            }));
+        }
+    }
+    return searchEuropePMC(phrase);
+}
+
 async function searchEuropePMC(phrase) {
     const url = `https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=${encodeURIComponent(phrase)}&format=json&pageSize=3`;
 
-    // Use Proxy (CORS blocked)
-    const res = await safeFetch(url, {}, false);
+    // Use Proxy (Always for reliability)
+    const res = await safeFetch(url, {}, true);
     if (res && res.ok) {
         const data = await res.json();
         const results = (data.resultList?.result || []).map(r => ({
             title: r.title,
             url: `https://europepmc.org/article/${r.source}/${r.id}`,
-            snippet: r.abstractText || '',
-            source: 'Europe PMC',
+            snippet: r.abstractText || 'Abstract not available',
+            source: 'Europe PMC / PubMed',
             type: 'Medical Research'
         }));
         if (results.length > 0) return results;
@@ -331,8 +352,7 @@ async function searchOpenLibrary(phrase) {
 // ==========================================
 async function searchStackExchange(phrase) {
     const url = `https://api.stackexchange.com/2.3/search?order=desc&sort=relevance&intitle=${encodeURIComponent(phrase)}&site=stackoverflow`;
-    // Use Proxy
-    // Use Proxy
+    // Use Proxy (CORS blocked)
     const res = await safeFetch(url, {}, true);
     if (res && res.ok) {
         const data = await res.json();
@@ -396,9 +416,11 @@ async function searchGoogleScholar(phrase) {
 }
 
 // ==========================================
-// SOURCE 12: CORE
+// SOURCE 12: CORE (Direct API)
 // ==========================================
 async function searchCORE(phrase) {
+    // CORE API V3 requires a key, but we can use their public search endpoint via proxy
+    // For now, sticking to targeted site search as it's more reliable without a key
     return await searchTargetedSite(phrase, 'core.ac.uk', 'Open Access Paper', 'CORE');
 }
 
