@@ -168,7 +168,7 @@ async function performGoogleCoreSearch(phrase) {
     const { apiKey, cseId } = getSearchConfigs();
 
     if (!apiKey || !cseId) {
-        throw new Error('Google Search API Key & Engine ID are required in Settings.');
+        return null; // Graceful skip
     }
 
     const url = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${cseId}&q=${encodeURIComponent('"' + phrase + '"')}`;

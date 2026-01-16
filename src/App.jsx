@@ -115,19 +115,13 @@ function App() {
 
     // Main Analysis Router
     const handleAnalyze = async () => {
-        // 1. Validation: Check for required API keys (Search)
+        // 1. Logic: If keys are missing, we will warn but continue (allows academic fallback)
         if (mode === 'text') {
-            const searchKey = localStorage.getItem('google_search_api_key');
-            const searchCx = localStorage.getItem('google_search_cx');
+            const searchKey = localStorage.getItem('google_search_api_key') || import.meta.env.VITE_GOOGLE_API_KEY;
+            const searchCx = localStorage.getItem('google_search_cx') || import.meta.env.VITE_GOOGLE_CSE_ID;
 
-            // Fallback to env vars if not in local storage (for dev)
-            const envSearchKey = import.meta.env.VITE_GOOGLE_API_KEY;
-            const envSearchCx = import.meta.env.VITE_GOOGLE_CSE_ID;
-
-            if ((!searchKey && !envSearchKey) || (!searchCx && !envSearchCx)) {
-                setError("Please configure your Google Search API Key in Settings to perform web analysis.");
-                setIsSettingsOpen(true);
-                return;
+            if (!searchKey || !searchCx) {
+                console.warn("Analysis running in Academic Fallback mode (No Google Key).");
             }
         }
 
