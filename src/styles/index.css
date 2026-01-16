@@ -649,3 +649,182 @@ body {
     justify-content: center;
   }
 }
+
+/* ============================================================
+   MOBILE ENHANCEMENTS - Phase 15
+   ============================================================ */
+
+/* Safe Area Insets for Notched Devices (iPhone X+) */
+@supports (padding: env(safe-area-inset-top)) {
+  body {
+    padding-top: env(safe-area-inset-top);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .footer {
+    padding-bottom: calc(2rem + env(safe-area-inset-bottom));
+  }
+}
+
+/* Prevent Horizontal Scroll */
+html,
+body {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+/* Touch-Friendly Buttons (Minimum 44px tap targets) */
+.btn {
+  min-height: 44px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Better Mobile Typography */
+@media (max-width: 480px) {
+  .logo h1 {
+    font-size: 1.25rem;
+  }
+
+  .logo-tagline {
+    font-size: 0.75rem;
+  }
+
+  .header-badge {
+    font-size: 0.75rem;
+    padding: 0.4rem 0.75rem;
+  }
+
+  .main-score .value {
+    font-size: 2.5rem;
+  }
+
+  .dropzone {
+    min-height: 150px;
+    padding: 1rem;
+  }
+
+  .dropzone-icon {
+    font-size: 2.5rem;
+  }
+
+  .dropzone h3 {
+    font-size: 1rem;
+  }
+
+  .text-area {
+    min-height: 150px;
+    font-size: 16px;
+    /* Prevent iOS zoom on focus */
+  }
+
+  /* Metrics Grid - 2 columns on small screens */
+  .metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .metric-item .value {
+    font-size: 1rem;
+  }
+
+  .metric-item .label {
+    font-size: 0.75rem;
+  }
+
+  /* Results Table scroll indicator */
+  .results-table-card {
+    position: relative;
+  }
+
+  .results-table-card::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 30px;
+    background: linear-gradient(to left, var(--bg-card), transparent);
+    pointer-events: none;
+    opacity: 0.8;
+  }
+
+  /* Footer mobile layout */
+  .developer-info {
+    margin-bottom: 1.5rem;
+  }
+
+  .developer-name {
+    font-size: 1.1rem;
+  }
+
+  .developer-contact {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .separator {
+    display: none;
+  }
+}
+
+/* PWA Install Prompt Styling */
+.pwa-install-prompt {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-card);
+  padding: 1rem 1.5rem;
+  border-radius: 1rem;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  max-width: 90vw;
+}
+
+.pwa-install-prompt button {
+  min-width: 100px;
+}
+
+/* Smooth Scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Hide scrollbar but allow scrolling */
+.results-table-card::-webkit-scrollbar {
+  height: 4px;
+}
+
+.results-table-card::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+.results-table-card::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 2px;
+}
+
+/* Active states for touch */
+.btn:active {
+  transform: scale(0.98);
+}
+
+/* Accessible focus states */
+.btn:focus-visible,
+.text-area:focus-visible {
+  outline: 2px solid var(--primary-light);
+  outline-offset: 2px;
+}
+
+/* Standalone PWA styles (when installed) */
+@media (display-mode: standalone) {
+  .header {
+    padding-top: 1rem;
+  }
+}
