@@ -267,19 +267,19 @@ export const generatePDF = async (results, text, metadata = {}) => {
     doc.text(`Similarity: ${score.toFixed(1)}%`, 70, 34);
     doc.text(`Originality: ${originalityIndex}%`, 125, 34);
 
-    // Matches Table
+    // Matches Table - Now includes source type
     const foundPhrases = results.keyPhrases?.filter(p => p.found) || [];
 
     const tableData = foundPhrases.length > 0 ? foundPhrases.map((p, idx) => [
         (idx + 1).toString(),
-        (p.text || '').substring(0, 55) + (p.text?.length > 55 ? '...' : ''),
-        p.source || 'Web Search',
-        '100%'
+        (p.text || '').substring(0, 50) + (p.text?.length > 50 ? '...' : ''),
+        p.source || 'Web',
+        'Identical'
     ]) : [['—', 'No plagiarism detected in this document.', '—', '—']];
 
     autoTable(doc, {
         startY: 45,
-        head: [['#', 'Matched Text Fragment', 'Source', 'Match']],
+        head: [['#', 'Matched Text Fragment', 'Source', 'Type']],
         body: tableData,
         headStyles: {
             fillColor: COLORS.primary,
@@ -287,37 +287,59 @@ export const generatePDF = async (results, text, metadata = {}) => {
             fontStyle: 'bold'
         },
         styles: {
-            fontSize: 8,
+            fontSize: 7,
             overflow: 'linebreak',
-            cellPadding: 3
+            cellPadding: 2
         },
         alternateRowStyles: {
             fillColor: [248, 249, 250]
         },
         columnStyles: {
             0: { cellWidth: 10, halign: 'center' },
-            1: { cellWidth: 100 },
-            2: { cellWidth: 50 },
-            3: { cellWidth: 20, halign: 'center' }
+            1: { cellWidth: 90 },
+            2: { cellWidth: 45 },
+            3: { cellWidth: 25, halign: 'center' }
         }
     });
 
-    // Sources Summary
-    const uniqueSources = [...new Set(foundPhrases.map(p => p.source || 'Web Search'))];
+    // Source Contribution Panel
+    const sourceCounts = {};
+    foundPhrases.forEach(p => {
+        const src = p.source || 'Web Search';
+        sourceCounts[src] = (sourceCounts[src] || 0) + 1;
+    });
 
-    if (uniqueSources.length > 0) {
-        const finalY = doc.lastAutoTable.finalY + 10;
+    const sortedSources = Object.entries(sourceCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 8);
+
+    if (sortedSources.length > 0 && doc.lastAutoTable) {
+        let finalY = doc.lastAutoTable.finalY + 10;
 
         doc.setTextColor(...COLORS.dark);
         doc.setFontSize(10);
         doc.setFont('helvetica', 'bold');
-        doc.text("Sources Detected", 15, finalY);
+        doc.text("Source Contribution Breakdown", 15, finalY);
 
-        doc.setFontSize(8);
-        doc.setFont('helvetica', 'normal');
-        uniqueSources.slice(0, 10).forEach((source, idx) => {
-            const count = foundPhrases.filter(p => (p.source || 'Web Search') === source).length;
-            doc.text(`• ${source} (${count} match${count > 1 ? 'es' : ''})`, 20, finalY + 8 + idx * 6);
+        finalY += 5;
+
+        // Contribution table
+        const contributionData = sortedSources.map(([source, count]) => {
+            const pct = matchesFound > 0 ? ((count / matchesFound) * 100).toFixed(1) : 0;
+            return [source, count.toString(), `${pct}%`];
+        });
+
+        autoTable(doc, {
+            startY: finalY,
+            head: [['Source Database', 'Matches', 'Contribution']],
+            body: contributionData,
+            headStyles: { fillColor: [52, 73, 94], fontSize: 8 },
+            styles: { fontSize: 7 },
+            columnStyles: {
+                0: { cellWidth: 80 },
+                1: { cellWidth: 30, halign: 'center' },
+                2: { cellWidth: 30, halign: 'center' }
+            }
         });
     }
 
@@ -327,7 +349,123 @@ export const generatePDF = async (results, text, metadata = {}) => {
 
     doc.setTextColor(...COLORS.white);
     doc.setFontSize(6);
-    doc.text("For verification: https://plagiarism-checker-web-app.vercel.app", pageWidth / 2, pageHeight - 4, { align: 'center' });
+    doc.text("Continued on next page...", pageWidth / 2, pageHeight - 4, { align: 'center' });
+
+    // ============================================================
+    // PAGE 3: SOURCES LIST WITH URLs
+    // ============================================================
+    doc.addPage();
+
+    // Header
+    doc.setFillColor(...COLORS.primary);
+    doc.rect(0, 0, pageWidth, 25, 'F');
+
+    doc.setTextColor(...COLORS.white);
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text("Source References", 15, 15);
+
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Page 3 of 3`, pageWidth - 15, 15, { align: 'right' });
+
+    // Sources with URLs from results.sources
+    const sources = results.sources || [];
+
+    let currentY = 35;
+
+    doc.setTextColor(...COLORS.dark);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Matching Sources Identified (${sources.length})`, 15, currentY);
+
+    currentY += 8;
+
+    if (sources.length > 0) {
+        sources.slice(0, 15).forEach((source, idx) => {
+            // Check if we need a new page
+            if (currentY > pageHeight - 30) {
+                doc.addPage();
+                currentY = 25;
+            }
+
+            // Source box
+            doc.setFillColor(250, 250, 250);
+            doc.roundedRect(15, currentY, pageWidth - 30, 22, 2, 2, 'F');
+
+            // Source number badge
+            doc.setFillColor(...COLORS.primary);
+            doc.circle(22, currentY + 11, 5, 'F');
+            doc.setTextColor(...COLORS.white);
+            doc.setFontSize(8);
+            doc.text((idx + 1).toString(), 22, currentY + 13, { align: 'center' });
+
+            // Source name
+            doc.setTextColor(...COLORS.dark);
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'bold');
+            const name = (source.name || 'Unknown Source').substring(0, 60);
+            doc.text(name + (source.name?.length > 60 ? '...' : ''), 32, currentY + 8);
+
+            // Source type badge
+            doc.setFillColor(236, 240, 241);
+            doc.roundedRect(32, currentY + 10, 30, 8, 1, 1, 'F');
+            doc.setTextColor(100, 100, 100);
+            doc.setFontSize(6);
+            doc.text((source.type || 'Web').substring(0, 15), 33, currentY + 15);
+
+            // Match count
+            doc.text(`${source.matches || 1} match${(source.matches || 1) > 1 ? 'es' : ''}`, 65, currentY + 15);
+
+            // Similarity score
+            const simScore = source.similarity ? `${source.similarity.toFixed(1)}%` : 'N/A';
+            doc.setTextColor(...getScoreColor(source.similarity || 0));
+            doc.setFont('helvetica', 'bold');
+            doc.text(simScore, pageWidth - 25, currentY + 11);
+
+            // URL (truncated)
+            if (source.url) {
+                doc.setTextColor(41, 128, 185);
+                doc.setFontSize(7);
+                doc.setFont('helvetica', 'normal');
+                const truncUrl = source.url.substring(0, 70) + (source.url.length > 70 ? '...' : '');
+                doc.textWithLink(truncUrl, 32, currentY + 19, { url: source.url });
+            }
+
+            currentY += 26;
+        });
+    } else {
+        doc.setTextColor(100, 100, 100);
+        doc.setFontSize(9);
+        doc.text("No external sources matched in this document.", 20, currentY);
+    }
+
+    // Document Fingerprint Section
+    currentY = Math.min(currentY + 10, pageHeight - 40);
+
+    doc.setFillColor(245, 245, 245);
+    doc.roundedRect(15, currentY, pageWidth - 30, 25, 2, 2, 'F');
+
+    doc.setTextColor(...COLORS.dark);
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.text("Document Verification", 20, currentY + 8);
+
+    // Simple hash generation
+    const docHash = btoa(text.substring(0, 100) + scanId).substring(0, 32).toUpperCase();
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    doc.text(`Document Hash: ${docHash}`, 20, currentY + 16);
+    doc.text(`Verification URL: https://plagiarism-checker-web-app.vercel.app/verify/${scanId}`, 20, currentY + 22);
+
+    // Page 3 Footer
+    doc.setFillColor(...COLORS.primary);
+    doc.rect(0, pageHeight - 10, pageWidth, 10, 'F');
+
+    doc.setTextColor(...COLORS.white);
+    doc.setFontSize(6);
+    doc.text("© PlagiarismGuard™ | Developed by Dr. Siddalingaiah H S | hssling@yahoo.com", pageWidth / 2, pageHeight - 4, { align: 'center' });
 
     // Save
     doc.save(`PlagiarismGuard_Certificate_${scanDate.toISOString().split('T')[0]}.pdf`);
