@@ -16,6 +16,22 @@ export const initializeAI = (apiKey) => {
 };
 
 /**
+ * Check if AI is initialized
+ */
+export const isAIInitialized = () => {
+    return model !== null;
+};
+
+/**
+ * Generic call to Gemini
+ */
+export const callGemini = async (prompt) => {
+    if (!model) throw new Error("AI not initialized");
+    const result = await model.generateContent(prompt);
+    return result.response.text();
+};
+
+/**
  * AI Authorship Detection
  * Estimates the probability that text was written by AI.
  */

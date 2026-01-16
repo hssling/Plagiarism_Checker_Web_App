@@ -3,6 +3,7 @@ import { generateWordReport } from '../lib/plagiarismAnalyzer';
 import { generatePDF } from '../lib/pdfGenerator';
 import { checkAIAuthorship, generateSummary } from '../lib/llmService';
 import CitationResults from './CitationResults';
+import StyleReport from './StyleReport';
 import { batchValidateReferences } from '../lib/citationValidator';
 
 function ResultsDashboard({ results, onReset, text }) {
@@ -147,6 +148,23 @@ function ResultsDashboard({ results, onReset, text }) {
                     }}
                 >
                     📚 Citations ({citationData?.stats?.totalReferences || 0})
+                </button>
+                <button
+                    className={`results-tab ${activeTab === 'style' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('style')}
+                    style={{
+                        padding: '0.75rem 1.5rem',
+                        border: 'none',
+                        background: activeTab === 'style' ? 'var(--primary)' : 'transparent',
+                        color: activeTab === 'style' ? 'white' : 'var(--text-muted)',
+                        cursor: 'pointer',
+                        fontWeight: activeTab === 'style' ? '600' : '400',
+                        borderRadius: '8px 8px 0 0',
+                        marginBottom: '-2px',
+                        borderBottom: activeTab === 'style' ? '2px solid var(--primary)' : 'none'
+                    }}
+                >
+                    ✍️ Style Analysis
                 </button>
             </div>
 
@@ -420,6 +438,11 @@ function ResultsDashboard({ results, onReset, text }) {
                     citationData={citationData}
                     onValidate={handleValidateCitations}
                 />
+            )}
+
+            {/* Style Analysis Tab */}
+            {activeTab === 'style' && (
+                <StyleReport text={text} />
             )}
         </div>
     );
