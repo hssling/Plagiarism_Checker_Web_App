@@ -1,6 +1,6 @@
 {
     "name": "plagiarism-guard-pro",
-    "version": "1.0.0",
+    "version": "2.1.0",
     "description": "Academic-Grade Plagiarism Detection - Free & Open Source",
     "private": true,
     "type": "module",
