@@ -1347,3 +1347,373 @@ html {
     font-size: 0.85rem;
   }
 }
+/* ================================================
+   BATCH PROCESSING STYLES
+   ================================================ */
+
+.batch-section {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* Batch Upload Dropzone */
+.batch-dropzone {
+  border: 2px dashed var(--border);
+  border-radius: 12px;
+  padding: 3rem 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: var(--bg-secondary);
+}
+
+.batch-dropzone:hover,
+.batch-dropzone.dragging {
+  border-color: var(--primary);
+  background: rgba(37, 99, 235, 0.1);
+}
+
+.batch-dropzone.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.dropzone-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+}
+
+.batch-dropzone h3 {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.batch-dropzone p {
+  color: var(--text-muted);
+}
+
+.dropzone-hint {
+  font-size: 0.85rem;
+  margin-top: 1rem;
+}
+
+/* Batch File Info */
+.batch-file-info {
+  background: var(--bg-secondary);
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.zip-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 1rem;
+}
+
+.zip-icon {
+  font-size: 2.5rem;
+}
+
+.zip-details {
+  flex: 1;
+}
+
+.zip-details h4 {
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+}
+
+.zip-details p {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.btn-clear {
+  background: var(--bg-card);
+  border: none;
+  color: var(--text-muted);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 1.2rem;
+  transition: all 0.2s;
+}
+
+.btn-clear:hover {
+  background: var(--danger);
+  color: white;
+}
+
+/* Document List */
+.document-list {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.document-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: var(--bg-card);
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+}
+
+.document-item.too_large {
+  opacity: 0.5;
+}
+
+.doc-icon {
+  font-size: 1.2rem;
+}
+
+.doc-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.doc-size {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.doc-warning {
+  color: var(--warning);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+/* Batch Error */
+.batch-error {
+  background: rgba(220, 38, 38, 0.1);
+  color: var(--danger);
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  margin-top: 1rem;
+  font-size: 0.9rem;
+}
+
+/* Batch Results */
+.batch-results {
+  background: var(--bg-secondary);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.batch-results.processing {
+  text-align: center;
+}
+
+.processing-header h3 {
+  margin-bottom: 0.5rem;
+}
+
+.processing-header p {
+  color: var(--text-muted);
+}
+
+.progress-container {
+  background: var(--bg-card);
+  border-radius: 8px;
+  height: 12px;
+  margin: 1.5rem 0;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary) 0%, var(--success) 100%);
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  color: var(--text-muted);
+}
+
+/* Summary Cards */
+.batch-summary {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.summary-card {
+  background: var(--bg-card);
+  padding: 1rem;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.summary-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+
+.summary-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.summary-card.high .summary-value { color: var(--danger); }
+.summary-card.moderate .summary-value { color: var(--warning); }
+.summary-card.low .summary-value { color: var(--success); }
+.summary-card.average .summary-value { color: var(--primary); }
+
+/* Batch Table */
+.batch-table-container {
+  overflow-x: auto;
+  margin-bottom: 1.5rem;
+}
+
+.batch-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.batch-table th,
+.batch-table td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.batch-table th {
+  background: var(--bg-card);
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.batch-table .filename {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.batch-table .score {
+  font-weight: 600;
+}
+
+.risk-badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.risk-high { color: var(--danger); background: rgba(220, 38, 38, 0.15); }
+.risk-moderate { color: var(--warning); background: rgba(245, 158, 11, 0.15); }
+.risk-low { color: var(--success); background: rgba(22, 163, 74, 0.15); }
+
+/* Export Buttons */
+.batch-export {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.btn-export {
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+}
+
+.btn-export.csv {
+  background: var(--bg-card);
+  color: var(--text-primary);
+}
+
+.btn-export.excel {
+  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+  color: white;
+}
+
+.btn-export:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Live Results */
+.live-results {
+  margin-top: 1.5rem;
+  text-align: left;
+}
+
+.live-results h4 {
+  margin-bottom: 0.75rem;
+  color: var(--text-muted);
+}
+
+.mini-results {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.mini-result {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem;
+  background: var(--bg-card);
+  border-radius: 6px;
+}
+
+/* Extracting Animation */
+.extracting {
+  padding: 2rem;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .batch-summary {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .batch-table th:nth-child(5),
+  .batch-table td:nth-child(5),
+  .batch-table th:nth-child(6),
+  .batch-table td:nth-child(6) {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .batch-summary {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .batch-export {
+    flex-direction: column;
+  }
+}

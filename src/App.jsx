@@ -3,7 +3,10 @@ import Header from './components/Header';
 import FileUpload from './components/FileUpload';
 import AnalysisProgress from './components/AnalysisProgress';
 import ResultsDashboard from './components/ResultsDashboard';
+import BatchUpload from './components/BatchUpload';
+import BatchResults from './components/BatchResults';
 import { analyzePlagiarism } from './lib/plagiarismAnalyzer';
+import { processBatch } from './lib/batchProcessor';
 import { calculateCodeSimilarity } from './lib/codePlagiarism';
 import { generateImageHash, calculateImageSimilarity } from './lib/imagePlagiarism';
 import ImageUpload from './components/ImageUpload';
@@ -11,7 +14,7 @@ import SettingsModal from './components/SettingsModal';
 import { initializeAI } from './lib/llmService';
 
 function App() {
-    // Mode: 'text' | 'code' | 'image'
+    // Mode: 'text' | 'code' | 'image' | 'batch'
     const [mode, setMode] = useState('text');
 
     // Text Mode State
@@ -32,6 +35,13 @@ function App() {
     const [comparisonResult, setComparisonResult] = useState(null); // Code/Image Results
     const [error, setError] = useState(null);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+    // Batch Mode State
+    const [batchFile, setBatchFile] = useState(null);
+    const [batchDocs, setBatchDocs] = useState([]);
+    const [batchResults, setBatchResults] = useState([]);
+    const [batchSummary, setBatchSummary] = useState(null);
+    const [currentDoc, setCurrentDoc] = useState('');
 
     // Initialize AI on load
     React.useEffect(() => {
@@ -58,8 +68,49 @@ function App() {
         setImgUrl1(''); setImgUrl2('');
         setResults(null);
         setComparisonResult(null);
+        setBatchFile(null);
+        setBatchDocs([]);
+        setBatchResults([]);
+        setBatchSummary(null);
+        setCurrentDoc('');
         setError(null);
         setProgress(0);
+    };
+
+    // Batch Mode Handlers
+    const handleBatchFilesReady = (file, docs) => {
+        setBatchFile(file);
+        setBatchDocs(docs);
+        setBatchResults([]);
+        setBatchSummary(null);
+    };
+
+    const handleBatchAnalyze = async () => {
+        if (!batchFile) return;
+
+        setIsAnalyzing(true);
+        setProgress(0);
+        setError(null);
+        setBatchResults([]);
+
+        try {
+            const { results: bResults, summary } = await processBatch(
+                batchFile,
+                (p) => setProgress(p),
+                (doc, completed, total) => {
+                    setCurrentDoc(`Processing ${completed}/${total}: ${doc.filename}`);
+                    setBatchResults(prev => [...prev, doc]);
+                }
+            );
+
+            setBatchResults(bResults);
+            setBatchSummary(summary);
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setIsAnalyzing(false);
+            setCurrentDoc('');
+        }
     };
 
     // Main Analysis Router
@@ -107,15 +158,15 @@ function App() {
 
             <main className="main-content">
                 {/* MODE TABS */}
-                <div className="tabs" style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', justifyContent: 'center' }}>
-                    {['text', 'code', 'image'].map(m => (
+                <div className="tabs" style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+                    {['text', 'code', 'image', 'batch'].map(m => (
                         <button
                             key={m}
                             onClick={() => { setMode(m); handleReset(); }}
                             className={`btn ${mode === m ? 'btn-primary' : 'btn-secondary'}`}
                             style={{ textTransform: 'capitalize', minWidth: '120px' }}
                         >
-                            {m === 'text' ? '📄 Text' : m === 'code' ? '💻 Code' : '🖼️ Image'}
+                            {m === 'text' ? '📄 Text' : m === 'code' ? '💻 Code' : m === 'image' ? '🖼️ Image' : '📦 Batch'}
                         </button>
                     ))}
                 </div>
@@ -168,6 +219,47 @@ function App() {
                         <p style={{ textAlign: 'center', marginTop: '2rem', color: 'var(--text-muted)' }}>
                             Note: Uses Perceptual Hashing (pHash) to detect visual similarity. Resized or slightly modified images will still match.
                         </p>
+                    </div>
+                )}
+
+                {/* BATCH MODE UI */}
+                {mode === 'batch' && !batchSummary && (
+                    <div className="batch-section">
+                        <BatchUpload
+                            onFilesReady={handleBatchFilesReady}
+                            disabled={isAnalyzing}
+                        />
+                        {batchDocs.length > 0 && !isAnalyzing && (
+                            <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
+                                <button className="btn btn-primary" onClick={handleBatchAnalyze}>
+                                    🚀 Analyze {batchDocs.filter(d => d.status !== 'too_large').length} Documents
+                                </button>
+                            </div>
+                        )}
+                        {isAnalyzing && (
+                            <BatchResults
+                                results={batchResults}
+                                isProcessing={true}
+                                progress={progress}
+                                currentDoc={currentDoc}
+                            />
+                        )}
+                    </div>
+                )}
+
+                {/* BATCH RESULTS */}
+                {mode === 'batch' && batchSummary && (
+                    <div className="batch-section">
+                        <BatchResults
+                            results={batchResults}
+                            summary={batchSummary}
+                            isProcessing={false}
+                        />
+                        <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
+                            <button className="btn btn-secondary" onClick={handleReset}>
+                                New Batch Analysis
+                            </button>
+                        </div>
                     </div>
                 )}
 
@@ -225,7 +317,7 @@ function App() {
                     </div>
                 </div>
                 <div className="footer-meta">
-                    <p>PlagiarismGuard v1.0 | Open Source Academic Plagiarism Checker</p>
+                    <p>PlagiarismGuard v2.1 | Open Source Academic Plagiarism Checker</p>
                     <a
                         href="https://github.com/hssling/Plagiarism_Checker_Web_App/blob/main/docs/USER_GUIDE.md"
                         target="_blank"
