@@ -115,11 +115,35 @@ function App() {
 
     // Main Analysis Router
     const handleAnalyze = async () => {
+        // 1. Validation: Check for required API keys (Search)
+        if (mode === 'text') {
+            const searchKey = localStorage.getItem('google_search_api_key');
+            const searchCx = localStorage.getItem('google_search_cx');
+
+            // Fallback to env vars if not in local storage (for dev)
+            const envSearchKey = import.meta.env.VITE_GOOGLE_API_KEY;
+            const envSearchCx = import.meta.env.VITE_GOOGLE_CSE_ID;
+
+            if ((!searchKey && !envSearchKey) || (!searchCx && !envSearchCx)) {
+                setError("Please configure your Google Search API Key in Settings to perform web analysis.");
+                setIsSettingsOpen(true);
+                return;
+            }
+        }
+
         setIsAnalyzing(true);
         setProgress(10);
         setError(null);
         setResults(null);
         setComparisonResult(null);
+
+        // Auto-scroll to progress (Fix UI visibility issue)
+        setTimeout(() => {
+            const progressElement = document.getElementById('analysis-progress-section');
+            if (progressElement) {
+                progressElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }, 100);
 
         try {
             if (mode === 'text') {
@@ -276,7 +300,11 @@ function App() {
                 )}
 
                 {/* PROGRESS & ERROR */}
-                {isAnalyzing && <AnalysisProgress progress={progress} />}
+                {isAnalyzing && (
+                    <div id="analysis-progress-section">
+                        <AnalysisProgress progress={progress} />
+                    </div>
+                )}
                 {error && <div className="error-message">❌ {error}</div>}
 
                 {/* RESULTS DASHBOARD (TEXT) */}
