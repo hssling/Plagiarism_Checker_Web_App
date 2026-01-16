@@ -10,6 +10,12 @@ const CONCURRENT_LIMIT = 4; // Batch size to prevent browser hang
 /**
  * Main Entry Point: Search for exact phrase
  */
+function getSearchConfigs() {
+    const apiKey = localStorage.getItem('google_search_api_key') || import.meta.env.VITE_GOOGLE_API_KEY;
+    const cseId = localStorage.getItem('google_search_cx') || import.meta.env.VITE_GOOGLE_CSE_ID;
+    return { apiKey, cseId };
+}
+
 export async function searchPhrase(phrase, options = {}) {
     const results = [];
 
@@ -18,7 +24,7 @@ export async function searchPhrase(phrase, options = {}) {
     results.push(...sourceResults);
 
     // 2. Global Safety Net: General Web Search (Guarantees non-zero results)
-    const googleResults = await searchGoogleCore(phrase);
+    const googleResults = await performGoogleCoreSearch(phrase);
     if (googleResults) {
         // Merge without duplicates
         const seen = new Set(results.map(r => r.url));
@@ -132,11 +138,13 @@ async function executeDeepSearches(phrase) {
  * Helper: Targeted Site Search via Google
  */
 async function searchTargetedSite(phrase, site, type, sourceName) {
-    const apiKey = import.meta.env.VITE_GOOGLE_API_KEY;
-    const cseId = import.meta.env.VITE_GOOGLE_CSE_ID;
+    const { apiKey, cseId } = getSearchConfigs();
 
     // Fail gracefully if keys are missing
-    if (!apiKey || !cseId) return null;
+    if (!apiKey || !cseId) {
+        console.warn('Missing Google Search Keys');
+        return null;
+    }
 
     const url = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${cseId}&q=${encodeURIComponent('site:' + site + ' "' + phrase + '"')}`;
 
@@ -319,7 +327,7 @@ async function searchStackExchange(phrase) {
 // SOURCE 8: Google Books
 // ==========================================
 async function searchGoogleBooks(phrase) {
-    const apiKey = import.meta.env.VITE_GOOGLE_API_KEY;
+    const { apiKey } = getSearchConfigs();
 
     // FIX: Check API key before request to avoid 400 Bad Request
     if (!apiKey) return searchTargetedSite(phrase, 'books.google.com', 'Book', 'Google Books');
@@ -400,11 +408,12 @@ async function searchScienceDirect(phrase) {
 /**
  * Core Google Search (General Web)
  */
-async function searchGoogleCore(phrase) {
-    const apiKey = import.meta.env.VITE_GOOGLE_API_KEY;
-    const cseId = import.meta.env.VITE_GOOGLE_CSE_ID;
+async function performGoogleCoreSearch(phrase) {
+    const { apiKey, cseId } = getSearchConfigs();
 
-    if (!apiKey || !cseId) return null;
+    if (!apiKey || !cseId) {
+        throw new Error('Google Search API Key & Engine ID are required in Settings.');
+    }
 
     const url = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${cseId}&q=${encodeURIComponent('"' + phrase + '"')}`;
 
