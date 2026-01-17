@@ -32,6 +32,7 @@ export default async function handler(req, res) {
             'authorization',
             'x-api-key',
             'anthropic-version',
+            'anthropic-dangerous-direct-browser-access',
             'content-type',
             'http-referer',
             'referer',

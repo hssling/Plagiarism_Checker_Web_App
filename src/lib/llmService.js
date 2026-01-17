@@ -71,12 +71,12 @@ export const callAI = async (prompt, systemPrompt = "You are an academic integri
                 } catch (sdkError) {
                     console.warn("Gemini SDK failed, trying Proxy-REST (v1beta)...");
                     const models = [
+                        "gemini-2.0-flash-exp",
+                        "gemini-2.0-flash",
                         "gemini-1.5-flash-latest",
                         "gemini-1.5-flash",
                         "gemini-1.5-pro-latest",
                         "gemini-1.5-pro",
-                        "gemini-pro-1.5",
-                        "gemini-pro-1.0",
                         "gemini-pro"
                     ];
                     for (const model of models) {
@@ -146,7 +146,8 @@ export const callAI = async (prompt, systemPrompt = "You are an academic integri
                     headers: {
                         'Content-Type': 'application/json',
                         'x-api-key': providers.anthropic.key,
-                        'anthropic-version': '2023-06-01'
+                        'anthropic-version': '2023-06-01',
+                        'anthropic-dangerous-direct-browser-access': 'true'
                     },
                     body: JSON.stringify({
                         model: "claude-3-haiku-20240307",
@@ -245,7 +246,7 @@ export const callAI = async (prompt, systemPrompt = "You are an academic integri
             // Hugging Face Inference (Free Tier)
             if (provider === 'huggingface' && providers.huggingface.key) {
                 const model = "mistralai/Mistral-7B-Instruct-v0.3";
-                const proxyUrl = `/api/proxy?url=${encodeURIComponent(`https://api-inference.huggingface.co/models/${model}`)}`;
+                const proxyUrl = `/api/proxy?url=${encodeURIComponent(`https://router.huggingface.co/hf-inference/models/${model}/v1/chat/completions`)}`;
                 const res = await fetch(proxyUrl, {
                     method: 'POST',
                     headers: {
@@ -253,17 +254,19 @@ export const callAI = async (prompt, systemPrompt = "You are an academic integri
                         'Authorization': `Bearer ${providers.huggingface.key}`
                     },
                     body: JSON.stringify({
-                        inputs: `<s>[INST] ${systemPrompt}\n\n${prompt} [/INST]`,
-                        parameters: { max_new_tokens: 1024, temperature: 0.7 }
+                        model: model,
+                        messages: [
+                            { role: "system", content: systemPrompt },
+                            { role: "user", content: prompt }
+                        ],
+                        max_tokens: 1024
                     })
                 });
                 const wrapper = await res.json();
                 if (!wrapper.upstreamOk) {
-                    throw new Error(`Hugging Face Error: ${wrapper.data?.error || wrapper.upstreamStatus}`);
+                    throw new Error(`Hugging Face Error: ${wrapper.data?.error?.message || wrapper.data?.error || wrapper.upstreamStatus}`);
                 }
-                // HF returns array or object depending on model
-                const text = Array.isArray(wrapper.data) ? wrapper.data[0]?.generated_text : wrapper.data?.generated_text;
-                return text?.replace(/^<s>\[INST\].*?\[\/INST\]\s*/s, '') || "";
+                return wrapper.data?.choices?.[0]?.message?.content || "";
             }
 
             // Cohere (Free Trial)
@@ -276,7 +279,7 @@ export const callAI = async (prompt, systemPrompt = "You are an academic integri
                         'Authorization': `Bearer ${providers.cohere.key}`
                     },
                     body: JSON.stringify({
-                        model: "command-r",
+                        model: "command-r-plus",
                         message: prompt,
                         preamble: systemPrompt
                     })
