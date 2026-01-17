@@ -207,7 +207,7 @@ export const callAI = async (prompt, systemPrompt = "You are an academic integri
                 return wrapper.data?.choices?.[0]?.message?.content || "";
             }
 
-            // OpenRouter (DeepSeek)
+            // OpenRouter (Free models via API)
             if (provider === 'openrouter' && providers.openrouter.key) {
                 const proxyUrl = `/api/proxy?url=${encodeURIComponent('https://openrouter.ai/api/v1/chat/completions')}`;
                 const res = await fetch(proxyUrl, {
@@ -215,23 +215,20 @@ export const callAI = async (prompt, systemPrompt = "You are an academic integri
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${providers.openrouter.key}`,
-                        'HTTP-Referer': 'https://plagiarism-checker-web-app.vercel.app',
-                        'Referer': window.location.origin,
-                        'Origin': window.location.origin,
-                        'X-Title': 'PlagiarismGuard Pro'
+                        'HTTP-Referer': window.location.origin,
+                        'X-Title': 'PlagiarismGuard'
                     },
                     body: JSON.stringify({
-                        model: "deepseek/deepseek-r1:free",
+                        model: "google/gemma-2-9b-it:free",
                         messages: [
                             { role: "system", content: systemPrompt },
                             { role: "user", content: prompt }
-                        ],
-                        temperature: 0
+                        ]
                     })
                 });
                 const wrapper = await res.json();
                 if (!wrapper.upstreamOk) {
-                    throw new Error(`OpenRouter Error: ${wrapper.data?.error?.message || wrapper.upstreamStatus}`);
+                    throw new Error(`OpenRouter Error: ${wrapper.data?.error?.message || JSON.stringify(wrapper.data?.error) || wrapper.upstreamStatus}`);
                 }
                 return wrapper.data?.choices?.[0]?.message?.content || "";
             }
@@ -261,10 +258,9 @@ export const callAI = async (prompt, systemPrompt = "You are an academic integri
                 return wrapper.data?.choices?.[0]?.message?.content || "";
             }
 
-            // Hugging Face Inference (Free Tier)
+            // Hugging Face Serverless Inference (Free Tier)
             if (provider === 'huggingface' && providers.huggingface.key) {
-                const model = "mistralai/Mistral-7B-Instruct-v0.3";
-                const proxyUrl = `/api/proxy?url=${encodeURIComponent(`https://router.huggingface.co/hf-inference/models/${model}/v1/chat/completions`)}`;
+                const proxyUrl = `/api/proxy?url=${encodeURIComponent('https://api-inference.huggingface.co/models/Qwen/Qwen2.5-1.5B-Instruct')}`;
                 const res = await fetch(proxyUrl, {
                     method: 'POST',
                     headers: {
@@ -272,19 +268,17 @@ export const callAI = async (prompt, systemPrompt = "You are an academic integri
                         'Authorization': `Bearer ${providers.huggingface.key}`
                     },
                     body: JSON.stringify({
-                        model: model,
-                        messages: [
-                            { role: "system", content: systemPrompt },
-                            { role: "user", content: prompt }
-                        ],
-                        max_tokens: 1024
+                        inputs: `System: ${systemPrompt}\n\nUser: ${prompt}\n\nAssistant:`,
+                        parameters: { max_new_tokens: 1024, temperature: 0.7 }
                     })
                 });
                 const wrapper = await res.json();
                 if (!wrapper.upstreamOk) {
-                    throw new Error(`Hugging Face Error: ${wrapper.data?.error?.message || wrapper.data?.error || wrapper.upstreamStatus}`);
+                    throw new Error(`Hugging Face Error: ${wrapper.data?.error || wrapper.upstreamStatus}`);
                 }
-                return wrapper.data?.choices?.[0]?.message?.content || "";
+                // HF returns array or object depending on model
+                const text = Array.isArray(wrapper.data) ? wrapper.data[0]?.generated_text : wrapper.data?.generated_text;
+                return text?.replace(/^System:.*?Assistant:\s*/s, '').trim() || "";
             }
 
             // Cohere (Free Trial) - Updated to latest model
