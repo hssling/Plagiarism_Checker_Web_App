@@ -171,9 +171,17 @@ export const generatePDF = async (results, text, metadata = {}) => {
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
-    doc.text(`Title: ${metadata.title || 'Untitled Document'}`, 20, infoStartY + 22);
-    doc.text(`Author: ${metadata.author || 'Anonymous User'}`, 20, infoStartY + 32);
-    doc.text(`Analysis Date: ${scanDate.toLocaleDateString()} at ${scanDate.toLocaleTimeString()}`, 20, infoStartY + 42);
+
+    const titleLines = doc.splitTextToSize(`Title: ${metadata.title || 'Untitled Document'}`, pageWidth - 80);
+    doc.text(titleLines, 20, infoStartY + 22);
+
+    const authorLines = doc.splitTextToSize(`Author: ${metadata.author || 'Anonymous User'}`, pageWidth - 80);
+    // Move author down if title has multiple lines
+    const authorY = infoStartY + 22 + (titleLines.length * 5);
+    doc.text(authorLines, 20, authorY);
+
+    const dateY = authorY + (authorLines.length * 5);
+    doc.text(`Analysis Date: ${scanDate.toLocaleDateString()} at ${scanDate.toLocaleTimeString()}`, 20, dateY);
 
     // ============================================================
     // QR CODE

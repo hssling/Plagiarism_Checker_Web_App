@@ -140,8 +140,9 @@ async function executeDeepSearches(phrase) {
         const batch = searchStrategies.slice(i, i + CONCURRENT_LIMIT).map(fn => fn());
         const batchResults = await Promise.allSettled(batch);
 
-        batchResults.forEach(res => {
-            if (res.status === 'fulfilled' && Array.isArray(res.value)) {
+        batchResults.forEach((res, idx) => {
+            if (res.status === 'fulfilled' && Array.isArray(res.value) && res.value.length > 0) {
+                console.log(`[Omni-Scanner] ${res.value[0].source} found ${res.value.length} potential matches`);
                 allResults.push(...res.value);
             }
         });
