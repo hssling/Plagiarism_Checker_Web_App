@@ -163,6 +163,28 @@ The PDF certificates generated in v2.4 are our most professional yet:
 
 ---
 
+## 🚀 Version 3.0 Preview: Integrity AI "Remediation Pro"
+
+The "Holy Grail" of academic integrity—**Remediation Pro**—allows you to legitimately reduce similarity scores by rewriting flagged sections while preserving scientific accuracy.
+
+### Using Remediation Pro
+1.  **Run a Scan**: Analyze your document as usual.
+2.  **Identify Flags**: Look for sources with a "Flag" or "Review" status in the Results Table.
+3.  **Trigger Integrity Fix**: Click the **"Integrity Fix"** button next to a high-similarity source.
+4.  **Review Proposal**:
+    - **Original Text**: The exact line from your manuscript that was matched.
+    - **AI Proposal**: A side-by-side rewrite that maintains your scientific findings and citations but uses unique phrasing.
+5.  **Apply/Copy**: Copy the fixed text directly to your clipboard or apply the changes to your working draft.
+
+### Academic Styles
+- **Formal/Medical**: Optimized for high-impact journals (BMJ, Lancet, Nature). Maintains rigorous terminology.
+- **Narrative Flow**: Best for literature reviews and discussions where a smooth linguistic transition is key.
+
+> [!IMPORTANT]
+> **Integrity AI** is a decision-support tool. Always verify that the paraphrased text accurately represents your experimental data and research conclusions before final submission.
+
+---
+
 ## 👨‍💻 Developed By
 
 **Dr. Siddalingaiah H S**

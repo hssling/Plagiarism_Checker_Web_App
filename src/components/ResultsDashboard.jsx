@@ -4,6 +4,7 @@ import { generatePDF } from '../lib/pdfGenerator';
 import { checkAIAuthorship, generateSummary } from '../lib/llmService';
 import CitationResults from './CitationResults';
 import StyleReport from './StyleReport';
+import RemediationTool from './RemediationTool';
 import { batchValidateReferences } from '../lib/citationValidator';
 
 function ResultsDashboard({ results, onReset, text }) {
@@ -11,6 +12,11 @@ function ResultsDashboard({ results, onReset, text }) {
     const [aiLoading, setAILoading] = React.useState(false);
     const [activeTab, setActiveTab] = React.useState('plagiarism');
     const [citationData, setCitationData] = React.useState(results.citations || null);
+    const [remediation, setRemediation] = React.useState({
+        isOpen: false,
+        text: '',
+        context: ''
+    });
 
     React.useEffect(() => {
         const runAI = async () => {
@@ -341,10 +347,29 @@ function ResultsDashboard({ results, onReset, text }) {
                                                 {source.similarity < 15 ? 'Pass' : source.similarity < 25 ? 'Review' : 'Flag'}
                                             </span>
                                         </td>
-                                        <td>
-                                            <button className="btn btn-sm btn-secondary">
+                                        <td style={{ display: 'flex', gap: '0.5rem' }}>
+                                            <button className="btn btn-sm btn-secondary" onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleSourceClick(source);
+                                            }}>
                                                 Compare &gt;
                                             </button>
+                                            {source.similarity > 15 && (
+                                                <button
+                                                    className="btn btn-sm btn-primary"
+                                                    style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem' }}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setRemediation({
+                                                            isOpen: true,
+                                                            text: source.matches?.[0]?.phrase || results.keyPhrases?.[0]?.text || "",
+                                                            context: source.name
+                                                        });
+                                                    }}
+                                                >
+                                                    Integrity Fix
+                                                </button>
+                                            )}
                                         </td>
                                     </tr>
                                 ))}
@@ -360,9 +385,24 @@ function ResultsDashboard({ results, onReset, text }) {
                                 {results.keyPhrases.slice(0, 10).map((phrase, index) => (
                                     <div key={index} className="phrase-item">
                                         <span className="phrase-text">"{phrase.text}"</span>
-                                        <span className={`phrase-badge ${phrase.found ? 'warning' : 'pass'}`}>
-                                            {phrase.found ? 'Match Found' : 'Unique'}
-                                        </span>
+                                        <div className="phrase-actions" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                            <span className={`phrase-badge ${phrase.found ? 'warning' : 'pass'}`}>
+                                                {phrase.found ? 'Match Found' : 'Unique'}
+                                            </span>
+                                            {phrase.found && (
+                                                <button
+                                                    className="btn btn-sm btn-secondary"
+                                                    style={{ padding: '0.2rem 0.5rem', fontSize: '0.7rem' }}
+                                                    onClick={() => setRemediation({
+                                                        isOpen: true,
+                                                        text: phrase.text,
+                                                        context: "Deep Web match"
+                                                    })}
+                                                >
+                                                    Remediate
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
                                 ))}
                             </div>
@@ -411,6 +451,17 @@ function ResultsDashboard({ results, onReset, text }) {
             {activeTab === 'style' && (
                 <StyleReport text={text} />
             )}
+            {/* Remediation Tool Modal */}
+            <RemediationTool
+                isOpen={remediation.isOpen}
+                onClose={() => setRemediation({ ...remediation, isOpen: false })}
+                originalText={remediation.text}
+                sourceContext={remediation.context}
+                onApply={(newText) => {
+                    console.log("Applying fixed text:", newText);
+                    setRemediation({ ...remediation, isOpen: false });
+                }}
+            />
         </div>
     );
 }

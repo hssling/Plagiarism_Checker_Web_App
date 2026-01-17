@@ -138,3 +138,47 @@ export const generateSummary = async (text) => {
         return `Failed to generate summary: ${e.message || "Unknown error"}`;
     }
 };
+/**
+ * Integrity AI: Remediation Pro
+ * Paraphrases text to reduce similarity while preserving academic accuracy.
+ */
+export const paraphraseAcademic = async (text, context = "", style = "formal") => {
+    if (!model) return { error: "AI not configured" };
+
+    const styleInstructions = style === "formal"
+        ? "Maintain a highly formal, academic, and objective tone. Use technical terminology appropriate for a scientific journal."
+        : "Ensure a smooth narrative flow while maintaining academic rigor. Focus on logical transitions between ideas.";
+
+    const prompt = `You are an expert scientific editor. Your task is to REWRITE the "Original Text" below to reduce its similarity with existing literature, while PRESERVING its exact scientific meaning and technical citations.
+
+    Original Text: "${text}"
+    Source Context (for reference): "${context}"
+
+    Instructions:
+    1. ${styleInstructions}
+    2. Keep ALL scientific terms, numbers, and citations (e.g., "[1]", "(Smith et al., 2023)") EXACTLY as they are.
+    3. Change the sentence structure, word choice, and phrasing significantly.
+    4. Do not add any new information or remove existing findings.
+    
+    Respond with ONLY a JSON object:
+    {
+        "paraphrased": "The newly written text here",
+        "changesMade": "Brief summary of what was changed",
+        "integrityScore": number (0-100 indicating how well scientific meaning was preserved)
+    }`;
+
+    try {
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+
+        if (response.candidates && response.candidates[0].finishReason === "SAFETY") {
+            return { error: "Blocked by Safety Filters - Content may be too sensitive for AI rewriting." };
+        }
+
+        const rawText = response.text().replace(/```json|```/g, '').trim();
+        return JSON.parse(rawText);
+    } catch (e) {
+        console.error("Paraphrasing Failed:", e);
+        return { error: e.message || "Failed to paraphrase" };
+    }
+};
