@@ -7,12 +7,11 @@ export const initializeAI = (apiKey) => {
     if (!apiKey) return false;
     try {
         genAI = new GoogleGenerativeAI(apiKey);
-        // Resilient model selection: using gemini-pro as primary for v1beta compatibility
-        // Resilient model selection: using gemini-1.5-flash as default
+        // Resilient model selection: using gemini-1.5-flash-latest as default
         try {
-            model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+            model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
         } catch (e) {
-            console.warn("Gemini 1.5 Flash failed, trying Pro...");
+            console.warn("Gemini Flash Latest failed, trying Pro...");
             model = genAI.getGenerativeModel({ model: "gemini-pro" });
         }
         return true;

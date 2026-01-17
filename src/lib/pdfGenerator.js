@@ -220,6 +220,12 @@ export const generatePDF = async (results, text, metadata = {}) => {
     doc.setFontSize(8);
     doc.setFont('helvetica', 'bold');
 
+    const verdict = score < 15
+        ? "✓ This document has passed plagiarism verification and is suitable for submission."
+        : score < 25
+            ? "⚠ This document requires review. Some similarity detected with existing sources."
+            : "✗ High similarity detected. Significant revision recommended before submission.";
+
     const verdictLines = doc.splitTextToSize(verdict, pageWidth - 40);
     doc.text(verdictLines, pageWidth / 2, stmtY + 8, { align: 'center' });
 
