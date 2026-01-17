@@ -61,6 +61,20 @@ export const callAI = async (prompt, systemPrompt = "You are an academic integri
     const order = [primaryProvider, 'gemini', 'openai', 'anthropic', 'xai', 'openrouter', 'groq', 'huggingface', 'cohere', 'cerebras', 'mistral'].filter((v, i, a) => a.indexOf(v) === i);
     let lastError = null;
 
+    // Debug: Show which providers have keys configured
+    console.log('🔑 AI Providers Status:', {
+        gemini: !!providers.gemini.key,
+        openai: !!providers.openai.key,
+        anthropic: !!providers.anthropic.key,
+        xai: !!providers.xai.key,
+        openrouter: !!providers.openrouter.key,
+        groq: !!providers.groq.key,
+        huggingface: !!providers.huggingface.key,
+        cohere: !!providers.cohere.key,
+        cerebras: !!providers.cerebras.key,
+        mistral: !!providers.mistral.key
+    });
+
     for (const provider of order) {
         try {
             // Gemini (Direct SDK + Proxy REST Fallbacks)
