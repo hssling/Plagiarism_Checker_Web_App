@@ -15,7 +15,7 @@ let primaryProvider = 'gemini';
  * Initialize AI Providers
  */
 export const initializeAI = (config = {}) => {
-    const { gemini, openai, anthropic, xai, primary } = config;
+    const { gemini, openai, anthropic, xai, openrouter, primary } = config;
 
     if (gemini) {
         providers.gemini.key = gemini.trim();
