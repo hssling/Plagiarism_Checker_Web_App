@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "PlagiarismGuard",
-    "version": "2.1.0",
+    "version": "2.4.0",
     "description": "Check for plagiarism on any webpage with a right-click. Academic-grade detection powered by AI.",
     "permissions": [
         "contextMenus",

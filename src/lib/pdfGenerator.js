@@ -7,6 +7,7 @@ import QRCode from 'qrcode';
  * Generates enterprise-grade plagiarism verification reports
  */
 export const generatePDF = async (results, text, metadata = {}) => {
+    console.log("Starting PDF generation...");
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.width;
     const pageHeight = doc.internal.pageSize.height;
@@ -231,7 +232,7 @@ export const generatePDF = async (results, text, metadata = {}) => {
 
     doc.setTextColor(...COLORS.white);
     doc.setFontSize(7);
-    doc.text("PlagiarismGuard™ Engine v2.0 | Academic Integrity Verification System", pageWidth / 2, pageHeight - 8, { align: 'center' });
+    doc.text("PlagiarismGuard™ Engine v2.4 | Academic Integrity Verification System", pageWidth / 2, pageHeight - 8, { align: 'center' });
     doc.text("This certificate is machine-generated and does not require signature.", pageWidth / 2, pageHeight - 3, { align: 'center' });
 
     // ============================================================
@@ -450,8 +451,10 @@ export const generatePDF = async (results, text, metadata = {}) => {
     doc.setFont('helvetica', 'bold');
     doc.text("Document Verification", 20, currentY + 8);
 
-    // Simple hash generation
-    const docHash = btoa(text.substring(0, 100) + scanId).substring(0, 32).toUpperCase();
+    // Simple hash generation (Unicode-safe)
+    const rawData = text.substring(0, 100) + scanId;
+    const docHash = Array.from(rawData).reduce((acc, char) => (acc << 5) - acc + char.charCodeAt(0), 0)
+        .toString(16).toUpperCase().padStart(8, '0');
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7);
@@ -467,5 +470,7 @@ export const generatePDF = async (results, text, metadata = {}) => {
     doc.text("© PlagiarismGuard™ | Developed by Dr. Siddalingaiah H S | hssling@yahoo.com", pageWidth / 2, pageHeight - 4, { align: 'center' });
 
     // Save
+    console.log("Saving PDF...");
     doc.save(`PlagiarismGuard_Certificate_${scanDate.toISOString().split('T')[0]}.pdf`);
+    console.log("PDF saved successfully.");
 };

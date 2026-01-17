@@ -70,10 +70,15 @@ function ResultsDashboard({ results, onReset, text }) {
     };
 
     const handlePDFExport = async () => {
-        await generatePDF(results, text || "", {
-            title: "Analysis Report",
-            author: "PlagiarismGuard User"
-        });
+        try {
+            await generatePDF(results, text || "", {
+                title: "Analysis Report",
+                author: "PlagiarismGuard User"
+            });
+        } catch (err) {
+            console.error("PDF Export failed:", err);
+            alert("Failed to generate PDF report. Please check the console for details.");
+        }
     };
 
     // Handler for validating citations against external APIs
