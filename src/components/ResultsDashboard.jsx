@@ -427,7 +427,7 @@ function ResultsDashboard({ results, onReset, text }) {
 
                     {/* Timestamp */}
                     <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                        Report generated: {new Date().toLocaleString()} | PlagiarismGuard v2.0
+                        Report generated: {new Date().toLocaleString()} | PlagiarismGuard v2.1
                     </div>
                 </>
             )}

@@ -6,6 +6,7 @@
 
 const SEARCH_TIMEOUT = 10000; // 10 seconds
 const CONCURRENT_LIMIT = 4; // Batch size to prevent browser hang
+let globalRateLimitTriggered = false;
 
 /**
  * Main Entry Point: Search for exact phrase
@@ -23,14 +24,17 @@ export async function searchPhrase(phrase, options = {}) {
     const sourceResults = await executeDeepSearches(phrase);
     results.push(...sourceResults);
 
-    // 2. Global Safety Net: General Web Search (Guarantees non-zero results)
-    const googleResults = await performGoogleCoreSearch(phrase);
-    if (googleResults) {
-        // Merge without duplicates
-        const seen = new Set(results.map(r => r.url));
-        googleResults.forEach(r => {
-            if (!seen.has(r.url)) results.push(r);
-        });
+    // 2. Global Safety Net (Conditional)
+    // Only perform Google Core Search if we don't have enough results yet
+    // This dramatically reduces API consumption.
+    if (results.length < 5) {
+        const googleResults = await performGoogleCoreSearch(phrase);
+        if (googleResults) {
+            const seen = new Set(results.map(r => r.url));
+            googleResults.forEach(r => {
+                if (!seen.has(r.url)) results.push(r);
+            });
+        }
     }
 
     return {
@@ -63,12 +67,20 @@ async function safeFetch(url, options = {}, useProxy = false) {
 
         clearTimeout(timeout);
 
+        if (response.status === 429) {
+            console.warn("Global Rate Limit (429) Triggered");
+            globalRateLimitTriggered = true;
+        }
+
         // Handle Proxy Wrapper (if using proxy)
         if (useProxy && response.ok) {
             const wrapper = await response.json(); // The proxy ALWAYS returns JSON 200
 
             // If the upstream failed (e.g. 404, 500, 429), treat as null to trigger fallback
-            if (!wrapper.upstreamOk) return null;
+            if (!wrapper.upstreamOk) {
+                if (wrapper.upstreamStatus === 429) globalRateLimitTriggered = true;
+                return null;
+            }
 
             // Reconstruct a mock Response object for the caller
             return new Response(wrapper.data, {
@@ -89,6 +101,7 @@ async function safeFetch(url, options = {}, useProxy = false) {
  * Execute searches with Concurrency Limiting
  */
 async function executeDeepSearches(phrase) {
+    if (globalRateLimitTriggered) return [];
     const allResults = [];
 
     // Explicit List of All 16 Search Strategies
@@ -125,11 +138,13 @@ async function executeDeepSearches(phrase) {
         const batchResults = await Promise.allSettled(batch);
 
         batchResults.forEach(res => {
-            // FIX: Check if res.value is actually an array before spreading
             if (res.status === 'fulfilled' && Array.isArray(res.value)) {
                 allResults.push(...res.value);
             }
         });
+
+        // Anti-429 Delay: Short pause between batches
+        await new Promise(r => setTimeout(r, 800 + Math.random() * 500));
     }
 
     return allResults;
@@ -166,6 +181,7 @@ async function searchTargetedSite(phrase, site, type, sourceName) {
  * Core Google Search (General Web)
  */
 async function performGoogleCoreSearch(phrase) {
+    if (globalRateLimitTriggered) return null;
     const { apiKey, cseId } = getSearchConfigs();
 
     if (!apiKey || !cseId) {
@@ -306,8 +322,8 @@ async function searchCrossRef(phrase) {
 async function searchArxiv(phrase) {
     const url = `https://export.arxiv.org/api/query?search_query=all:${encodeURIComponent(phrase)}&start=0&max_results=3`;
 
-    // Arxiv supports CORS
-    const res = await safeFetch(url, {}, false);
+    // Arxiv CORS is often flaky, use proxy for reliability
+    const res = await safeFetch(url, {}, true);
     if (res && res.ok) {
         const text = await res.text();
         const parser = new DOMParser();

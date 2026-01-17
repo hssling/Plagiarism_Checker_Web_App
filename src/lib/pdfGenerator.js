@@ -296,9 +296,9 @@ export const generatePDF = async (results, text, metadata = {}) => {
         },
         columnStyles: {
             0: { cellWidth: 10, halign: 'center' },
-            1: { cellWidth: 90 },
-            2: { cellWidth: 45 },
-            3: { cellWidth: 25, halign: 'center' }
+            1: { cellWidth: 80 },
+            2: { cellWidth: 40 },
+            3: { cellWidth: 20, halign: 'center' }
         }
     });
 
@@ -336,9 +336,9 @@ export const generatePDF = async (results, text, metadata = {}) => {
             headStyles: { fillColor: [52, 73, 94], fontSize: 8 },
             styles: { fontSize: 7 },
             columnStyles: {
-                0: { cellWidth: 80 },
-                1: { cellWidth: 30, halign: 'center' },
-                2: { cellWidth: 30, halign: 'center' }
+                0: { cellWidth: 70 },
+                1: { cellWidth: 25, halign: 'center' },
+                2: { cellWidth: 25, halign: 'center' }
             }
         });
     }
