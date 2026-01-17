@@ -1,7 +1,7 @@
 # 🔌 PlagiarismGuard API Documentation
 
 > **Base URL**: `https://plagiarism-checker-web-app.vercel.app/api`  
-> **Version**: 1.0
+> **Version**: 2.4 (Latest)
 
 ---
 
@@ -93,7 +93,7 @@ curl -X POST https://plagiarism-checker-web-app.vercel.app/api/analyze \
     "processedAt": "2026-01-16T20:00:00.000Z",
     "processingTime": 1250,
     "tier": "free",
-    "apiVersion": "1.0"
+    "apiVersion": "2.4"
   }
 }
 ```
@@ -122,7 +122,7 @@ curl https://plagiarism-checker-web-app.vercel.app/api/health
 ```json
 {
   "status": "healthy",
-  "version": "2.1.0",
+  "version": "2.4.0",
   "timestamp": "2026-01-16T20:00:00.000Z",
   "endpoints": {
     "analyze": "POST /api/analyze",

@@ -324,7 +324,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ```
 MIT License
 
-Copyright (c) 2026 Dr. Shailendra Hari Singh
+Copyright (c) 2026 Dr. Siddalingaiah H S
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files...
