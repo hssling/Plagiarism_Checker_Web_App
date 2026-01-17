@@ -3,7 +3,7 @@
 <div align="center">
 
 ![PlagiarismGuard Pro](https://img.shields.io/badge/PlagiarismGuard-Pro-2563eb?style=for-the-badge&logo=shield&logoColor=white)
-![Version](https://img.shields.io/badge/Version-2.4.0-success?style=for-the-badge)
+![Version](https://img.shields.io/badge/Version-3.0.0-success?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)
 ![React](https://img.shields.io/badge/React-18.2-61DAFB?style=for-the-badge&logo=react)
 ![Vite](https://img.shields.io/badge/Vite-5.0-646CFF?style=for-the-badge&logo=vite)
@@ -268,6 +268,12 @@ PlagiarismGuard uses Supabase for anonymous usage analytics:
 - ✅ **Gemini 1.5 Integration**: Stable connection to latest LLM models.
 - ✅ **Layout Polish**: Professional PDF certificates with zero overflow warnings.
 - ✅ **Improved Search**: Enhanced metadata matching for PubMed & CrossRef.
+
+### Version 3.0 (Multi-AI Hub - LATEST)
+- ✅ **AI Hub Resiliency**: Connect Gemini, OpenAI, Claude, and xAI.
+- ✅ **Remediation Pro**: Interactive side-by-side AI paraphrasing.
+- ✅ **Automatic Fallback**: Intelligent routing when one AI provider fails.
+- ✅ **Stability Hotfix**: Resolved Gemini 404 model errors.
 
 ### Version 2.2 (Planned)
 - 🔲 Browser extension (Chrome/Edge)
