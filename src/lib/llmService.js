@@ -7,7 +7,13 @@ export const initializeAI = (apiKey) => {
     if (!apiKey) return false;
     try {
         genAI = new GoogleGenerativeAI(apiKey);
-        model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        // Resilient model selection
+        try {
+            model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        } catch (e) {
+            console.warn("Gemini 1.5 Flash failed, trying Pro...");
+            model = genAI.getGenerativeModel({ model: "gemini-pro" });
+        }
         return true;
     } catch (e) {
         console.error("Failed to initialize AI:", e);

@@ -109,60 +109,22 @@ function ResultsDashboard({ results, onReset, text }) {
             </div>
 
             {/* Tab Navigation */}
-            <div className="results-tabs" style={{
-                display: 'flex',
-                gap: '0',
-                marginBottom: '1.5rem',
-                borderBottom: '2px solid var(--border-color)'
-            }}>
+            <div className="results-tabs">
                 <button
                     className={`results-tab ${activeTab === 'plagiarism' ? 'active' : ''}`}
                     onClick={() => setActiveTab('plagiarism')}
-                    style={{
-                        padding: '0.75rem 1.5rem',
-                        border: 'none',
-                        background: activeTab === 'plagiarism' ? 'var(--primary)' : 'transparent',
-                        color: activeTab === 'plagiarism' ? 'white' : 'var(--text-muted)',
-                        cursor: 'pointer',
-                        fontWeight: activeTab === 'plagiarism' ? '600' : '400',
-                        borderRadius: '8px 8px 0 0',
-                        marginBottom: '-2px',
-                        borderBottom: activeTab === 'plagiarism' ? '2px solid var(--primary)' : 'none'
-                    }}
                 >
                     🔍 Plagiarism Analysis
                 </button>
                 <button
                     className={`results-tab ${activeTab === 'citations' ? 'active' : ''}`}
                     onClick={() => setActiveTab('citations')}
-                    style={{
-                        padding: '0.75rem 1.5rem',
-                        border: 'none',
-                        background: activeTab === 'citations' ? 'var(--primary)' : 'transparent',
-                        color: activeTab === 'citations' ? 'white' : 'var(--text-muted)',
-                        cursor: 'pointer',
-                        fontWeight: activeTab === 'citations' ? '600' : '400',
-                        borderRadius: '8px 8px 0 0',
-                        marginBottom: '-2px',
-                        borderBottom: activeTab === 'citations' ? '2px solid var(--primary)' : 'none'
-                    }}
                 >
                     📚 Citations ({citationData?.stats?.totalReferences || 0})
                 </button>
                 <button
                     className={`results-tab ${activeTab === 'style' ? 'active' : ''}`}
                     onClick={() => setActiveTab('style')}
-                    style={{
-                        padding: '0.75rem 1.5rem',
-                        border: 'none',
-                        background: activeTab === 'style' ? 'var(--primary)' : 'transparent',
-                        color: activeTab === 'style' ? 'white' : 'var(--text-muted)',
-                        cursor: 'pointer',
-                        fontWeight: activeTab === 'style' ? '600' : '400',
-                        borderRadius: '8px 8px 0 0',
-                        marginBottom: '-2px',
-                        borderBottom: activeTab === 'style' ? '2px solid var(--primary)' : 'none'
-                    }}
                 >
                     ✍️ Style Analysis
                 </button>

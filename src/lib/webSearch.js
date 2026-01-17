@@ -6,7 +6,7 @@
 
 const SEARCH_TIMEOUT = 10000; // 10 seconds
 const CONCURRENT_LIMIT = 4; // Batch size to prevent browser hang
-let globalRateLimitTriggered = false;
+let googleRateLimitTriggered = false; // Only block Google-based searches
 
 /**
  * Main Entry Point: Search for exact phrase
@@ -25,9 +25,9 @@ export async function searchPhrase(phrase, options = {}) {
     results.push(...sourceResults);
 
     // 2. Global Safety Net (Conditional)
-    // Only perform Google Core Search if we don't have enough results yet
-    // This dramatically reduces API consumption.
-    if (results.length < 5) {
+    // Run Google Search to find matches that specialized APIs might have missed.
+    // We run this regardless of sourceCount unless Google is rate-limited.
+    if (!googleRateLimitTriggered) {
         const googleResults = await performGoogleCoreSearch(phrase);
         if (googleResults) {
             const seen = new Set(results.map(r => r.url));
@@ -68,8 +68,10 @@ async function safeFetch(url, options = {}, useProxy = false) {
         clearTimeout(timeout);
 
         if (response.status === 429) {
-            console.warn("Global Rate Limit (429) Triggered");
-            globalRateLimitTriggered = true;
+            if (url.includes('googleapis.com')) {
+                console.warn("Google API Rate Limit (429) Triggered");
+                googleRateLimitTriggered = true;
+            }
         }
 
         // Handle Proxy Wrapper (if using proxy)
@@ -78,7 +80,9 @@ async function safeFetch(url, options = {}, useProxy = false) {
 
             // If the upstream failed (e.g. 404, 500, 429), treat as null to trigger fallback
             if (!wrapper.upstreamOk) {
-                if (wrapper.upstreamStatus === 429) globalRateLimitTriggered = true;
+                if (wrapper.upstreamStatus === 429 && url.includes('googleapis.com')) {
+                    googleRateLimitTriggered = true;
+                }
                 return null;
             }
 
@@ -101,7 +105,6 @@ async function safeFetch(url, options = {}, useProxy = false) {
  * Execute searches with Concurrency Limiting
  */
 async function executeDeepSearches(phrase) {
-    if (globalRateLimitTriggered) return [];
     const allResults = [];
 
     // Explicit List of All 16 Search Strategies
@@ -143,8 +146,8 @@ async function executeDeepSearches(phrase) {
             }
         });
 
-        // Anti-429 Delay: Short pause between batches
-        await new Promise(r => setTimeout(r, 800 + Math.random() * 500));
+        // Anti-429 Delay: Increased pause between batches for stability
+        await new Promise(r => setTimeout(r, 1200 + Math.random() * 800));
     }
 
     return allResults;
@@ -161,6 +164,8 @@ async function searchTargetedSite(phrase, site, type, sourceName) {
         console.warn('Missing Google Search Keys');
         return null;
     }
+
+    if (googleRateLimitTriggered) return null;
 
     const url = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${cseId}&q=${encodeURIComponent('site:' + site + ' "' + phrase + '"')}`;
 
@@ -181,7 +186,7 @@ async function searchTargetedSite(phrase, site, type, sourceName) {
  * Core Google Search (General Web)
  */
 async function performGoogleCoreSearch(phrase) {
-    if (globalRateLimitTriggered) return null;
+    if (googleRateLimitTriggered) return null;
     const { apiKey, cseId } = getSearchConfigs();
 
     if (!apiKey || !cseId) {

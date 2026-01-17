@@ -287,18 +287,18 @@ export const generatePDF = async (results, text, metadata = {}) => {
             fontStyle: 'bold'
         },
         styles: {
-            fontSize: 7,
+            fontSize: 6.5,
             overflow: 'linebreak',
-            cellPadding: 2
+            cellPadding: 1.5
         },
         alternateRowStyles: {
             fillColor: [248, 249, 250]
         },
         columnStyles: {
-            0: { cellWidth: 10, halign: 'center' },
-            1: { cellWidth: 80 },
-            2: { cellWidth: 40 },
-            3: { cellWidth: 20, halign: 'center' }
+            0: { cellWidth: 8, halign: 'center' },
+            1: { cellWidth: 70 },
+            2: { cellWidth: 35 },
+            3: { cellWidth: 15, halign: 'center' }
         }
     });
 
@@ -334,11 +334,11 @@ export const generatePDF = async (results, text, metadata = {}) => {
             head: [['Source Database', 'Matches', 'Contribution']],
             body: contributionData,
             headStyles: { fillColor: [52, 73, 94], fontSize: 8 },
-            styles: { fontSize: 7 },
+            styles: { fontSize: 6.5 },
             columnStyles: {
-                0: { cellWidth: 70 },
-                1: { cellWidth: 25, halign: 'center' },
-                2: { cellWidth: 25, halign: 'center' }
+                0: { cellWidth: 60 },
+                1: { cellWidth: 20, halign: 'center' },
+                2: { cellWidth: 20, halign: 'center' }
             }
         });
     }
