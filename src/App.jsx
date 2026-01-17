@@ -339,7 +339,7 @@ function App() {
                     </div>
                 </div>
                 <div className="footer-meta">
-                    <p>PlagiarismGuard v2.1 | Open Source Academic Plagiarism Checker</p>
+                    <p>PlagiarismGuard v2.4 | Open Source Academic Plagiarism Checker</p>
                     <a
                         href="https://github.com/hssling/Plagiarism_Checker_Web_App/blob/main/docs/USER_GUIDE.md"
                         target="_blank"

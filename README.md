@@ -3,7 +3,7 @@
 <div align="center">
 
 ![PlagiarismGuard Pro](https://img.shields.io/badge/PlagiarismGuard-Pro-2563eb?style=for-the-badge&logo=shield&logoColor=white)
-![Version](https://img.shields.io/badge/Version-2.1.0-success?style=for-the-badge)
+![Version](https://img.shields.io/badge/Version-2.4.0-success?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)
 ![React](https://img.shields.io/badge/React-18.2-61DAFB?style=for-the-badge&logo=react)
 ![Vite](https://img.shields.io/badge/Vite-5.0-646CFF?style=for-the-badge&logo=vite)
@@ -27,9 +27,9 @@ While developed by a medical professor, **PlagiarismGuard** works for **ALL** re
 
 ### 🧠 Cognitive AI (Phase 12 - NEW!)
 Go beyond simple matching with **Google Gemini** integration:
-- **🤖 AI Authorship Detection** - "Did ChatGPT write this?" (Confidence Score)
+- **🤖 AI Authorship Detection** - "Did ChatGPT write this?" (Powered by Gemini 1.5 Flash)
 - **🧐 Intent Analysis** - Distinguishes "Sloppy Citation" from "Malicious Copying"
-- **📝 Smart Summary** - Auto-generates 3-bullet executive summary
+- **📝 Smart Summary** - Auto-generates 3-bullet executive summary (v2.4 Stable)
 
 ### 📄 Enterprise Reporting
 - **Official PDF Certificates** - Unforgeable reports with "Verified" badge and simulated QR code
@@ -262,6 +262,12 @@ PlagiarismGuard uses Supabase for anonymous usage analytics:
 - ✅ **Batch Processing**: Multi-document queued analysis.
 - ✅ **Advanced AI Enhancement**: Style fingerprinting and anomalies.
 - ✅ **Keyless Fallback**: Automated academic search mode.
+
+### Version 2.4 (Current)
+- ✅ **PDF Citation Stability**: Coordinated text extraction for higher accuracy.
+- ✅ **Gemini 1.5 Integration**: Stable connection to latest LLM models.
+- ✅ **Layout Polish**: Professional PDF certificates with zero overflow warnings.
+- ✅ **Improved Search**: Enhanced metadata matching for PubMed & CrossRef.
 
 ### Version 2.2 (Planned)
 - 🔲 Browser extension (Chrome/Edge)
