@@ -22,7 +22,7 @@ export const initializeAI = (config = {}) => {
         try {
             const genAI = new GoogleGenerativeAI(providers.gemini.key);
             // Fix: Use stable model identifier to avoid 404
-            providers.gemini.model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+            providers.gemini.model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
         } catch (e) {
             console.error("Gemini initialization failed:", e);
         }
@@ -69,6 +69,8 @@ export const callAI = async (prompt, systemPrompt = "You are an academic integri
                         "gemini-1.5-flash",
                         "gemini-1.5-pro-latest",
                         "gemini-1.5-pro",
+                        "gemini-pro-1.5",
+                        "gemini-pro-1.0",
                         "gemini-pro"
                     ];
                     for (const model of models) {
@@ -85,6 +87,7 @@ export const callAI = async (prompt, systemPrompt = "You are an academic integri
                                 });
                                 const wrapper = await res.json();
                                 if (wrapper.upstreamOk) return wrapper.data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+                                console.warn(`Gemini ${version}/${model} failed:`, wrapper.data?.error?.message || wrapper.upstreamStatus);
                             }
                         } catch (e) { continue; }
                     }
@@ -167,7 +170,9 @@ export const callAI = async (prompt, systemPrompt = "You are an academic integri
                         messages: [
                             { role: "system", content: systemPrompt },
                             { role: "user", content: prompt }
-                        ]
+                        ],
+                        temperature: 0,
+                        stream: false
                     })
                 });
                 const wrapper = await res.json();
@@ -186,6 +191,8 @@ export const callAI = async (prompt, systemPrompt = "You are an academic integri
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${providers.openrouter.key}`,
                         'HTTP-Referer': 'https://plagiarism-checker-web-app.vercel.app',
+                        'Referer': window.location.origin,
+                        'Origin': window.location.origin,
                         'X-Title': 'PlagiarismGuard Pro'
                     },
                     body: JSON.stringify({
@@ -193,7 +200,8 @@ export const callAI = async (prompt, systemPrompt = "You are an academic integri
                         messages: [
                             { role: "system", content: systemPrompt },
                             { role: "user", content: prompt }
-                        ]
+                        ],
+                        temperature: 0
                     })
                 });
                 const wrapper = await res.json();

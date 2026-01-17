@@ -28,26 +28,26 @@ export default async function handler(req, res) {
         };
 
         // Forward specific security headers if present
-        const forwardHeaders = [
+        const forwardableHeaders = [
             'authorization',
             'x-api-key',
             'anthropic-version',
             'content-type',
             'http-referer',
+            'referer',
+            'origin',
             'x-title',
             'openai-organization',
             'openai-project'
         ];
-        forwardHeaders.forEach(h => {
+        forwardableHeaders.forEach(h => {
             if (req.headers[h]) {
                 fetchOptions.headers[h] = req.headers[h];
             }
         });
 
-        // Add User-Agent if missing
-        if (!fetchOptions.headers['user-agent']) {
-            fetchOptions.headers['user-agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) PlagiarismGuard/3.0';
-        }
+        // Add a standard browser User-Agent if none provided
+        fetchOptions.headers['user-agent'] = req.headers['user-agent'] || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
         // Handle POST body
         if (req.method === 'POST' && req.body) {
