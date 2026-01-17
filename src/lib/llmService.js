@@ -17,9 +17,9 @@ export const initializeAI = (config = {}) => {
     const { gemini, openai, anthropic, xai, primary } = config;
 
     if (gemini) {
-        providers.gemini.key = gemini;
+        providers.gemini.key = gemini.trim();
         try {
-            const genAI = new GoogleGenerativeAI(gemini);
+            const genAI = new GoogleGenerativeAI(providers.gemini.key);
             // Fix: Use stable model identifier to avoid 404
             providers.gemini.model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
         } catch (e) {
@@ -27,9 +27,9 @@ export const initializeAI = (config = {}) => {
         }
     }
 
-    if (openai) providers.openai.key = openai;
-    if (anthropic) providers.anthropic.key = anthropic;
-    if (xai) providers.xai.key = xai;
+    if (openai) providers.openai.key = openai.trim();
+    if (anthropic) providers.anthropic.key = anthropic.trim();
+    if (xai) providers.xai.key = xai.trim();
     if (primary) primaryProvider = primary;
 
     return isAIInitialized();
@@ -51,42 +51,44 @@ export const callAI = async (prompt, systemPrompt = "You are an academic integri
 
     for (const provider of order) {
         try {
-            // Gemini (Direct SDK + Manual REST Fallbacks)
+            // Gemini (Direct SDK + Proxy REST Fallbacks)
             if (provider === 'gemini' && providers.gemini.key) {
                 try {
-                    // 1. Try SDK (usually defaults to v1beta)
+                    // 1. Try SDK (usually v1beta)
                     if (providers.gemini.model) {
                         const result = await providers.gemini.model.generateContent(prompt);
                         const response = await result.response;
                         return response.text();
                     }
                 } catch (sdkError) {
-                    console.warn("Gemini SDK failed, trying REST (v1beta)...", sdkError);
+                    console.warn("Gemini SDK failed, trying Proxy-REST (v1beta)...", sdkError);
                     try {
-                        // 2. Try REST v1beta (v1beta is needed for some regions/models)
-                        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${providers.gemini.key}`, {
+                        // 2. Try REST v1beta through Proxy
+                        const v1betaUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${providers.gemini.key}`;
+                        const res = await fetch(`/api/proxy?url=${encodeURIComponent(v1betaUrl)}`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
                                 contents: [{ parts: [{ text: `${systemPrompt}\n\n${prompt}` }] }]
                             })
                         });
-                        const data = await res.json();
-                        if (res.ok) return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+                        const wrapper = await res.json();
+                        if (wrapper.upstreamOk) return wrapper.data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
 
-                        console.warn("Gemini REST v1beta failed, trying REST v1...", data);
-                        // 3. Try REST v1 (Last resort)
-                        const resV1 = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${providers.gemini.key}`, {
+                        console.warn("Gemini Proxy v1beta failed, trying v1...", wrapper.data);
+                        // 3. Try REST v1 through Proxy
+                        const v1Url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${providers.gemini.key}`;
+                        const resV1 = await fetch(`/api/proxy?url=${encodeURIComponent(v1Url)}`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
                                 contents: [{ parts: [{ text: `${systemPrompt}\n\n${prompt}` }] }]
                             })
                         });
-                        const dataV1 = await resV1.json();
-                        if (resV1.ok) return dataV1.candidates?.[0]?.content?.parts?.[0]?.text || "";
+                        const wrapperV1 = await resV1.json();
+                        if (wrapperV1.upstreamOk) return wrapperV1.data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
 
-                        throw new Error(`Gemini REST failed: ${dataV1.error?.message || resV1.status}`);
+                        throw new Error(`Gemini Proxy failed: ${wrapperV1.data?.error?.message || wrapperV1.upstreamStatus}`);
                     } catch (restError) {
                         throw restError;
                     }

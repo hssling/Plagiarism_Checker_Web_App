@@ -165,9 +165,31 @@ function SettingsModal({ isOpen, onClose, onSave }) {
                     </div>
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '2rem' }}>
-                    <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
-                    <button className="btn btn-primary" onClick={handleSave}>Verify & Save All</button>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', marginTop: '2rem' }}>
+                    <button
+                        className="btn btn-secondary"
+                        style={{ fontSize: '0.8rem', opacity: 0.8 }}
+                        onClick={async () => {
+                            const btn = document.activeElement;
+                            const originalText = btn.innerText;
+                            btn.innerText = "⏳ Testing...";
+                            try {
+                                const { callAI } = await import('../lib/llmService');
+                                const result = await callAI("Say 'Connection Successful'", "Connection Test");
+                                alert(`✅ Hub Response: ${result}`);
+                            } catch (e) {
+                                alert(`❌ Error: ${e.message}`);
+                            } finally {
+                                btn.innerText = originalText;
+                            }
+                        }}
+                    >
+                        🩺 Run Diagnostic
+                    </button>
+                    <div style={{ display: 'flex', gap: '1rem' }}>
+                        <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
+                        <button className="btn btn-primary" onClick={handleSave}>Verify & Save All</button>
+                    </div>
                 </div>
             </div>
         </div>
