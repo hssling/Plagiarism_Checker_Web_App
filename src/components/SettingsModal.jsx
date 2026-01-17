@@ -2,25 +2,53 @@ import React, { useState, useEffect } from 'react';
 
 function SettingsModal({ isOpen, onClose, onSave }) {
     const [apiKey, setApiKey] = useState('');
+    const [openaiKey, setOpenaiKey] = useState('');
+    const [anthropicKey, setAnthropicKey] = useState('');
+    const [xaiKey, setXaiKey] = useState('');
+    const [primaryAI, setPrimaryAI] = useState('gemini');
+
     const [searchApiKey, setSearchApiKey] = useState('');
     const [searchCx, setSearchCx] = useState('');
 
     useEffect(() => {
         const savedKey = localStorage.getItem('gemini_api_key');
+        const savedOpenAI = localStorage.getItem('openai_api_key');
+        const savedAnthropic = localStorage.getItem('anthropic_api_key');
+        const savedXAI = localStorage.getItem('xai_api_key');
+        const savedPrimary = localStorage.getItem('primary_ai_provider') || 'gemini';
+
         const savedSearchKey = localStorage.getItem('google_search_api_key');
         const savedCx = localStorage.getItem('google_search_cx');
 
         if (savedKey) setApiKey(savedKey);
+        if (savedOpenAI) setOpenaiKey(savedOpenAI);
+        if (savedAnthropic) setAnthropicKey(savedAnthropic);
+        if (savedXAI) setXaiKey(savedXAI);
+        setPrimaryAI(savedPrimary);
+
         if (savedSearchKey) setSearchApiKey(savedSearchKey);
         if (savedCx) setSearchCx(savedCx);
     }, [isOpen]);
 
     const handleSave = () => {
         localStorage.setItem('gemini_api_key', apiKey);
+        localStorage.setItem('openai_api_key', openaiKey);
+        localStorage.setItem('anthropic_api_key', anthropicKey);
+        localStorage.setItem('xai_api_key', xaiKey);
+        localStorage.setItem('primary_ai_provider', primaryAI);
+
         localStorage.setItem('google_search_api_key', searchApiKey);
         localStorage.setItem('google_search_cx', searchCx);
 
-        onSave({ apiKey, searchApiKey, searchCx });
+        onSave({
+            gemini: apiKey,
+            openai: openaiKey,
+            anthropic: anthropicKey,
+            xai: xaiKey,
+            primary: primaryAI,
+            searchApiKey,
+            searchCx
+        });
         onClose();
     };
 
@@ -29,70 +57,120 @@ function SettingsModal({ isOpen, onClose, onSave }) {
     return (
         <div className="modal-overlay" style={{
             position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-            backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000
+            backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000,
+            backdropFilter: 'blur(4px)'
         }}>
-            <div className="modal-content" style={{
-                background: 'var(--bg-primary)', padding: '2rem', borderRadius: '12px', width: '90%', maxWidth: '500px',
-                boxShadow: '0 10px 25px rgba(0,0,0,0.2)'
+            <div className="modal-content glass" style={{
+                background: 'var(--bg-primary)', padding: '2rem', borderRadius: '1.5rem', width: '95%', maxWidth: '600px',
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)', border: '1px solid var(--border)',
+                maxHeight: '90vh', overflowY: 'auto'
             }}>
-                <h2 style={{ marginTop: 0 }}>⚙️ AI Settings</h2>
-                <p style={{ color: 'var(--text-muted)' }}>
-                    To enable <strong>Cognitive Analysis</strong> (Authorship Detection & Intent), please enter your Google Gemini API Key.
+                <h2 style={{ marginTop: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>⚙️ Cognitive AI Hub</h2>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+                    Configure multiple AI providers for maximum resiliency. If your primary AI fails, the system will automatically fall back to the next available one.
                 </p>
-                <div style={{ margin: '1.5rem 0' }}>
-                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Google Gemini API Key</label>
-                    <input
-                        type="password"
-                        value={apiKey}
-                        onChange={(e) => setApiKey(e.target.value)}
-                        placeholder="AIzaSy..."
-                        className="text-input"
-                        style={{ width: '100%' }}
-                    />
-                    <small style={{ display: 'block', marginTop: '0.5rem', color: 'var(--text-muted)' }}>
-                        Don't have one? <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer">Get a free key here</a>.
-                    </small>
+
+                <div className="section" style={{ marginBottom: '2rem' }}>
+                    <h3 style={{ fontSize: '1rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem', marginBottom: '1rem' }}>🤖 AI Providers</h3>
+
+                    {/* Gemini */}
+                    <div style={{ marginBottom: '1.25rem' }}>
+                        <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                            <span style={{ fontWeight: 600 }}>Google Gemini</span>
+                            <input type="radio" name="primaryAI" checked={primaryAI === 'gemini'} onChange={() => setPrimaryAI('gemini')} />
+                        </label>
+                        <input
+                            type="password"
+                            value={apiKey}
+                            onChange={(e) => setApiKey(e.target.value)}
+                            placeholder="Gemini API Key (AIzaSy...)"
+                            className="text-input"
+                            style={{ width: '100%', padding: '0.6rem', borderRadius: '0.5rem', background: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'white' }}
+                        />
+                    </div>
+
+                    {/* OpenAI */}
+                    <div style={{ marginBottom: '1.25rem' }}>
+                        <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                            <span style={{ fontWeight: 600 }}>OpenAI (ChatGPT)</span>
+                            <input type="radio" name="primaryAI" checked={primaryAI === 'openai'} onChange={() => setPrimaryAI('openai')} />
+                        </label>
+                        <input
+                            type="password"
+                            value={openaiKey}
+                            onChange={(e) => setOpenaiKey(e.target.value)}
+                            placeholder="OpenAI API Key (sk-...)"
+                            className="text-input"
+                            style={{ width: '100%', padding: '0.6rem', borderRadius: '0.5rem', background: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'white' }}
+                        />
+                    </div>
+
+                    {/* Anthropic */}
+                    <div style={{ marginBottom: '1.25rem' }}>
+                        <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                            <span style={{ fontWeight: 600 }}>Anthropic (Claude)</span>
+                            <input type="radio" name="primaryAI" checked={primaryAI === 'anthropic'} onChange={() => setPrimaryAI('anthropic')} />
+                        </label>
+                        <input
+                            type="password"
+                            value={anthropicKey}
+                            onChange={(e) => setAnthropicKey(e.target.value)}
+                            placeholder="Anthropic API Key (sk-ant-...)"
+                            className="text-input"
+                            style={{ width: '100%', padding: '0.6rem', borderRadius: '0.5rem', background: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'white' }}
+                        />
+                    </div>
+
+                    {/* xAI */}
+                    <div style={{ marginBottom: '1.25rem' }}>
+                        <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                            <span style={{ fontWeight: 600 }}>xAI (Grok)</span>
+                            <input type="radio" name="primaryAI" checked={primaryAI === 'xai'} onChange={() => setPrimaryAI('xai')} />
+                        </label>
+                        <input
+                            type="password"
+                            value={xaiKey}
+                            onChange={(e) => setXaiKey(e.target.value)}
+                            placeholder="xAI API Key"
+                            className="text-input"
+                            style={{ width: '100%', padding: '0.6rem', borderRadius: '0.5rem', background: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'white' }}
+                        />
+                    </div>
+                    <small style={{ color: 'var(--text-muted)' }}>Radio button selects the default (Primary) provider.</small>
                 </div>
 
-                <div style={{ margin: '1.5rem 0', borderTop: '1px solid var(--border)', paddingTop: '1.5rem' }}>
-                    <h3 style={{ fontSize: '1rem', marginBottom: '1rem' }}>🌐 Web Search Settings</h3>
-                    <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
-                        Required for checking plagiarism against the open web.
-                    </p>
-
+                <div className="section" style={{ marginBottom: '2rem' }}>
+                    <h3 style={{ fontSize: '1rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem', marginBottom: '1rem' }}>🌐 Web Search Engine</h3>
                     <div style={{ marginBottom: '1rem' }}>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Google Custom Search API Key</label>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Google Search API Key</label>
                         <input
                             type="password"
                             value={searchApiKey}
                             onChange={(e) => setSearchApiKey(e.target.value)}
-                            placeholder="AIzaSy..."
+                            placeholder="Search API Key"
                             className="text-input"
-                            style={{ width: '100%' }}
+                            style={{ width: '100%', padding: '0.6rem', borderRadius: '0.5rem', background: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'white' }}
                         />
                     </div>
-
                     <div>
                         <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Search Engine ID (CX)</label>
                         <input
                             type="text"
                             value={searchCx}
                             onChange={(e) => setSearchCx(e.target.value)}
-                            placeholder="0123456789..."
+                            placeholder="CX ID"
                             className="text-input"
-                            style={{ width: '100%' }}
+                            style={{ width: '100%', padding: '0.6rem', borderRadius: '0.5rem', background: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'white' }}
                         />
-                        <small style={{ display: 'block', marginTop: '0.5rem', color: 'var(--text-muted)' }}>
-                            <a href="https://programmablesearchengine.google.com/controlpanel/create" target="_blank" rel="noopener noreferrer">Create a Search Engine</a> (select "Search the entire web").
-                        </small>
                     </div>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '2rem' }}>
                     <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
-                    <button className="btn btn-primary" onClick={handleSave}>Save & Enable AI</button>
+                    <button className="btn btn-primary" onClick={handleSave}>Verify & Save All</button>
                 </div>
             </div>
-        </div >
+        </div>
     );
 }
 

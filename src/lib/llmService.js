@@ -1,49 +1,131 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-let genAI = null;
-let model = null;
+// Provider configs
+let providers = {
+    gemini: { key: null, model: null, name: "Gemini" },
+    openai: { key: null, name: "OpenAI" },
+    anthropic: { key: null, name: "Anthropic" },
+    xai: { key: null, name: "xAI" }
+};
 
-export const initializeAI = (apiKey) => {
-    if (!apiKey) return false;
-    try {
-        genAI = new GoogleGenerativeAI(apiKey);
-        // Resilient model selection: using gemini-1.5-flash-latest as default
+let primaryProvider = 'gemini';
+
+/**
+ * Initialize AI Providers
+ */
+export const initializeAI = (config = {}) => {
+    const { gemini, openai, anthropic, xai, primary } = config;
+
+    if (gemini) {
+        providers.gemini.key = gemini;
         try {
-            model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+            const genAI = new GoogleGenerativeAI(gemini);
+            // Fix: Use stable model identifier to avoid 404
+            providers.gemini.model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
         } catch (e) {
-            console.warn("Gemini Flash Latest failed, trying Pro...");
-            model = genAI.getGenerativeModel({ model: "gemini-pro" });
+            console.error("Gemini initialization failed:", e);
         }
-        return true;
-    } catch (e) {
-        console.error("Failed to initialize AI:", e);
-        return false;
     }
+
+    if (openai) providers.openai.key = openai;
+    if (anthropic) providers.anthropic.key = anthropic;
+    if (xai) providers.xai.key = xai;
+    if (primary) primaryProvider = primary;
+
+    return isAIInitialized();
 };
 
 /**
- * Check if AI is initialized
+ * Check if at least one AI is initialized
  */
 export const isAIInitialized = () => {
-    return model !== null;
+    return providers.gemini.model !== null || providers.openai.key || providers.anthropic.key || providers.xai.key;
 };
 
 /**
- * Generic call to Gemini
+ * Primary AI Call with Fallbacks
  */
-export const callGemini = async (prompt) => {
-    if (!model) throw new Error("AI not initialized");
-    const result = await model.generateContent(prompt);
-    return result.response.text();
+export const callAI = async (prompt, systemPrompt = "You are an academic integrity expert.") => {
+    const order = [primaryProvider, 'gemini', 'openai', 'anthropic', 'xai'].filter((v, i, a) => a.indexOf(v) === i);
+    let lastError = null;
+
+    for (const provider of order) {
+        try {
+            if (provider === 'gemini' && providers.gemini.model) {
+                const result = await providers.gemini.model.generateContent(prompt);
+                const response = await result.response;
+                return response.text();
+            }
+
+            if (provider === 'openai' && providers.openai.key) {
+                const res = await fetch('https://api.openai.com/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${providers.openai.key}`
+                    },
+                    body: JSON.stringify({
+                        model: "gpt-4o-mini",
+                        messages: [
+                            { role: "system", content: systemPrompt },
+                            { role: "user", content: prompt }
+                        ]
+                    })
+                });
+                const data = await res.json();
+                return data.choices[0].message.content;
+            }
+
+            if (provider === 'anthropic' && providers.anthropic.key) {
+                const res = await fetch('https://api.anthropic.com/v1/messages', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-api-key': providers.anthropic.key,
+                        'anthropic-version': '2023-06-01'
+                    },
+                    body: JSON.stringify({
+                        model: "claude-3-haiku-20240307",
+                        max_tokens: 1024,
+                        system: systemPrompt,
+                        messages: [{ role: "user", content: prompt }]
+                    })
+                });
+                const data = await res.json();
+                return data.content[0].text;
+            }
+
+            if (provider === 'xai' && providers.xai.key) {
+                const res = await fetch('https://api.x.ai/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${providers.xai.key}`
+                    },
+                    body: JSON.stringify({
+                        model: "grok-beta",
+                        messages: [
+                            { role: "system", content: systemPrompt },
+                            { role: "user", content: prompt }
+                        ]
+                    })
+                });
+                const data = await res.json();
+                return data.choices[0].message.content;
+            }
+        } catch (e) {
+            console.warn(`${provider} failed, trying next...`, e);
+            lastError = e;
+        }
+    }
+
+    throw new Error(lastError ? lastError.message : "No AI providers available or all failed");
 };
 
 /**
  * AI Authorship Detection
- * Estimates the probability that text was written by AI.
  */
 export const checkAIAuthorship = async (text) => {
-    if (!model) return { error: "AI not configured" };
-
     const prompt = `Analyze the following text for signs of AI generation. 
     Focus on:
     1. Uniformity of sentence length (Low Burstiness).
@@ -60,57 +142,24 @@ export const checkAIAuthorship = async (text) => {
     }`;
 
     try {
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-
-        // Check for safety blocks
-        if (response.candidates && response.candidates[0].finishReason === "SAFETY") {
-            return { isAI: false, confidence: 0, reasoning: "Blocked by Safety Filters" };
-        }
-
-        const text = response.text().replace(/```json|```/g, '').trim();
-        try {
-            return JSON.parse(text);
-        } catch (parseError) {
-            console.error("JSON Parse Error:", text);
-            // Return raw text if it's short, otherwise generic error
-            const reason = text.length < 50 ? text : "Invalid JSON Response";
-            return { isAI: false, confidence: 0, reasoning: reason };
-        }
+        const result = await callAI(prompt, "You are a stylometrics expert.");
+        const clean = result.replace(/```json|```/g, '').trim();
+        return JSON.parse(clean);
     } catch (e) {
         console.error("AI Authorship Check Failed:", e);
-        let errorMsg = "AI Analysis Failed";
-
-        if (e.message) {
-            if (e.message.includes('API key')) errorMsg = "Invalid API Key";
-            else if (e.message.includes('403')) errorMsg = "Access Denied (403)";
-            else if (e.message.includes('429')) errorMsg = "Quota Exceeded";
-            else if (e.message.includes('404')) errorMsg = "Key lacks Gemini Access"; // Specific fix
-            else errorMsg = e.message.substring(0, 40) + "...";
-        }
-
-        return { isAI: false, confidence: 0, reasoning: errorMsg };
+        return { isAI: false, confidence: 0, reasoning: e.message };
     }
 };
 
 /**
  * Plagiarism Intent Analysis
- * Explains WHY the text was flagged.
  */
 export const analyzeIntent = async (match) => {
-    if (!model) return null;
-
-    const prompt = `You are an academic integrity expert. Compare the "Suspect Text" with the "Source Text".
-    Determine the INTENT of the plagiarism.
-
+    const prompt = `Compare the "Suspect Text" with the "Source Text". Determine INTENT.
     Suspect Text: "${match.phrase}"
     Source Context: "${match.snippet}"
 
-    Classify as one of:
-    - "Direct Copy" (Identical or near identical)
-    - "Paraphrasing Issue" (Tried to rewrite but failed)
-    - "Accidental" (Common phrase or coincidence)
-    
+    Classify as: "Direct Copy", "Paraphrasing Issue", or "Accidental".
     Respond with ONLY a JSON object:
     {
         "category": "Direct Copy" | "Paraphrasing Issue" | "Accidental",
@@ -118,9 +167,8 @@ export const analyzeIntent = async (match) => {
     }`;
 
     try {
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        return JSON.parse(response.text().replace(/```json|```/g, '').trim());
+        const result = await callAI(prompt);
+        return JSON.parse(result.replace(/```json|```/g, '').trim());
     } catch (e) {
         return null;
     }
@@ -130,12 +178,10 @@ export const analyzeIntent = async (match) => {
  * Smart Summary
  */
 export const generateSummary = async (text) => {
-    if (!model) return null;
     try {
-        const result = await model.generateContent(`Summarize this text in 3 bullet points:\n\n${text.substring(0, 2000)}`);
-        return result.response.text();
+        return await callAI(`Summarize this text in 3 bullet points:\n\n${text.substring(0, 2000)}`);
     } catch (e) {
-        return `Failed to generate summary: ${e.message || "Unknown error"}`;
+        return `Failed to generate summary: ${e.message}`;
     }
 };
 /**
@@ -143,7 +189,7 @@ export const generateSummary = async (text) => {
  * Paraphrases text to reduce similarity while preserving academic accuracy.
  */
 export const paraphraseAcademic = async (text, context = "", style = "formal") => {
-    if (!model) return { error: "AI not configured" };
+    if (!isAIInitialized()) return { error: "AI Hub not configured. Please add an API key in Settings." };
 
     const styleInstructions = style === "formal"
         ? "Maintain a highly formal, academic, and objective tone. Use technical terminology appropriate for a scientific journal."
@@ -151,8 +197,8 @@ export const paraphraseAcademic = async (text, context = "", style = "formal") =
 
     const prompt = `You are an expert scientific editor. Your task is to REWRITE the "Original Text" below to reduce its similarity with existing literature, while PRESERVING its exact scientific meaning and technical citations.
 
-    Original Text: "${text}"
-    Source Context (for reference): "${context}"
+    Original Text: \"${text}\"
+    Source Context (for reference): \"${context}\"
 
     Instructions:
     1. ${styleInstructions}
@@ -168,14 +214,8 @@ export const paraphraseAcademic = async (text, context = "", style = "formal") =
     }`;
 
     try {
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-
-        if (response.candidates && response.candidates[0].finishReason === "SAFETY") {
-            return { error: "Blocked by Safety Filters - Content may be too sensitive for AI rewriting." };
-        }
-
-        const rawText = response.text().replace(/```json|```/g, '').trim();
+        const result = await callAI(prompt, "You are an expert scientific editor.");
+        const rawText = result.replace(/```json|```/g, '').trim();
         return JSON.parse(rawText);
     } catch (e) {
         console.error("Paraphrasing Failed:", e);

@@ -3,7 +3,7 @@
  * Detects if text has been translated from another language
  */
 
-import { isAIInitialized, callAI } from './llmService';
+import { isAIInitialized, callGemini } from './llmService';
 
 /**
  * Common translation artifacts to detect
@@ -176,7 +176,7 @@ Respond in JSON format only:
 }`;
 
     try {
-        const response = await callAI(prompt, "You are a translation detection expert.");
+        const response = await callGemini(prompt);
         const jsonMatch = response.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
             return JSON.parse(jsonMatch[0]);

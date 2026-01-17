@@ -43,16 +43,10 @@ function App() {
     const [batchSummary, setBatchSummary] = useState(null);
     const [currentDoc, setCurrentDoc] = useState('');
 
-    // Initialize AI Hub on load
+    // Initialize AI on load
     React.useEffect(() => {
-        const config = {
-            gemini: localStorage.getItem('gemini_api_key'),
-            openai: localStorage.getItem('openai_api_key'),
-            anthropic: localStorage.getItem('anthropic_api_key'),
-            xai: localStorage.getItem('xai_api_key'),
-            primary: localStorage.getItem('primary_ai_provider') || 'gemini'
-        };
-        initializeAI(config);
+        const apiKey = localStorage.getItem('gemini_api_key');
+        if (apiKey) initializeAI(apiKey);
     }, []);
 
     // ... (Handlers for Text Mode) ...
@@ -360,7 +354,7 @@ function App() {
             <SettingsModal
                 isOpen={isSettingsOpen}
                 onClose={() => setIsSettingsOpen(false)}
-                onSave={(config) => initializeAI(config)}
+                onSave={({ apiKey }) => initializeAI(apiKey)}
             />
         </div>
     );

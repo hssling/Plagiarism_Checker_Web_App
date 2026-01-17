@@ -1,0 +1,469 @@
+import React from 'react';
+import { generateWordReport } from '../lib/plagiarismAnalyzer';
+import { generatePDF } from '../lib/pdfGenerator';
+import { checkAIAuthorship, generateSummary } from '../lib/llmService';
+import CitationResults from './CitationResults';
+import StyleReport from './StyleReport';
+import RemediationTool from './RemediationTool';
+import { batchValidateReferences } from '../lib/citationValidator';
+
+function ResultsDashboard({ results, onReset, text }) {
+    const [aiAnalysis, setAIAnalysis] = React.useState(null);
+    const [aiLoading, setAILoading] = React.useState(false);
+    const [activeTab, setActiveTab] = React.useState('plagiarism');
+    const [citationData, setCitationData] = React.useState(results.citations || null);
+    const [remediation, setRemediation] = React.useState({
+        isOpen: false,
+        text: '',
+        context: ''
+    });
+
+    React.useEffect(() => {
+        const runAI = async () => {
+            const apiKey = localStorage.getItem('gemini_api_key');
+            if (!apiKey) return;
+
+            setAILoading(true);
+            const [authorship, summary] = await Promise.all([
+                checkAIAuthorship(text),
+                generateSummary(text)
+            ]);
+            setAIAnalysis({ authorship, summary });
+            setAILoading(false);
+        };
+        runAI();
+    }, [text]);
+
+    const getStatusClass = (score) => {
+        if (score < 10) return 'status-excellent';
+        if (score < 20) return 'status-good';
+        if (score < 30) return 'status-moderate';
+        return 'status-high';
+    };
+
+    const getStatusLabel = (score) => {
+        if (score < 10) return '🟢 Excellent';
+        if (score < 20) return '🟢 Good';
+        if (score < 30) return '🟡 Moderate';
+        return '🔴 High';
+    };
+
+    const getProgressColor = (score) => {
+        if (score < 15) return 'var(--success)';
+        if (score < 25) return 'var(--warning)';
+        return 'var(--danger)';
+    };
+
+    const [selectedSource, setSelectedSource] = React.useState(null);
+
+    const handleSourceClick = (source) => {
+        setSelectedSource(source);
+    };
+
+    const handleExport = () => {
+        const reportContent = generateWordReport(results, text || "");
+
+        // Create a blob and triggers download
+        const blob = new Blob([reportContent], { type: 'application/msword' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Plagiarism_Report_${new Date().toISOString().slice(0, 10)}.doc`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    };
+
+    const handlePDFExport = async () => {
+        try {
+            await generatePDF(results, text || "", {
+                title: "Analysis Report",
+                author: "PlagiarismGuard User"
+            });
+        } catch (err) {
+            console.error("PDF Export failed:", err);
+            alert("Failed to generate PDF report. Please check the console for details.");
+        }
+    };
+
+    // Handler for validating citations against external APIs
+    const handleValidateCitations = async (onProgress) => {
+        if (!citationData || !citationData.references) return;
+
+        const validationResults = await batchValidateReferences(
+            citationData.references,
+            onProgress
+        );
+
+        setCitationData(prev => ({
+            ...prev,
+            validationResults
+        }));
+    };
+
+    return (
+        <div className="results-dashboard">
+            <div className="results-header">
+                <h2>📊 Analysis Results</h2>
+                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                    <button className="btn btn-secondary" onClick={onReset}>
+                        ← New Analysis
+                    </button>
+                    <button className="btn btn-secondary" onClick={handleExport}>
+                        📥 Word Report
+                    </button>
+                    <button className="btn btn-primary" onClick={handlePDFExport} style={{ backgroundColor: '#2980b9' }}>
+                        📄 Official PDF Report
+                    </button>
+                </div>
+            </div>
+
+            {/* Tab Navigation */}
+            <div className="results-tabs">
+                <button
+                    className={`results-tab ${activeTab === 'plagiarism' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('plagiarism')}
+                >
+                    🔍 Plagiarism Analysis
+                </button>
+                <button
+                    className={`results-tab ${activeTab === 'citations' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('citations')}
+                >
+                    📚 Citations ({citationData?.stats?.totalReferences || 0})
+                </button>
+                <button
+                    className={`results-tab ${activeTab === 'style' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('style')}
+                >
+                    ✍️ Style Analysis
+                </button>
+            </div>
+
+            {/* Tab Content */}
+            {activeTab === 'plagiarism' && (
+                <>
+
+                    {/* Main Score Card */}
+                    <div className="score-card">
+                        <div className="main-score">
+                            <div className="value" style={{ color: getProgressColor(results.overallScore) }}>
+                                {results.overallScore.toFixed(1)}%
+                            </div>
+                            <div className="label">Overall Similarity</div>
+                            <span className={`status ${getStatusClass(results.overallScore)}`}>
+                                {getStatusLabel(results.overallScore)}
+                            </span>
+                        </div>
+
+                        <div className="metrics-grid">
+                            <div className="metric-item">
+                                <div className="label">Word Count</div>
+                                <div className="value">{results.wordCount.toLocaleString()}</div>
+                            </div>
+                            <div className="metric-item">
+                                <div className="label">Unique Words</div>
+                                <div className="value">{results.uniqueWords.toLocaleString()}</div>
+                            </div>
+                            <div className="metric-item">
+                                <div className="label">Max Single Match</div>
+                                <div className="value">{results.maxMatch.toFixed(1)}%</div>
+                            </div>
+                            <div className="metric-item">
+                                <div className="label">Sources Checked</div>
+                                <div className="value">{results.sourcesChecked}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* AI INSIGHTS CARD */}
+                    <div className="score-card" style={{ marginBottom: '2rem', border: '1px solid var(--primary)', background: 'rgba(37, 99, 235, 0.03)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                            <h3 style={{ color: 'var(--primary)', margin: 0 }}>🧠 Cognitive AI Insights</h3>
+                            {!aiAnalysis && !aiLoading && <small style={{ color: 'var(--text-muted)' }}>(Configure API Key in Settings to enable)</small>}
+                            {aiLoading && <small>Thinking...</small>}
+                        </div>
+
+                        {aiAnalysis ? (
+                            <div className="ai-insights-grid">
+                                {/* Authorship */}
+                                <div>
+                                    <h4 style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>AI Authorship Detection</h4>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                        <div style={{
+                                            fontSize: '2rem',
+                                            fontWeight: 'bold',
+                                            color: aiAnalysis.authorship.confidence > 50 ? 'var(--warning)' : 'var(--success)'
+                                        }}>
+                                            {aiAnalysis.authorship.confidence || 0}%
+                                        </div>
+                                        <div style={{ fontSize: '0.9rem' }}>
+                                            Probability of AI Generation<br />
+                                            <span style={{ color: 'var(--text-muted)' }}>{aiAnalysis.authorship.reasoning}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                {/* Summary */}
+                                <div>
+                                    <h4 style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Smart Summary</h4>
+                                    <div style={{ fontSize: '0.9rem', lineHeight: '1.5' }}>
+                                        {aiAnalysis.summary ? aiAnalysis.summary.split('\n').map((line, i) => (
+                                            <div key={i}>{line}</div>
+                                        )) : 'Generating summary...'}
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            !aiLoading && <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                                Enable the "Omni-Brain" by adding your Google Gemini API Key in Settings ⚙️.
+                            </div>
+                        )}
+                    </div>
+
+                    {/* SPLIT VIEW COMPARISON (THE AUDITOR UI) */}
+                    <div className="auditor-split-view" style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'minmax(300px, 1fr) minmax(300px, 1fr)',
+                        gap: '1.5rem',
+                        marginTop: '2rem',
+                        height: '600px',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '8px',
+                        overflow: 'hidden'
+                    }}>
+                        {/* Left Pane: User Text (Highlighted) */}
+                        <div className="left-pane" style={{
+                            padding: '1.5rem',
+                            overflowY: 'auto',
+                            background: 'var(--bg-secondary)',
+                            borderRight: '1px solid var(--border-color)'
+                        }}>
+                            <h3 style={{ marginBottom: '1rem', position: 'sticky', top: 0, background: 'var(--bg-secondary)', zIndex: 10 }}>
+                                📝 Your Document
+                            </h3>
+                            <div className="document-content" style={{ whiteSpace: 'pre-wrap', lineHeight: '1.6' }}>
+                                {/* 
+                           We render the text. 
+                           Ideally, we'd use a regex here to inject highlights dynamically based on the selectedSource.
+                           For simplicity in this version, we highlight ALL phrases found in results.
+                        */}
+                                {text.split(new RegExp(`(${results.keyPhrases.filter(p => p.found && p.text).map(p => p.text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`, 'gi')).map((part, i) => {
+                                    const isMatch = part && results.keyPhrases.some(p => p.found && p.text && p.text.toLowerCase() === part.toLowerCase());
+                                    return isMatch ?
+                                        <span key={i} style={{ backgroundColor: 'rgba(253, 224, 71, 0.3)', borderBottom: '2px solid var(--warning)' }}>{part}</span>
+                                        : part;
+                                })}
+                            </div>
+                        </div>
+
+                        {/* Right Pane: Source Viewer */}
+                        <div className="right-pane" style={{ padding: '1.5rem', overflowY: 'auto', background: 'var(--bg-primary)' }}>
+                            <h3 style={{ marginBottom: '1rem', position: 'sticky', top: 0, background: 'var(--bg-primary)', zIndex: 10 }}>
+                                📚 Matched Source
+                            </h3>
+
+                            {selectedSource ? (
+                                <div className="source-viewer">
+                                    <div className="source-header" style={{ marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '1px solid var(--border-color)' }}>
+                                        <h4 style={{ color: 'var(--primary)' }}>{selectedSource.name}</h4>
+                                        <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
+                                            Match: <strong>{selectedSource.similarity.toFixed(1)}%</strong> | Type: {selectedSource.type || 'Web Source'}
+                                        </div>
+                                        {selectedSource.url && (
+                                            <a href={selectedSource.url} target="_blank" rel="noopener noreferrer" className="btn btn-sm btn-outline" style={{ marginTop: '0.5rem', display: 'inline-block' }}>
+                                                View Original Source ↗
+                                            </a>
+                                        )}
+                                    </div>
+
+                                    <div className="source-content" style={{ background: '#f8fafc', padding: '1rem', borderRadius: '4px', borderLeft: '4px solid var(--primary)' }}>
+                                        <p style={{ fontStyle: 'italic', color: '#475569' }}>
+                                            "{selectedSource.text || selectedSource.snippet || "Available preview text for this source is limited. Please visit the original URL for full content."}"
+                                        </p>
+                                    </div>
+
+                                    <div style={{ marginTop: '2rem', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+                                        <p><strong>Comparison Tip:</strong> The highlighted text on the left matches content found in this source.</p>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="empty-state" style={{ textAlign: 'center', marginTop: '4rem', color: 'var(--text-muted)' }}>
+                                    <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>👈</div>
+                                    <p>Select a source from the list below<br />to compare it side-by-side.</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Source Matches Table */}
+                    <div className="results-table-card" style={{ marginTop: '2rem' }}>
+                        <h3>📚 Detected Sources</h3>
+                        <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>Click on a source to view details.</p>
+                        <table className="results-table">
+                            <thead>
+                                <tr>
+                                    <th>Source</th>
+                                    <th>Similarity</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {results.sources.map((source, index) => (
+                                    <tr key={index}
+                                        onClick={() => handleSourceClick(source)}
+                                        style={{
+                                            cursor: 'pointer',
+                                            background: selectedSource === source ? 'rgba(37, 99, 235, 0.05)' : 'transparent',
+                                            borderLeft: selectedSource === source ? '3px solid var(--primary)' : '3px solid transparent'
+                                        }}
+                                    >
+                                        <td>
+                                            <strong>{source.name}</strong>
+                                            {source.type && <span style={{ color: 'var(--text-muted)', marginLeft: '0.5rem', fontSize: '0.85rem' }}>({source.type})</span>}
+                                        </td>
+                                        <td>
+                                            <span style={{ fontWeight: 'bold', color: getProgressColor(source.similarity) }}>
+                                                {source.similarity.toFixed(1)}%
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span
+                                                className="phrase-badge"
+                                                style={{
+                                                    background: source.similarity < 15
+                                                        ? 'rgba(22, 163, 74, 0.2)'
+                                                        : source.similarity < 25
+                                                            ? 'rgba(245, 158, 11, 0.2)'
+                                                            : 'rgba(220, 38, 38, 0.2)',
+                                                    color: source.similarity < 15
+                                                        ? 'var(--success-light)'
+                                                        : source.similarity < 25
+                                                            ? 'var(--warning)'
+                                                            : 'var(--danger)'
+                                                }}
+                                            >
+                                                {source.similarity < 15 ? 'Pass' : source.similarity < 25 ? 'Review' : 'Flag'}
+                                            </span>
+                                        </td>
+                                        <td style={{ display: 'flex', gap: '0.5rem' }}>
+                                            <button className="btn btn-sm btn-secondary" onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleSourceClick(source);
+                                            }}>
+                                                Compare &gt;
+                                            </button>
+                                            {source.similarity > 15 && (
+                                                <button
+                                                    className="btn btn-sm btn-primary"
+                                                    style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem' }}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setRemediation({
+                                                            isOpen: true,
+                                                            text: source.matches?.[0]?.phrase || results.keyPhrases?.[0]?.text || "",
+                                                            context: source.name
+                                                        });
+                                                    }}
+                                                >
+                                                    Integrity Fix
+                                                </button>
+                                            )}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {/* Key Phrases */}
+                    {results.keyPhrases && results.keyPhrases.length > 0 && (
+                        <div className="phrases-card">
+                            <h3>🔍 Key Phrases Analyzed</h3>
+                            <div className="phrase-list">
+                                {results.keyPhrases.slice(0, 10).map((phrase, index) => (
+                                    <div key={index} className="phrase-item">
+                                        <span className="phrase-text">"{phrase.text}"</span>
+                                        <div className="phrase-actions" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                            <span className={`phrase-badge ${phrase.found ? 'warning' : 'pass'}`}>
+                                                {phrase.found ? 'Match Found' : 'Unique'}
+                                            </span>
+                                            {phrase.found && (
+                                                <button
+                                                    className="btn btn-sm btn-secondary"
+                                                    style={{ padding: '0.2rem 0.5rem', fontSize: '0.7rem' }}
+                                                    onClick={() => setRemediation({
+                                                        isOpen: true,
+                                                        text: phrase.text,
+                                                        context: "Deep Web match"
+                                                    })}
+                                                >
+                                                    Remediate
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Recommendations */}
+                    <div className="score-card" style={{ background: 'var(--bg-secondary)' }}>
+                        <div style={{ flex: 1 }}>
+                            <h3 style={{ marginBottom: '1rem' }}>📝 Recommendations</h3>
+                            {results.overallScore < 15 ? (
+                                <p style={{ color: 'var(--success-light)' }}>
+                                    ✅ <strong>Ready for Submission</strong> - Your document shows very low similarity
+                                    and should pass standard plagiarism checks.
+                                </p>
+                            ) : results.overallScore < 25 ? (
+                                <p style={{ color: 'var(--warning)' }}>
+                                    ⚠️ <strong>Review Recommended</strong> - Some similarity detected. Check the
+                                    flagged sources above and consider paraphrasing matched content.
+                                </p>
+                            ) : (
+                                <p style={{ color: 'var(--danger)' }}>
+                                    ❌ <strong>Revision Required</strong> - Significant similarity detected. Please
+                                    review and rewrite the matched sections before submission.
+                                </p>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Timestamp */}
+                    <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                        Report generated: {new Date().toLocaleString()} | PlagiarismGuard v2.4
+                    </div>
+                </>
+            )}
+
+            {/* Citations Tab */}
+            {activeTab === 'citations' && (
+                <CitationResults
+                    citationData={citationData}
+                    onValidate={handleValidateCitations}
+                />
+            )}
+
+            {/* Style Analysis Tab */}
+            {activeTab === 'style' && (
+                <StyleReport text={text} />
+            )}
+            {/* Remediation Tool Modal */}
+            <RemediationTool
+                isOpen={remediation.isOpen}
+                onClose={() => setRemediation({ ...remediation, isOpen: false })}
+                originalText={remediation.text}
+                sourceContext={remediation.context}
+                onApply={(newText) => {
+                    console.log("Applying fixed text:", newText);
+                    setRemediation({ ...remediation, isOpen: false });
+                }}
+            />
+        </div>
+    );
+}
+
+export default ResultsDashboard;
