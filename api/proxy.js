@@ -5,10 +5,10 @@ export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
     res.setHeader(
         'Access-Control-Allow-Headers',
-        'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
+        'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization, x-api-key, anthropic-version'
     );
 
-    // 2. Handle OPTIONS
+    // 2. Handle OPTIONS (Preflight)
     if (req.method === 'OPTIONS') {
         res.status(200).end();
         return;
@@ -22,34 +22,52 @@ export default async function handler(req, res) {
 
     try {
         // 4. Server-Side Fetch
-        // User-Agent rotation to be polite but resilient
-        const userAgents = [
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36',
-            'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.107 Safari/537.36'
-        ];
-        const randomUA = userAgents[Math.floor(Math.random() * userAgents.length)];
+        const fetchOptions = {
+            method: req.method,
+            headers: {}
+        };
 
-        const response = await fetch(url, {
-            headers: { 'User-Agent': randomUA }
+        // Forward specific security headers if present
+        const forwardHeaders = ['authorization', 'x-api-key', 'anthropic-version', 'content-type'];
+        forwardHeaders.forEach(h => {
+            if (req.headers[h]) {
+                fetchOptions.headers[h] = req.headers[h];
+            }
         });
 
-        // 5. Read Body safely (Text, not JSON)
-        // This fixes the crash when upstream returns XML (arXiv) or HTML (error pages)
-        const rawBody = await response.text();
+        // Add User-Agent if missing
+        if (!fetchOptions.headers['user-agent']) {
+            fetchOptions.headers['user-agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) PlagiarismGuard/3.0';
+        }
 
-        // 6. Return Wrapper (ALWAYS 200 OK to keep console clean)
+        // Handle POST body
+        if (req.method === 'POST' && req.body) {
+            fetchOptions.body = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
+        }
+
+        const response = await fetch(url, fetchOptions);
+
+        // 5. Read Body safely
+        const contentType = response.headers.get('content-type');
+        let data;
+
+        if (contentType && contentType.includes('application/json')) {
+            data = await response.json();
+        } else {
+            data = await response.text();
+        }
+
+        // 6. Return Wrapper
         return res.status(200).json({
             upstreamOk: response.ok,
             upstreamStatus: response.status,
             upstreamStatusText: response.statusText,
-            contentType: response.headers.get('content-type'),
-            data: rawBody
+            contentType: contentType,
+            data: data
         });
 
     } catch (error) {
         console.error('Proxy Error:', error);
-        // Return 200 with error details so client can handle it gracefully
         return res.status(200).json({
             upstreamOk: false,
             upstreamStatus: 500,

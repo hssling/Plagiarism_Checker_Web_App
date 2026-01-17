@@ -21,7 +21,7 @@ export const initializeAI = (config = {}) => {
         try {
             const genAI = new GoogleGenerativeAI(gemini);
             // Fix: Use stable model identifier to avoid 404
-            providers.gemini.model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+            providers.gemini.model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
         } catch (e) {
             console.error("Gemini initialization failed:", e);
         }
@@ -51,14 +51,18 @@ export const callAI = async (prompt, systemPrompt = "You are an academic integri
 
     for (const provider of order) {
         try {
+            // Gemini (Direct SDK Call - Usually safe from CORS if key is valid)
             if (provider === 'gemini' && providers.gemini.model) {
                 const result = await providers.gemini.model.generateContent(prompt);
                 const response = await result.response;
+                if (!response) throw new Error("Empty Gemini response");
                 return response.text();
             }
 
+            // OpenAI (Routed through Proxy to skip CORS)
             if (provider === 'openai' && providers.openai.key) {
-                const res = await fetch('https://api.openai.com/v1/chat/completions', {
+                const proxyUrl = `/api/proxy?url=${encodeURIComponent('https://api.openai.com/v1/chat/completions')}`;
+                const res = await fetch(proxyUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -72,12 +76,15 @@ export const callAI = async (prompt, systemPrompt = "You are an academic integri
                         ]
                     })
                 });
-                const data = await res.json();
-                return data.choices[0].message.content;
+                const wrapper = await res.json();
+                if (!wrapper.upstreamOk) throw new Error(`OpenAI Proxy Error: ${wrapper.upstreamStatus}`);
+                return wrapper.data?.choices?.[0]?.message?.content || "";
             }
 
+            // Anthropic (Routed through Proxy to skip CORS)
             if (provider === 'anthropic' && providers.anthropic.key) {
-                const res = await fetch('https://api.anthropic.com/v1/messages', {
+                const proxyUrl = `/api/proxy?url=${encodeURIComponent('https://api.anthropic.com/v1/messages')}`;
+                const res = await fetch(proxyUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -91,12 +98,15 @@ export const callAI = async (prompt, systemPrompt = "You are an academic integri
                         messages: [{ role: "user", content: prompt }]
                     })
                 });
-                const data = await res.json();
-                return data.content[0].text;
+                const wrapper = await res.json();
+                if (!wrapper.upstreamOk) throw new Error(`Anthropic Proxy Error: ${wrapper.upstreamStatus}`);
+                return wrapper.data?.content?.[0]?.text || "";
             }
 
+            // xAI (Routed through Proxy to skip CORS)
             if (provider === 'xai' && providers.xai.key) {
-                const res = await fetch('https://api.x.ai/v1/chat/completions', {
+                const proxyUrl = `/api/proxy?url=${encodeURIComponent('https://api.x.ai/v1/chat/completions')}`;
+                const res = await fetch(proxyUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -110,8 +120,9 @@ export const callAI = async (prompt, systemPrompt = "You are an academic integri
                         ]
                     })
                 });
-                const data = await res.json();
-                return data.choices[0].message.content;
+                const wrapper = await res.json();
+                if (!wrapper.upstreamOk) throw new Error(`xAI Proxy Error: ${wrapper.upstreamStatus}`);
+                return wrapper.data?.choices?.[0]?.message?.content || "";
             }
         } catch (e) {
             console.warn(`${provider} failed, trying next...`, e);
