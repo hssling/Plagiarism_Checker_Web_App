@@ -54,73 +54,71 @@ export const callAI = async (prompt, systemPrompt = "You are an academic integri
             // Gemini (Direct SDK + Proxy REST Fallbacks)
             if (provider === 'gemini' && providers.gemini.key) {
                 try {
-                    // 1. Try SDK (usually v1beta)
+                    // 1. Try SDK
                     if (providers.gemini.model) {
                         const result = await providers.gemini.model.generateContent(prompt);
                         const response = await result.response;
                         return response.text();
                     }
                 } catch (sdkError) {
-                    console.warn("Gemini SDK failed, trying Proxy-REST (v1beta)...", sdkError);
+                    console.warn("Gemini SDK failed, trying Proxy-REST (v1beta)...");
+                    const models = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-pro"];
+                    for (const model of models) {
+                        try {
+                            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${providers.gemini.key}`;
+                            const res = await fetch(`/api/proxy?url=${encodeURIComponent(url)}`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    contents: [{ parts: [{ text: `${systemPrompt}\n\n${prompt}` }] }]
+                                })
+                            });
+                            const wrapper = await res.json();
+                            if (wrapper.upstreamOk) return wrapper.data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+                        } catch (e) { continue; }
+                    }
+                    throw new Error("Gemini all models/endpoints failed");
+                }
+            }
+
+            // OpenAI (Routed through Proxy)
+            if (provider === 'openai' && providers.openai.key) {
+                const tryOpenAI = async (model) => {
+                    const proxyUrl = `/api/proxy?url=${encodeURIComponent('https://api.openai.com/v1/chat/completions')}`;
+                    const res = await fetch(proxyUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${providers.openai.key}`
+                        },
+                        body: JSON.stringify({
+                            model: model,
+                            messages: [
+                                { role: "system", content: systemPrompt },
+                                { role: "user", content: prompt }
+                            ],
+                            temperature: 0.7
+                        })
+                    });
+                    const wrapper = await res.json();
+                    if (!wrapper.upstreamOk) throw wrapper;
+                    return wrapper.data?.choices?.[0]?.message?.content || "";
+                };
+
+                try {
+                    return await tryOpenAI("gpt-4o-mini");
+                } catch (e1) {
+                    console.warn("GPT-4o-mini failed, trying 3.5-turbo...", e1);
                     try {
-                        // 2. Try REST v1beta through Proxy
-                        const v1betaUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${providers.gemini.key}`;
-                        const res = await fetch(`/api/proxy?url=${encodeURIComponent(v1betaUrl)}`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                contents: [{ parts: [{ text: `${systemPrompt}\n\n${prompt}` }] }]
-                            })
-                        });
-                        const wrapper = await res.json();
-                        if (wrapper.upstreamOk) return wrapper.data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
-
-                        console.warn("Gemini Proxy v1beta failed, trying v1...", wrapper.data);
-                        // 3. Try REST v1 through Proxy
-                        const v1Url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${providers.gemini.key}`;
-                        const resV1 = await fetch(`/api/proxy?url=${encodeURIComponent(v1Url)}`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                contents: [{ parts: [{ text: `${systemPrompt}\n\n${prompt}` }] }]
-                            })
-                        });
-                        const wrapperV1 = await resV1.json();
-                        if (wrapperV1.upstreamOk) return wrapperV1.data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
-
-                        throw new Error(`Gemini Proxy failed: ${wrapperV1.data?.error?.message || wrapperV1.upstreamStatus}`);
-                    } catch (restError) {
-                        throw restError;
+                        return await tryOpenAI("gpt-3.5-turbo");
+                    } catch (e2) {
+                        const msg = e2.data?.error?.message || e2.upstreamStatus || "Unknown";
+                        throw new Error(`OpenAI Error: ${msg}`);
                     }
                 }
             }
 
-            // OpenAI (Routed through Proxy to skip CORS)
-            if (provider === 'openai' && providers.openai.key) {
-                const proxyUrl = `/api/proxy?url=${encodeURIComponent('https://api.openai.com/v1/chat/completions')}`;
-                const res = await fetch(proxyUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${providers.openai.key}`
-                    },
-                    body: JSON.stringify({
-                        model: "gpt-4o-mini",
-                        messages: [
-                            { role: "system", content: systemPrompt },
-                            { role: "user", content: prompt }
-                        ]
-                    })
-                });
-                const wrapper = await res.json();
-                if (!wrapper.upstreamOk) {
-                    const msg = wrapper.data?.error?.message || wrapper.upstreamStatus;
-                    throw new Error(`OpenAI Error: ${msg}`);
-                }
-                return wrapper.data?.choices?.[0]?.message?.content || "";
-            }
-
-            // Anthropic (Routed through Proxy to skip CORS)
+            // Anthropic (Proxy)
             if (provider === 'anthropic' && providers.anthropic.key) {
                 const proxyUrl = `/api/proxy?url=${encodeURIComponent('https://api.anthropic.com/v1/messages')}`;
                 const res = await fetch(proxyUrl, {
@@ -139,13 +137,12 @@ export const callAI = async (prompt, systemPrompt = "You are an academic integri
                 });
                 const wrapper = await res.json();
                 if (!wrapper.upstreamOk) {
-                    const msg = wrapper.data?.error?.message || wrapper.upstreamStatus;
-                    throw new Error(`Anthropic Error: ${msg}`);
+                    throw new Error(`Anthropic Error: ${wrapper.data?.error?.message || wrapper.upstreamStatus}`);
                 }
                 return wrapper.data?.content?.[0]?.text || "";
             }
 
-            // xAI (Routed through Proxy to skip CORS)
+            // xAI (Proxy - Simplified Payload)
             if (provider === 'xai' && providers.xai.key) {
                 const proxyUrl = `/api/proxy?url=${encodeURIComponent('https://api.x.ai/v1/chat/completions')}`;
                 const res = await fetch(proxyUrl, {
@@ -157,16 +154,13 @@ export const callAI = async (prompt, systemPrompt = "You are an academic integri
                     body: JSON.stringify({
                         model: "grok-beta",
                         messages: [
-                            { role: "system", content: systemPrompt || "You are an AI assistant." },
-                            { role: "user", content: prompt || "Hello" }
-                        ],
-                        stream: false
+                            { role: "user", content: `${systemPrompt}\n\n${prompt}` }
+                        ]
                     })
                 });
                 const wrapper = await res.json();
                 if (!wrapper.upstreamOk) {
-                    const msg = wrapper.data?.error?.message || wrapper.data?.detail || wrapper.upstreamStatus;
-                    throw new Error(`xAI Error: ${msg}`);
+                    throw new Error(`xAI Error: ${wrapper.data?.error?.message || wrapper.data?.detail || wrapper.upstreamStatus}`);
                 }
                 return wrapper.data?.choices?.[0]?.message?.content || "";
             }
