@@ -9,6 +9,8 @@ function SettingsModal({ isOpen, onClose, onSave }) {
     const [groqKey, setGroqKey] = useState('');
     const [huggingfaceKey, setHuggingfaceKey] = useState('');
     const [cohereKey, setCohereKey] = useState('');
+    const [cerebrasKey, setCerebrasKey] = useState('');
+    const [mistralKey, setMistralKey] = useState('');
     const [primaryAI, setPrimaryAI] = useState('gemini');
 
     const [searchApiKey, setSearchApiKey] = useState('');
@@ -23,6 +25,8 @@ function SettingsModal({ isOpen, onClose, onSave }) {
         const savedGroq = localStorage.getItem('groq_api_key');
         const savedHuggingface = localStorage.getItem('huggingface_api_key');
         const savedCohere = localStorage.getItem('cohere_api_key');
+        const savedCerebras = localStorage.getItem('cerebras_api_key');
+        const savedMistral = localStorage.getItem('mistral_api_key');
         const savedPrimary = localStorage.getItem('primary_ai_provider') || 'gemini';
 
         const savedSearchKey = localStorage.getItem('google_search_api_key');
@@ -36,6 +40,8 @@ function SettingsModal({ isOpen, onClose, onSave }) {
         if (savedGroq) setGroqKey(savedGroq);
         if (savedHuggingface) setHuggingfaceKey(savedHuggingface);
         if (savedCohere) setCohereKey(savedCohere);
+        if (savedCerebras) setCerebrasKey(savedCerebras);
+        if (savedMistral) setMistralKey(savedMistral);
         setPrimaryAI(savedPrimary);
 
         if (savedSearchKey) setSearchApiKey(savedSearchKey);
@@ -51,6 +57,8 @@ function SettingsModal({ isOpen, onClose, onSave }) {
         localStorage.setItem('groq_api_key', groqKey);
         localStorage.setItem('huggingface_api_key', huggingfaceKey);
         localStorage.setItem('cohere_api_key', cohereKey);
+        localStorage.setItem('cerebras_api_key', cerebrasKey);
+        localStorage.setItem('mistral_api_key', mistralKey);
         localStorage.setItem('primary_ai_provider', primaryAI);
 
         localStorage.setItem('google_search_api_key', searchApiKey);
@@ -65,6 +73,8 @@ function SettingsModal({ isOpen, onClose, onSave }) {
             groq: groqKey,
             huggingface: huggingfaceKey,
             cohere: cohereKey,
+            cerebras: cerebrasKey,
+            mistral: mistralKey,
             primary: primaryAI,
             searchApiKey,
             searchCx
@@ -223,7 +233,39 @@ function SettingsModal({ isOpen, onClose, onSave }) {
                             style={{ width: '100%', padding: '0.6rem', borderRadius: '0.5rem', background: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'white' }}
                         />
                     </div>
-                    <small style={{ color: 'var(--text-muted)' }}>Radio button selects the default (Primary) provider.</small>
+
+                    {/* Cerebras (India-friendly) */}
+                    <div style={{ marginBottom: '1.25rem' }}>
+                        <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                            <span style={{ fontWeight: 600 }}>Cerebras (Llama 3.1) 🇮🇳</span>
+                            <input type="radio" name="primaryAI" checked={primaryAI === 'cerebras'} onChange={() => setPrimaryAI('cerebras')} />
+                        </label>
+                        <input
+                            type="password"
+                            value={cerebrasKey}
+                            onChange={(e) => setCerebrasKey(e.target.value)}
+                            placeholder="Cerebras API Key"
+                            className="text-input"
+                            style={{ width: '100%', padding: '0.6rem', borderRadius: '0.5rem', background: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'white' }}
+                        />
+                    </div>
+
+                    {/* Mistral (India-friendly) */}
+                    <div style={{ marginBottom: '1.25rem' }}>
+                        <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                            <span style={{ fontWeight: 600 }}>Mistral AI (Open-Mistral) 🇮🇳</span>
+                            <input type="radio" name="primaryAI" checked={primaryAI === 'mistral'} onChange={() => setPrimaryAI('mistral')} />
+                        </label>
+                        <input
+                            type="password"
+                            value={mistralKey}
+                            onChange={(e) => setMistralKey(e.target.value)}
+                            placeholder="Mistral API Key"
+                            className="text-input"
+                            style={{ width: '100%', padding: '0.6rem', borderRadius: '0.5rem', background: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'white' }}
+                        />
+                    </div>
+                    <small style={{ color: 'var(--text-muted)' }}>🇮🇳 = Available in India. Radio button selects the default (Primary) provider.</small>
                 </div>
 
                 <div className="section" style={{ marginBottom: '2rem' }}>

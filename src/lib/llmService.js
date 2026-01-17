@@ -9,7 +9,9 @@ let providers = {
     openrouter: { key: null, name: "OpenRouter" },
     groq: { key: null, name: "Groq" },
     huggingface: { key: null, name: "Hugging Face" },
-    cohere: { key: null, name: "Cohere" }
+    cohere: { key: null, name: "Cohere" },
+    cerebras: { key: null, name: "Cerebras" },
+    mistral: { key: null, name: "Mistral" }
 };
 
 let primaryProvider = 'gemini';
@@ -18,7 +20,7 @@ let primaryProvider = 'gemini';
  * Initialize AI Providers
  */
 export const initializeAI = (config = {}) => {
-    const { gemini, openai, anthropic, xai, openrouter, groq, huggingface, cohere, primary } = config;
+    const { gemini, openai, anthropic, xai, openrouter, groq, huggingface, cohere, cerebras, mistral, primary } = config;
 
     if (gemini) {
         providers.gemini.key = gemini.trim();
@@ -38,6 +40,8 @@ export const initializeAI = (config = {}) => {
     if (groq) providers.groq.key = groq.trim();
     if (huggingface) providers.huggingface.key = huggingface.trim();
     if (cohere) providers.cohere.key = cohere.trim();
+    if (cerebras) providers.cerebras.key = cerebras.trim();
+    if (mistral) providers.mistral.key = mistral.trim();
     if (primary) primaryProvider = primary;
 
     return isAIInitialized();
@@ -47,14 +51,14 @@ export const initializeAI = (config = {}) => {
  * Check if at least one AI is initialized
  */
 export const isAIInitialized = () => {
-    return providers.gemini.model !== null || providers.openai.key || providers.anthropic.key || providers.xai.key || providers.openrouter.key || providers.groq.key || providers.huggingface.key || providers.cohere.key;
+    return providers.gemini.model !== null || providers.openai.key || providers.anthropic.key || providers.xai.key || providers.openrouter.key || providers.groq.key || providers.huggingface.key || providers.cohere.key || providers.cerebras.key || providers.mistral.key;
 };
 
 /**
  * Primary AI Call with Fallbacks
  */
 export const callAI = async (prompt, systemPrompt = "You are an academic integrity expert.") => {
-    const order = [primaryProvider, 'gemini', 'openai', 'anthropic', 'xai', 'openrouter', 'groq', 'huggingface', 'cohere'].filter((v, i, a) => a.indexOf(v) === i);
+    const order = [primaryProvider, 'gemini', 'openai', 'anthropic', 'xai', 'openrouter', 'groq', 'huggingface', 'cohere', 'cerebras', 'mistral'].filter((v, i, a) => a.indexOf(v) === i);
     let lastError = null;
 
     for (const provider of order) {
@@ -269,7 +273,7 @@ export const callAI = async (prompt, systemPrompt = "You are an academic integri
                 return wrapper.data?.choices?.[0]?.message?.content || "";
             }
 
-            // Cohere (Free Trial)
+            // Cohere (Free Trial) - Updated to latest model
             if (provider === 'cohere' && providers.cohere.key) {
                 const proxyUrl = `/api/proxy?url=${encodeURIComponent('https://api.cohere.ai/v1/chat')}`;
                 const res = await fetch(proxyUrl, {
@@ -279,7 +283,7 @@ export const callAI = async (prompt, systemPrompt = "You are an academic integri
                         'Authorization': `Bearer ${providers.cohere.key}`
                     },
                     body: JSON.stringify({
-                        model: "command-r-plus",
+                        model: "command-a-03-2025",
                         message: prompt,
                         preamble: systemPrompt
                     })
@@ -289,6 +293,54 @@ export const callAI = async (prompt, systemPrompt = "You are an academic integri
                     throw new Error(`Cohere Error: ${wrapper.data?.message || wrapper.upstreamStatus}`);
                 }
                 return wrapper.data?.text || "";
+            }
+
+            // Cerebras (Free Tier - 14K requests/day, available in India)
+            if (provider === 'cerebras' && providers.cerebras.key) {
+                const proxyUrl = `/api/proxy?url=${encodeURIComponent('https://api.cerebras.ai/v1/chat/completions')}`;
+                const res = await fetch(proxyUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${providers.cerebras.key}`
+                    },
+                    body: JSON.stringify({
+                        model: "llama3.1-8b",
+                        messages: [
+                            { role: "system", content: systemPrompt },
+                            { role: "user", content: prompt }
+                        ]
+                    })
+                });
+                const wrapper = await res.json();
+                if (!wrapper.upstreamOk) {
+                    throw new Error(`Cerebras Error: ${wrapper.data?.error?.message || wrapper.upstreamStatus}`);
+                }
+                return wrapper.data?.choices?.[0]?.message?.content || "";
+            }
+
+            // Mistral AI (Free Tier - 500K tokens/min, available in India)
+            if (provider === 'mistral' && providers.mistral.key) {
+                const proxyUrl = `/api/proxy?url=${encodeURIComponent('https://api.mistral.ai/v1/chat/completions')}`;
+                const res = await fetch(proxyUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${providers.mistral.key}`
+                    },
+                    body: JSON.stringify({
+                        model: "open-mistral-7b",
+                        messages: [
+                            { role: "system", content: systemPrompt },
+                            { role: "user", content: prompt }
+                        ]
+                    })
+                });
+                const wrapper = await res.json();
+                if (!wrapper.upstreamOk) {
+                    throw new Error(`Mistral Error: ${wrapper.data?.message || wrapper.upstreamStatus}`);
+                }
+                return wrapper.data?.choices?.[0]?.message?.content || "";
             }
         } catch (e) {
             console.warn(`${provider} failed, trying next...`, e);
