@@ -19,7 +19,9 @@ export function extractReferencesSection(text) {
         /(?:^|\n)\s*(?:\d+\.?\s*)?works?\s+cited(?:\s*:)?\s*(?:\n|$)/i,
         /(?:^|\n)\s*(?:\d+\.?\s*)?literature\s+cited(?:\s*:)?\s*(?:\n|$)/i,
         /(?:^|\n)\s*(?:\d+\.?\s*)?sources?(?:\s*:)?\s*(?:\n|$)/i,
-        /(?:^|\n)\s*(?:\d+\.?\s*)?citations?(?:\s*:)?\s*(?:\n|$)/i
+        /(?:^|\n)\s*(?:\d+\.?\s*)?citations?(?:\s*:)?\s*(?:\n|$)/i,
+        /(?:^|\n)\s*(?:re\s*fe\s*re\s*nc\s*es?)/i, // Handle PDF spacing issues like "Re fe re nc es"
+        /(?:^|\n)\s*(?:bi\s*bl\s*io\s*gr\s*ap\s*hy)/i
     ];
 
     let refStart = -1;
@@ -316,8 +318,8 @@ export function parseReference(refText, style = 'auto') {
 export function findInTextCitations(text) {
     const citations = [];
 
-    // Vancouver style: [1], [2-5], [1,3,5]
-    const vancouverPattern = /\[(\d+(?:[-–]\d+)?(?:,\s*\d+)*)\]/g;
+    // Vancouver style: [1], [2-5], [1, 3, 5], [1,3,5]
+    const vancouverPattern = /\[(\d+(?:\s?[-–]\s?\d+)?(?:\s?,\s?\d+)*)\]/g;
     let match;
     while ((match = vancouverPattern.exec(text)) !== null) {
         const numbers = parseNumberRange(match[1]);

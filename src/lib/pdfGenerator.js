@@ -219,13 +219,8 @@ export const generatePDF = async (results, text, metadata = {}) => {
     doc.setFontSize(8);
     doc.setFont('helvetica', 'bold');
 
-    const verdict = score < 15
-        ? "✓ This document has passed plagiarism verification and is suitable for submission."
-        : score < 25
-            ? "⚠ This document requires review. Some similarity detected with existing sources."
-            : "✗ High similarity detected. Significant revision recommended before submission.";
-
-    doc.text(verdict, pageWidth / 2, stmtY + 12, { align: 'center' });
+    const verdictLines = doc.splitTextToSize(verdict, pageWidth - 40);
+    doc.text(verdictLines, pageWidth / 2, stmtY + 8, { align: 'center' });
 
     // ============================================================
     // FOOTER
@@ -296,10 +291,12 @@ export const generatePDF = async (results, text, metadata = {}) => {
         },
         columnStyles: {
             0: { cellWidth: 8, halign: 'center' },
-            1: { cellWidth: 70 },
-            2: { cellWidth: 35 },
-            3: { cellWidth: 15, halign: 'center' }
-        }
+            1: { cellWidth: 60 },
+            2: { cellWidth: 30 },
+            3: { cellWidth: 12, halign: 'center' }
+        },
+        margin: { left: 15, right: 15 },
+        tableWidth: 'auto'
     });
 
     // Source Contribution Panel
@@ -336,10 +333,12 @@ export const generatePDF = async (results, text, metadata = {}) => {
             headStyles: { fillColor: [52, 73, 94], fontSize: 8 },
             styles: { fontSize: 6.5 },
             columnStyles: {
-                0: { cellWidth: 60 },
-                1: { cellWidth: 20, halign: 'center' },
-                2: { cellWidth: 20, halign: 'center' }
-            }
+                0: { cellWidth: 50 },
+                1: { cellWidth: 15, halign: 'center' },
+                2: { cellWidth: 15, halign: 'center' }
+            },
+            margin: { left: 15, right: 15 },
+            tableWidth: 'auto'
         });
     }
 

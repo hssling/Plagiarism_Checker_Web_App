@@ -268,9 +268,9 @@ async function searchPubMed(phrase) {
         const ids = data.esearchresult?.idlist || [];
         if (ids.length > 0) {
             return ids.map(id => ({
-                title: `PubMed ID: ${id}`,
+                title: `PubMed Publication ${id}`,
                 url: `https://pubmed.ncbi.nlm.nih.gov/${id}/`,
-                snippet: 'Click to view publication details on PubMed.',
+                snippet: `Academic medical research publication found in PubMed database (ID: ${id}). Highly relevant for biomedical and clinical verification.`,
                 source: 'PubMed',
                 type: 'Medical Research'
             }));
