@@ -50,10 +50,17 @@ function App() {
             openai: localStorage.getItem('openai_api_key'),
             anthropic: localStorage.getItem('anthropic_api_key'),
             xai: localStorage.getItem('xai_api_key'),
+            openrouter: localStorage.getItem('openrouter_api_key'),
+            groq: localStorage.getItem('groq_api_key'),
+            huggingface: localStorage.getItem('huggingface_api_key'),
+            cohere: localStorage.getItem('cohere_api_key'),
+            cerebras: localStorage.getItem('cerebras_api_key'),
+            mistral: localStorage.getItem('mistral_api_key'),
             primary: localStorage.getItem('primary_ai_provider') || 'gemini'
         };
         initializeAI(config);
     }, []);
+
 
     // ... (Handlers for Text Mode) ...
     const handleFileUpload = (uploadedFile, extractedText) => {
