@@ -28,7 +28,16 @@ export default async function handler(req, res) {
         };
 
         // Forward specific security headers if present
-        const forwardHeaders = ['authorization', 'x-api-key', 'anthropic-version', 'content-type'];
+        const forwardHeaders = [
+            'authorization',
+            'x-api-key',
+            'anthropic-version',
+            'content-type',
+            'http-referer',
+            'x-title',
+            'openai-organization',
+            'openai-project'
+        ];
         forwardHeaders.forEach(h => {
             if (req.headers[h]) {
                 fetchOptions.headers[h] = req.headers[h];

@@ -22,7 +22,7 @@ export const initializeAI = (config = {}) => {
         try {
             const genAI = new GoogleGenerativeAI(providers.gemini.key);
             // Fix: Use stable model identifier to avoid 404
-            providers.gemini.model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+            providers.gemini.model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
         } catch (e) {
             console.error("Gemini initialization failed:", e);
         }
