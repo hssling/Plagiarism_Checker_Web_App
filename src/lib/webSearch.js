@@ -400,7 +400,7 @@ async function searchGoogleBooks(phrase) {
 
     const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(phrase)}&maxResults=3&key=${apiKey}`;
 
-    const res = await safeFetch(url);
+    const res = await safeFetch(url, {}, true);
     if (res && res.ok) {
         const data = await res.json();
         const results = (data.items || []).map(i => ({

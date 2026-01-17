@@ -214,7 +214,7 @@ export const generatePDF = async (results, text, metadata = {}) => {
     const stmtY = infoStartY + 55;
 
     doc.setFillColor(score < 15 ? 230 : 255, score < 15 ? 255 : 243, score < 15 ? 230 : 230);
-    doc.roundedRect(15, stmtY, pageWidth - 30, 20, 3, 3, 'F');
+    doc.roundedRect(15, stmtY, pageWidth - 30, 30, 3, 3, 'F');
 
     doc.setTextColor(...COLORS.dark);
     doc.setFontSize(8);
@@ -226,8 +226,9 @@ export const generatePDF = async (results, text, metadata = {}) => {
             ? "⚠ This document requires review. Some similarity detected with existing sources."
             : "✗ High similarity detected. Significant revision recommended before submission.";
 
-    const verdictLines = doc.splitTextToSize(verdict, pageWidth - 40);
-    doc.text(verdictLines, pageWidth / 2, stmtY + 8, { align: 'center' });
+    const verdictLines = doc.splitTextToSize(verdict, pageWidth - 50);
+    // Align left to be safer with margins
+    doc.text(verdictLines, 25, stmtY + 10);
 
     // ============================================================
     // FOOTER
