@@ -64,19 +64,28 @@ export const callAI = async (prompt, systemPrompt = "You are an academic integri
                     }
                 } catch (sdkError) {
                     console.warn("Gemini SDK failed, trying Proxy-REST (v1beta)...");
-                    const models = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-pro"];
+                    const models = [
+                        "gemini-1.5-flash-latest",
+                        "gemini-1.5-flash",
+                        "gemini-1.5-pro-latest",
+                        "gemini-1.5-pro",
+                        "gemini-pro"
+                    ];
                     for (const model of models) {
                         try {
-                            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${providers.gemini.key}`;
-                            const res = await fetch(`/api/proxy?url=${encodeURIComponent(url)}`, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                    contents: [{ parts: [{ text: `${systemPrompt}\n\n${prompt}` }] }]
-                                })
-                            });
-                            const wrapper = await res.json();
-                            if (wrapper.upstreamOk) return wrapper.data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+                            // Try both v1beta and v1
+                            for (const version of ['v1beta', 'v1']) {
+                                const url = `https://generativelanguage.googleapis.com/${version}/models/${model}:generateContent?key=${providers.gemini.key}`;
+                                const res = await fetch(`/api/proxy?url=${encodeURIComponent(url)}`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                        contents: [{ parts: [{ text: `${systemPrompt}\n\n${prompt}` }] }]
+                                    })
+                                });
+                                const wrapper = await res.json();
+                                if (wrapper.upstreamOk) return wrapper.data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+                            }
                         } catch (e) { continue; }
                     }
                     throw new Error("Gemini all models/endpoints failed");
@@ -114,7 +123,7 @@ export const callAI = async (prompt, systemPrompt = "You are an academic integri
                     try {
                         return await tryOpenAI("gpt-3.5-turbo");
                     } catch (e2) {
-                        const msg = e2.data?.error?.message || e2.upstreamStatus || "Unknown";
+                        const msg = e2.data?.error?.message || e2.upstreamStatusText || e2.upstreamStatus || "Unknown";
                         throw new Error(`OpenAI Error: ${msg}`);
                     }
                 }
@@ -139,12 +148,12 @@ export const callAI = async (prompt, systemPrompt = "You are an academic integri
                 });
                 const wrapper = await res.json();
                 if (!wrapper.upstreamOk) {
-                    throw new Error(`Anthropic Error: ${wrapper.data?.error?.message || wrapper.upstreamStatus}`);
+                    throw new Error(`Anthropic Error: ${wrapper.data?.error?.message || wrapper.upstreamStatusText || wrapper.upstreamStatus}`);
                 }
                 return wrapper.data?.content?.[0]?.text || "";
             }
 
-            // xAI (Proxy - Simplified Payload)
+            // xAI (Proxy)
             if (provider === 'xai' && providers.xai.key) {
                 const proxyUrl = `/api/proxy?url=${encodeURIComponent('https://api.x.ai/v1/chat/completions')}`;
                 const res = await fetch(proxyUrl, {
@@ -156,13 +165,14 @@ export const callAI = async (prompt, systemPrompt = "You are an academic integri
                     body: JSON.stringify({
                         model: "grok-beta",
                         messages: [
-                            { role: "user", content: `${systemPrompt}\n\n${prompt}` }
+                            { role: "system", content: systemPrompt },
+                            { role: "user", content: prompt }
                         ]
                     })
                 });
                 const wrapper = await res.json();
                 if (!wrapper.upstreamOk) {
-                    throw new Error(`xAI Error: ${wrapper.data?.error?.message || wrapper.data?.detail || wrapper.upstreamStatus}`);
+                    throw new Error(`xAI Error: ${wrapper.data?.error?.message || wrapper.data?.detail || wrapper.upstreamStatusText || wrapper.upstreamStatus}`);
                 }
                 return wrapper.data?.choices?.[0]?.message?.content || "";
             }
