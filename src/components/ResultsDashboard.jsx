@@ -175,7 +175,7 @@ function ResultsDashboard({ results, onReset, text }) {
                         </div>
 
                         {aiAnalysis ? (
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+                            <div className="ai-insights-grid">
                                 {/* Authorship */}
                                 <div>
                                     <h4 style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>AI Authorship Detection</h4>
@@ -389,7 +389,7 @@ function ResultsDashboard({ results, onReset, text }) {
 
                     {/* Timestamp */}
                     <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                        Report generated: {new Date().toLocaleString()} | PlagiarismGuard v2.1
+                        Report generated: {new Date().toLocaleString()} | PlagiarismGuard v2.3
                     </div>
                 </>
             )}

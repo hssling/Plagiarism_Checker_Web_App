@@ -110,8 +110,22 @@ function FileUpload({ onFileUpload, onTextInput, file, text }) {
                     for (let i = 1; i <= pdf.numPages; i++) {
                         const page = await pdf.getPage(i);
                         const textContent = await page.getTextContent();
-                        const pageText = textContent.items.map(item => item.str).join(' ');
-                        fullText += pageText + '\n';
+
+                        // Smarter text joining: handle spacing and line breaks based on coordinates
+                        let lastY = -1;
+                        let pageText = '';
+
+                        for (const item of textContent.items) {
+                            if (lastY !== -1 && Math.abs(item.transform[5] - lastY) > 5) {
+                                pageText += '\n';
+                            } else if (lastY !== -1 && item.str.length > 0) {
+                                pageText += ' ';
+                            }
+                            pageText += item.str;
+                            lastY = item.transform[5];
+                        }
+
+                        fullText += pageText + '\n\n';
                     }
 
                     resolve(fullText.trim());
