@@ -5,6 +5,7 @@ function SettingsModal({ isOpen, onClose, onSave }) {
     const [openaiKey, setOpenaiKey] = useState('');
     const [anthropicKey, setAnthropicKey] = useState('');
     const [xaiKey, setXaiKey] = useState('');
+    const [openrouterKey, setOpenrouterKey] = useState('');
     const [primaryAI, setPrimaryAI] = useState('gemini');
 
     const [searchApiKey, setSearchApiKey] = useState('');
@@ -15,6 +16,7 @@ function SettingsModal({ isOpen, onClose, onSave }) {
         const savedOpenAI = localStorage.getItem('openai_api_key');
         const savedAnthropic = localStorage.getItem('anthropic_api_key');
         const savedXAI = localStorage.getItem('xai_api_key');
+        const savedOpenRouter = localStorage.getItem('openrouter_api_key');
         const savedPrimary = localStorage.getItem('primary_ai_provider') || 'gemini';
 
         const savedSearchKey = localStorage.getItem('google_search_api_key');
@@ -24,6 +26,7 @@ function SettingsModal({ isOpen, onClose, onSave }) {
         if (savedOpenAI) setOpenaiKey(savedOpenAI);
         if (savedAnthropic) setAnthropicKey(savedAnthropic);
         if (savedXAI) setXaiKey(savedXAI);
+        if (savedOpenRouter) setOpenrouterKey(savedOpenRouter);
         setPrimaryAI(savedPrimary);
 
         if (savedSearchKey) setSearchApiKey(savedSearchKey);
@@ -35,6 +38,7 @@ function SettingsModal({ isOpen, onClose, onSave }) {
         localStorage.setItem('openai_api_key', openaiKey);
         localStorage.setItem('anthropic_api_key', anthropicKey);
         localStorage.setItem('xai_api_key', xaiKey);
+        localStorage.setItem('openrouter_api_key', openrouterKey);
         localStorage.setItem('primary_ai_provider', primaryAI);
 
         localStorage.setItem('google_search_api_key', searchApiKey);
@@ -45,6 +49,7 @@ function SettingsModal({ isOpen, onClose, onSave }) {
             openai: openaiKey,
             anthropic: anthropicKey,
             xai: xaiKey,
+            openrouter: openrouterKey,
             primary: primaryAI,
             searchApiKey,
             searchCx
@@ -136,6 +141,22 @@ function SettingsModal({ isOpen, onClose, onSave }) {
                             style={{ width: '100%', padding: '0.6rem', borderRadius: '0.5rem', background: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'white' }}
                         />
                     </div>
+
+                    {/* OpenRouter */}
+                    <div style={{ marginBottom: '1.25rem' }}>
+                        <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                            <span style={{ fontWeight: 600 }}>OpenRouter (DeepSeek R1)</span>
+                            <input type="radio" name="primaryAI" checked={primaryAI === 'openrouter'} onChange={() => setPrimaryAI('openrouter')} />
+                        </label>
+                        <input
+                            type="password"
+                            value={openrouterKey}
+                            onChange={(e) => setOpenrouterKey(e.target.value)}
+                            placeholder="OpenRouter API Key (sk-or-...)"
+                            className="text-input"
+                            style={{ width: '100%', padding: '0.6rem', borderRadius: '0.5rem', background: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'white' }}
+                        />
+                    </div>
                     <small style={{ color: 'var(--text-muted)' }}>Radio button selects the default (Primary) provider.</small>
                 </div>
 
@@ -192,7 +213,7 @@ function SettingsModal({ isOpen, onClose, onSave }) {
                     </div>
                 </div>
             </div>
-        </div>
+        </div >
     );
 }
 

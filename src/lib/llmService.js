@@ -5,7 +5,8 @@ let providers = {
     gemini: { key: null, model: null, name: "Gemini" },
     openai: { key: null, name: "OpenAI" },
     anthropic: { key: null, name: "Anthropic" },
-    xai: { key: null, name: "xAI" }
+    xai: { key: null, name: "xAI" },
+    openrouter: { key: null, name: "OpenRouter" }
 };
 
 let primaryProvider = 'gemini';
@@ -30,6 +31,7 @@ export const initializeAI = (config = {}) => {
     if (openai) providers.openai.key = openai.trim();
     if (anthropic) providers.anthropic.key = anthropic.trim();
     if (xai) providers.xai.key = xai.trim();
+    if (openrouter) providers.openrouter.key = openrouter.trim();
     if (primary) primaryProvider = primary;
 
     return isAIInitialized();
@@ -39,14 +41,14 @@ export const initializeAI = (config = {}) => {
  * Check if at least one AI is initialized
  */
 export const isAIInitialized = () => {
-    return providers.gemini.model !== null || providers.openai.key || providers.anthropic.key || providers.xai.key;
+    return providers.gemini.model !== null || providers.openai.key || providers.anthropic.key || providers.xai.key || providers.openrouter.key;
 };
 
 /**
  * Primary AI Call with Fallbacks
  */
 export const callAI = async (prompt, systemPrompt = "You are an academic integrity expert.") => {
-    const order = [primaryProvider, 'gemini', 'openai', 'anthropic', 'xai'].filter((v, i, a) => a.indexOf(v) === i);
+    const order = [primaryProvider, 'gemini', 'openai', 'anthropic', 'xai', 'openrouter'].filter((v, i, a) => a.indexOf(v) === i);
     let lastError = null;
 
     for (const provider of order) {
@@ -161,6 +163,32 @@ export const callAI = async (prompt, systemPrompt = "You are an academic integri
                 const wrapper = await res.json();
                 if (!wrapper.upstreamOk) {
                     throw new Error(`xAI Error: ${wrapper.data?.error?.message || wrapper.data?.detail || wrapper.upstreamStatus}`);
+                }
+                return wrapper.data?.choices?.[0]?.message?.content || "";
+            }
+
+            // OpenRouter (DeepSeek)
+            if (provider === 'openrouter' && providers.openrouter.key) {
+                const proxyUrl = `/api/proxy?url=${encodeURIComponent('https://openrouter.ai/api/v1/chat/completions')}`;
+                const res = await fetch(proxyUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${providers.openrouter.key}`,
+                        'HTTP-Referer': 'https://plagiarism-checker-web-app.vercel.app',
+                        'X-Title': 'PlagiarismGuard Pro'
+                    },
+                    body: JSON.stringify({
+                        model: "deepseek/deepseek-r1:free",
+                        messages: [
+                            { role: "system", content: systemPrompt },
+                            { role: "user", content: prompt }
+                        ]
+                    })
+                });
+                const wrapper = await res.json();
+                if (!wrapper.upstreamOk) {
+                    throw new Error(`OpenRouter Error: ${wrapper.data?.error?.message || wrapper.upstreamStatus}`);
                 }
                 return wrapper.data?.choices?.[0]?.message?.content || "";
             }
