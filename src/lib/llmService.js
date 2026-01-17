@@ -6,7 +6,10 @@ let providers = {
     openai: { key: null, name: "OpenAI" },
     anthropic: { key: null, name: "Anthropic" },
     xai: { key: null, name: "xAI" },
-    openrouter: { key: null, name: "OpenRouter" }
+    openrouter: { key: null, name: "OpenRouter" },
+    groq: { key: null, name: "Groq" },
+    huggingface: { key: null, name: "Hugging Face" },
+    cohere: { key: null, name: "Cohere" }
 };
 
 let primaryProvider = 'gemini';
@@ -15,7 +18,7 @@ let primaryProvider = 'gemini';
  * Initialize AI Providers
  */
 export const initializeAI = (config = {}) => {
-    const { gemini, openai, anthropic, xai, openrouter, primary } = config;
+    const { gemini, openai, anthropic, xai, openrouter, groq, huggingface, cohere, primary } = config;
 
     if (gemini) {
         providers.gemini.key = gemini.trim();
@@ -32,6 +35,9 @@ export const initializeAI = (config = {}) => {
     if (anthropic) providers.anthropic.key = anthropic.trim();
     if (xai) providers.xai.key = xai.trim();
     if (openrouter) providers.openrouter.key = openrouter.trim();
+    if (groq) providers.groq.key = groq.trim();
+    if (huggingface) providers.huggingface.key = huggingface.trim();
+    if (cohere) providers.cohere.key = cohere.trim();
     if (primary) primaryProvider = primary;
 
     return isAIInitialized();
@@ -41,14 +47,14 @@ export const initializeAI = (config = {}) => {
  * Check if at least one AI is initialized
  */
 export const isAIInitialized = () => {
-    return providers.gemini.model !== null || providers.openai.key || providers.anthropic.key || providers.xai.key || providers.openrouter.key;
+    return providers.gemini.model !== null || providers.openai.key || providers.anthropic.key || providers.xai.key || providers.openrouter.key || providers.groq.key || providers.huggingface.key || providers.cohere.key;
 };
 
 /**
  * Primary AI Call with Fallbacks
  */
 export const callAI = async (prompt, systemPrompt = "You are an academic integrity expert.") => {
-    const order = [primaryProvider, 'gemini', 'openai', 'anthropic', 'xai', 'openrouter'].filter((v, i, a) => a.indexOf(v) === i);
+    const order = [primaryProvider, 'gemini', 'openai', 'anthropic', 'xai', 'openrouter', 'groq', 'huggingface', 'cohere'].filter((v, i, a) => a.indexOf(v) === i);
     let lastError = null;
 
     for (const provider of order) {
@@ -209,6 +215,77 @@ export const callAI = async (prompt, systemPrompt = "You are an academic integri
                     throw new Error(`OpenRouter Error: ${wrapper.data?.error?.message || wrapper.upstreamStatus}`);
                 }
                 return wrapper.data?.choices?.[0]?.message?.content || "";
+            }
+
+            // Groq (Free Tier - OpenAI-compatible)
+            if (provider === 'groq' && providers.groq.key) {
+                const proxyUrl = `/api/proxy?url=${encodeURIComponent('https://api.groq.com/openai/v1/chat/completions')}`;
+                const res = await fetch(proxyUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${providers.groq.key}`
+                    },
+                    body: JSON.stringify({
+                        model: "llama-3.3-70b-versatile",
+                        messages: [
+                            { role: "system", content: systemPrompt },
+                            { role: "user", content: prompt }
+                        ],
+                        temperature: 0.7
+                    })
+                });
+                const wrapper = await res.json();
+                if (!wrapper.upstreamOk) {
+                    throw new Error(`Groq Error: ${wrapper.data?.error?.message || wrapper.upstreamStatus}`);
+                }
+                return wrapper.data?.choices?.[0]?.message?.content || "";
+            }
+
+            // Hugging Face Inference (Free Tier)
+            if (provider === 'huggingface' && providers.huggingface.key) {
+                const model = "mistralai/Mistral-7B-Instruct-v0.3";
+                const proxyUrl = `/api/proxy?url=${encodeURIComponent(`https://api-inference.huggingface.co/models/${model}`)}`;
+                const res = await fetch(proxyUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${providers.huggingface.key}`
+                    },
+                    body: JSON.stringify({
+                        inputs: `<s>[INST] ${systemPrompt}\n\n${prompt} [/INST]`,
+                        parameters: { max_new_tokens: 1024, temperature: 0.7 }
+                    })
+                });
+                const wrapper = await res.json();
+                if (!wrapper.upstreamOk) {
+                    throw new Error(`Hugging Face Error: ${wrapper.data?.error || wrapper.upstreamStatus}`);
+                }
+                // HF returns array or object depending on model
+                const text = Array.isArray(wrapper.data) ? wrapper.data[0]?.generated_text : wrapper.data?.generated_text;
+                return text?.replace(/^<s>\[INST\].*?\[\/INST\]\s*/s, '') || "";
+            }
+
+            // Cohere (Free Trial)
+            if (provider === 'cohere' && providers.cohere.key) {
+                const proxyUrl = `/api/proxy?url=${encodeURIComponent('https://api.cohere.ai/v1/chat')}`;
+                const res = await fetch(proxyUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${providers.cohere.key}`
+                    },
+                    body: JSON.stringify({
+                        model: "command-r",
+                        message: prompt,
+                        preamble: systemPrompt
+                    })
+                });
+                const wrapper = await res.json();
+                if (!wrapper.upstreamOk) {
+                    throw new Error(`Cohere Error: ${wrapper.data?.message || wrapper.upstreamStatus}`);
+                }
+                return wrapper.data?.text || "";
             }
         } catch (e) {
             console.warn(`${provider} failed, trying next...`, e);

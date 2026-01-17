@@ -6,6 +6,9 @@ function SettingsModal({ isOpen, onClose, onSave }) {
     const [anthropicKey, setAnthropicKey] = useState('');
     const [xaiKey, setXaiKey] = useState('');
     const [openrouterKey, setOpenrouterKey] = useState('');
+    const [groqKey, setGroqKey] = useState('');
+    const [huggingfaceKey, setHuggingfaceKey] = useState('');
+    const [cohereKey, setCohereKey] = useState('');
     const [primaryAI, setPrimaryAI] = useState('gemini');
 
     const [searchApiKey, setSearchApiKey] = useState('');
@@ -17,6 +20,9 @@ function SettingsModal({ isOpen, onClose, onSave }) {
         const savedAnthropic = localStorage.getItem('anthropic_api_key');
         const savedXAI = localStorage.getItem('xai_api_key');
         const savedOpenRouter = localStorage.getItem('openrouter_api_key');
+        const savedGroq = localStorage.getItem('groq_api_key');
+        const savedHuggingface = localStorage.getItem('huggingface_api_key');
+        const savedCohere = localStorage.getItem('cohere_api_key');
         const savedPrimary = localStorage.getItem('primary_ai_provider') || 'gemini';
 
         const savedSearchKey = localStorage.getItem('google_search_api_key');
@@ -27,6 +33,9 @@ function SettingsModal({ isOpen, onClose, onSave }) {
         if (savedAnthropic) setAnthropicKey(savedAnthropic);
         if (savedXAI) setXaiKey(savedXAI);
         if (savedOpenRouter) setOpenrouterKey(savedOpenRouter);
+        if (savedGroq) setGroqKey(savedGroq);
+        if (savedHuggingface) setHuggingfaceKey(savedHuggingface);
+        if (savedCohere) setCohereKey(savedCohere);
         setPrimaryAI(savedPrimary);
 
         if (savedSearchKey) setSearchApiKey(savedSearchKey);
@@ -39,6 +48,9 @@ function SettingsModal({ isOpen, onClose, onSave }) {
         localStorage.setItem('anthropic_api_key', anthropicKey);
         localStorage.setItem('xai_api_key', xaiKey);
         localStorage.setItem('openrouter_api_key', openrouterKey);
+        localStorage.setItem('groq_api_key', groqKey);
+        localStorage.setItem('huggingface_api_key', huggingfaceKey);
+        localStorage.setItem('cohere_api_key', cohereKey);
         localStorage.setItem('primary_ai_provider', primaryAI);
 
         localStorage.setItem('google_search_api_key', searchApiKey);
@@ -50,6 +62,9 @@ function SettingsModal({ isOpen, onClose, onSave }) {
             anthropic: anthropicKey,
             xai: xaiKey,
             openrouter: openrouterKey,
+            groq: groqKey,
+            huggingface: huggingfaceKey,
+            cohere: cohereKey,
             primary: primaryAI,
             searchApiKey,
             searchCx
@@ -153,6 +168,57 @@ function SettingsModal({ isOpen, onClose, onSave }) {
                             value={openrouterKey}
                             onChange={(e) => setOpenrouterKey(e.target.value)}
                             placeholder="OpenRouter API Key (sk-or-...)"
+                            className="text-input"
+                            style={{ width: '100%', padding: '0.6rem', borderRadius: '0.5rem', background: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'white' }}
+                        />
+                    </div>
+
+                    {/* Free AI Fallbacks Section */}
+                    <h4 style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginTop: '1.5rem', marginBottom: '1rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '0.25rem' }}>🆓 Free AI Fallbacks</h4>
+
+                    {/* Groq */}
+                    <div style={{ marginBottom: '1.25rem' }}>
+                        <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                            <span style={{ fontWeight: 600 }}>Groq (Llama 3.3)</span>
+                            <input type="radio" name="primaryAI" checked={primaryAI === 'groq'} onChange={() => setPrimaryAI('groq')} />
+                        </label>
+                        <input
+                            type="password"
+                            value={groqKey}
+                            onChange={(e) => setGroqKey(e.target.value)}
+                            placeholder="Groq API Key (gsk_...)"
+                            className="text-input"
+                            style={{ width: '100%', padding: '0.6rem', borderRadius: '0.5rem', background: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'white' }}
+                        />
+                    </div>
+
+                    {/* Hugging Face */}
+                    <div style={{ marginBottom: '1.25rem' }}>
+                        <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                            <span style={{ fontWeight: 600 }}>Hugging Face (Mistral)</span>
+                            <input type="radio" name="primaryAI" checked={primaryAI === 'huggingface'} onChange={() => setPrimaryAI('huggingface')} />
+                        </label>
+                        <input
+                            type="password"
+                            value={huggingfaceKey}
+                            onChange={(e) => setHuggingfaceKey(e.target.value)}
+                            placeholder="Hugging Face Token (hf_...)"
+                            className="text-input"
+                            style={{ width: '100%', padding: '0.6rem', borderRadius: '0.5rem', background: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'white' }}
+                        />
+                    </div>
+
+                    {/* Cohere */}
+                    <div style={{ marginBottom: '1.25rem' }}>
+                        <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                            <span style={{ fontWeight: 600 }}>Cohere (Command-R)</span>
+                            <input type="radio" name="primaryAI" checked={primaryAI === 'cohere'} onChange={() => setPrimaryAI('cohere')} />
+                        </label>
+                        <input
+                            type="password"
+                            value={cohereKey}
+                            onChange={(e) => setCohereKey(e.target.value)}
+                            placeholder="Cohere API Key"
                             className="text-input"
                             style={{ width: '100%', padding: '0.6rem', borderRadius: '0.5rem', background: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'white' }}
                         />
