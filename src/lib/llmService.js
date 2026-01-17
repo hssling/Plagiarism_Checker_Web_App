@@ -21,7 +21,7 @@ export const initializeAI = (config = {}) => {
         try {
             const genAI = new GoogleGenerativeAI(gemini);
             // Fix: Use stable model identifier to avoid 404
-            providers.gemini.model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+            providers.gemini.model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
         } catch (e) {
             console.error("Gemini initialization failed:", e);
         }
@@ -51,12 +51,30 @@ export const callAI = async (prompt, systemPrompt = "You are an academic integri
 
     for (const provider of order) {
         try {
-            // Gemini (Direct SDK Call - Usually safe from CORS if key is valid)
-            if (provider === 'gemini' && providers.gemini.model) {
-                const result = await providers.gemini.model.generateContent(prompt);
-                const response = await result.response;
-                if (!response) throw new Error("Empty Gemini response");
-                return response.text();
+            // Gemini (Direct SDK Call with revised model/version handling)
+            if (provider === 'gemini' && providers.gemini.key) {
+                try {
+                    // Try direct SDK first
+                    if (providers.gemini.model) {
+                        const result = await providers.gemini.model.generateContent(prompt);
+                        const response = await result.response;
+                        return response.text();
+                    }
+                } catch (sdkError) {
+                    console.warn("Gemini SDK failed, trying Proxy-Native...", sdkError);
+                    // Fallback to Proxy-Native for Gemini if SDK fails (v1 API is more stable)
+                    const proxyUrl = `/api/proxy?url=${encodeURIComponent(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${providers.gemini.key}`)}`;
+                    const res = await fetch(proxyUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: `${systemPrompt}\n\n${prompt}` }] }]
+                        })
+                    });
+                    const wrapper = await res.json();
+                    if (!wrapper.upstreamOk) throw new Error(`Gemini Proxy Error: ${wrapper.upstreamStatus}`);
+                    return wrapper.data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+                }
             }
 
             // OpenAI (Routed through Proxy to skip CORS)
@@ -77,7 +95,10 @@ export const callAI = async (prompt, systemPrompt = "You are an academic integri
                     })
                 });
                 const wrapper = await res.json();
-                if (!wrapper.upstreamOk) throw new Error(`OpenAI Proxy Error: ${wrapper.upstreamStatus}`);
+                if (!wrapper.upstreamOk) {
+                    const msg = wrapper.data?.error?.message || wrapper.upstreamStatus;
+                    throw new Error(`OpenAI Error: ${msg}`);
+                }
                 return wrapper.data?.choices?.[0]?.message?.content || "";
             }
 
@@ -99,7 +120,10 @@ export const callAI = async (prompt, systemPrompt = "You are an academic integri
                     })
                 });
                 const wrapper = await res.json();
-                if (!wrapper.upstreamOk) throw new Error(`Anthropic Proxy Error: ${wrapper.upstreamStatus}`);
+                if (!wrapper.upstreamOk) {
+                    const msg = wrapper.data?.error?.message || wrapper.upstreamStatus;
+                    throw new Error(`Anthropic Error: ${msg}`);
+                }
                 return wrapper.data?.content?.[0]?.text || "";
             }
 
@@ -121,7 +145,10 @@ export const callAI = async (prompt, systemPrompt = "You are an academic integri
                     })
                 });
                 const wrapper = await res.json();
-                if (!wrapper.upstreamOk) throw new Error(`xAI Proxy Error: ${wrapper.upstreamStatus}`);
+                if (!wrapper.upstreamOk) {
+                    const msg = wrapper.data?.error?.message || wrapper.upstreamStatus;
+                    throw new Error(`xAI Error: ${msg}`);
+                }
                 return wrapper.data?.choices?.[0]?.message?.content || "";
             }
         } catch (e) {
