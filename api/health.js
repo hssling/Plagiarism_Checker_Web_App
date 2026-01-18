@@ -4,6 +4,7 @@
  */
 
 export default function handler(req, res) {
+    console.log(`Health check at ${new Date().toISOString()}`);
     // Set CORS headers
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
