@@ -15,7 +15,7 @@ export default function handler(req, res) {
 
     return res.status(200).json({
         status: 'healthy',
-        version: '2.1.0',
+        version: '3.2.0',
         timestamp: new Date().toISOString(),
         endpoints: {
             analyze: 'POST /api/analyze',
