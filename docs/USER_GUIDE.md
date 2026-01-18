@@ -1,199 +1,221 @@
-# 📘 PlagiarismGuard: The Science of Academic Integrity
+# 📘 PlagiarismGuard v3.2.0 User Guide
 
-Welcome to **PlagiarismGuard**, industry-standard software for advanced plagiarism detection. This document details the sophisticated algorithms, multi-layer architecture, and rigorous privacy standards that power our engine.
-
----
-
-## 🌍 Universal Applicability (Not Just Medical)
-
-While Dr. Siddalingaiah is a medical professor, **PlagiarismGuard** is a universal engine designed for **ALL** research fields. It adapts its search strategy based on the content.
-
-| Field | Technologies & Sources Used |
-| :--- | :--- |
-| **⚖️ Law & Humanities** | **Google Books**, **Open Library**, **JSTOR** (via CrossRef) |
-| **🛠️ Engineering & CS** | **IEEE Xplore**, **GitHub**, **StackExchange**, **arXiv** |
-| **🎨 Arts & Literature** | **Internet Archive**, **Project Gutenberg**, **OpenAlex** |
-| **🧬 Science & Medicine** | **Europe PMC**, **PubMed**, **ScienceDirect** |
+Welcome to **PlagiarismGuard**, industry-standard software for advanced plagiarism detection. This guide covers all features and usage instructions.
 
 ---
 
-## 🧭 System Architecture
+## 🚀 Getting Started
 
-PlagiarismGuard operates on a **Serverless Proxy Architecture**, ensuring that your search for truth is never blocked by browser restrictions or firewall policies.
+### Option 1: Web App
+Visit [plagiarism-checker-web-app.vercel.app](https://plagiarism-checker-web-app.vercel.app)
 
-```mermaid
-graph TD
-    User[User Document] -->|Encrypted Chunks| Client[Client Engine React]
-    
-    Client -->|Safe Requests| Proxy[Serverless Proxy API]
-    Proxy -->|Query| S1[Semantic Scholar]
-    Proxy -->|Query| S2[OpenAlex]
-    Proxy -->|Query| S3[arXiv]
-    Proxy -->|Query| S4[PubMed EuropePMC]
-    Proxy -->|Query| S5[CrossRef]
-    Proxy -->|Query| S6[IEEE Xplore]
-
-    S1 -->|Results| Proxy
-    S2 -->|Results| Proxy
-    S3 -->|Results| Proxy
-    
-    Proxy -->|Aggregated Data| Client
-    Client -->|Analysis| Report[Similarity Report]
-```
-
----
-
-## 🔬 Scientific Methodologies
-
-We utilize cutting-edge algorithms to ensure detection goes beyond simple "Copy-Paste" matching.
-
-### 1. 📄 Text Forensics (NLP & Shingling)
-Instead of searching for exact sentences, we use **Natural Language Processing (NLP)** to extract "Smart Phrases"—unique linguistic fingerprints of your document.
-*   **Method:** N-Gram Shingling & Vector Space Modeling.
-*   **Benefit:** Detects plagiarism even if the writer has rearranged words or used a thesaurus.
-
-### 2. 💻 Code Fingerprinting (The Winnowing Algorithm)
-Code plagiarism is harder to detect because variable names (`int x` vs `int count`) can be changed easily.
-*   **Method:** We use the **Winnowing Algorithm** (Schleimer et al.). It converts code into a series of "hashes" (tokens) and looks for structural similarities.
-*   **Benefit:** Resilient against renaming variables, reordering functions, or changing whitespace.
-
-### 3. 🖼️ Visual Hashing (Perceptual pHash)
-Images, charts, and diagrams are often stolen in academic papers. Standard byte-comparison fails if an image is resized or compressed.
-*   **Method:** We generate a **Perceptual Hash (pHash)**—a "fingerprint" based on the visual frequency content of the image, not its file data.
-*   **Benefit:** Detects the same image even if it has been resized, cropped, or saved in a different format (e.g., PNG vs JPG).
-
-### 4. 🧠 Cognitive AI Analysis (Phase 12)
-We integrate **Google Gemini (LLM)** to go beyond simple matching:
-*   **🤖 AI Authorship Detection:** Analyzes stylometrics (burstiness/perplexity) to estimate if text was written by AI like ChatGPT.
-*   **🧐 Intent Analysis:** The AI reviews the context of a match to determine if it is "Accidental" (common phrase) or "Malicious" (direct copy).
-*   **📝 Smart Summary:** Automatically generates a 3-bullet executive summary of the document.
-
-### 5. 📄 Enterprise Reporting
-*   **Official Certification:** Generates a secure PDF with a "Verified" badge and simulated QR code.
-*   **Detailed Evidence:** The report includes a page-by-page breakdown of every matched phrase and its source URL.
-
----
-
-## 🚀 The Omni-Scanner: 16+ Source Coverage
-
-We do not rely on a single database. Our engine aggregates data from the world's most trusted repositories.
-
-### 📚 Academic & Scientific
-| Source | Specialty |
-| :--- | :--- |
-| **Semantic Scholar** | AI-driven literature search |
-| **OpenAlex** | Massive graph of global research |
-| **Europe PMC** | Biomedical & Life Sciences (PubMed) |
-| **CrossRef** | Official DOI registration data |
-| **CORE** | The world's largest collection of Open Access papers |
-| **arXiv** | Preprints in Physics, Math, and CS |
-
-### 🛠️ Technical & Reference
-| Source | Specialty |
-| :--- | :--- |
-| **StackExchange** | Developer Q&A and Code Snippets |
-| **GitHub** | Open Source Code Repositories |
-| **IEEE Xplore** | Engineering & Computer Science Standards |
-| **Springer** | High-impact scientific journals |
-
-### 📖 Books & Archives
-| Source | Specialty |
-| :--- | :--- |
-| **Google Books** | Millions of digitized books |
-| **Open Library** | Universal book catalog |
-| **Internet Archive** | The Wayback Machine (Legacy Web) |
-
----
-
-## 📱 Install as App (PWA)
-
-PlagiarismGuard is a **Progressive Web App (PWA)**, meaning you can install it on any device for offline-like access.
-
-### Installation Instructions
+### Option 2: Install as PWA
 
 | Platform | Steps |
-| :--- | :--- |
+|----------|-------|
 | **Android** | Chrome → Menu (⋮) → "Add to Home Screen" |
 | **iOS** | Safari → Share (⬆) → "Add to Home Screen" |
 | **Windows** | Edge/Chrome → Install icon (⊕) in address bar |
 | **Mac** | Chrome → Menu (⋮) → "Install PlagiarismGuard..." |
 
-Once installed, the app opens in its own window without browser UI, works faster, and can function with limited connectivity.
+---
+
+## 📄 Analyzing Documents
+
+### Supported Formats
+- **PDF** - Research papers, manuscripts
+- **DOCX/DOC** - Word documents
+- **TXT** - Plain text files
+- **Direct paste** - Copy-paste text directly
+
+### How to Scan
+1. **Upload** a file or paste text
+2. Click **"Analyze for Plagiarism"**
+3. Wait for multi-source analysis (10-30 seconds)
+4. Review results dashboard
 
 ---
 
-## 📄 Professional PDF Certificate
+## 🧠 AI Features (v3.0+)
 
-Our PDF report is designed for **journal submission** and **institutional verification**, comparable to iThenticate/Turnitin reports.
+### Setting Up AI Hub
+1. Click **⚙️ Settings** (gear icon in header)
+2. Add your API keys:
+   - **Gemini** (recommended) - Free tier available
+   - **OpenAI, Claude, xAI** - Alternative providers
+   - **Groq, Cerebras, Mistral** - Free alternatives
+3. Save settings
 
-### 3-Page Report Structure
-
-| Page | Contents |
-| :--- | :--- |
-| **Page 1** | Executive Dashboard (8 metrics), Score Badge, QR Code, Verification Statement |
-| **Page 2** | Citation Analysis (NEW), Detailed Findings Table, Source Contribution breakdown |
-| **Page 3** | Authorship Style Analysis, Fingerprinting Chart, Full Sources List |
-
-### Report Features
-- ✅ **Unique Certificate ID** for verification
-- ✅ **QR Code** containing scan metadata
-- ✅ **Source URLs** - Direct links to original content
-- ✅ **Match Classification** - Identical, Similar, Paraphrased
-- ✅ **Document Hash** - Fingerprint for authenticity verification
+### AI Capabilities
+- **Authorship Detection**: Analyzes if text was AI-generated
+- **Intent Analysis**: Distinguishes accidental from malicious copying
+- **Smart Summary**: Auto-generates executive summary
 
 ---
 
-## 🚀 Version 2.4 Enhancements
+## 🔧 Remediation Pro (v3.2.0 - NEW!)
 
-### 📄 Coordinated PDF Extraction
-Standard PDF text extraction often breaks word spacing and line breaks, causing citation detection to fail. Our v2.4 engine uses **Coordinated Extraction**:
-- **Spatial Awareness**: Groups text items based on X-Y coordinates to preserve document structure.
-- **Reference Section Locating**: Specifically targets and identifies bibliography sections even with unusual PDF formatting.
-- **Improved Accuracy**: 40% better detection for citations like `[1, 2]` or `(Smith, 2023)`.
+Fix plagiarism issues with AI-powered paraphrasing.
 
-### ⚡ Stable AI Authorship (Gemini 1.5)
-We have upgraded our Cognitive AI layer to use the latest **Gemini 1.5 Flash** models:
-- **Resilient Connectivity**: Advanced fallback mechanisms ensure the 404 errors common in early LLM integrations are eliminated.
-- **Deeper Stylometrics**: More accurate analysis of "burstiness" and linguistic patterns used by generators like ChatGPT, Claude, and Gemini.
+### Using Remediation
+1. Run a scan and view results
+2. Click **"Remediate"** button next to any flagged section
+3. Choose style:
+   - **Formal**: Academic journals (BMJ, Nature)
+   - **Narrative**: Literature reviews, discussions
+4. Review side-by-side comparison
+5. Click **"Copy Fixed Text"** to use
 
-### 🛡️ Layout & Delivery Polish
-The PDF certificates generated in v2.4 are our most professional yet:
-- **Zero Overflow**: All tables, verification statements, and recommendations are dynamically sized to fit perfectly.
-- **Metadata Precision**: Improved integration with PubMed ensures DOI and PMID data are correctly mapped in the report.
+> **Important:** Always verify that paraphrased text accurately represents your research conclusions.
 
 ---
 
-## 🚀 Version 3.0 Preview: Integrity AI "Remediation Pro"
+## 👩‍🏫 Teacher/Admin Dashboard (v3.2.0)
 
-The "Holy Grail" of academic integrity—**Remediation Pro**—allows you to legitimately reduce similarity scores by rewriting flagged sections while preserving scientific accuracy.
+For educators and institutional oversight:
 
-### Using Remediation Pro
-1.  **Run a Scan**: Analyze your document as usual.
-2.  **Identify Flags**: Look for sources with a "Flag" or "Review" status in the Results Table.
-3.  **Trigger Integrity Fix**: Click the **"Integrity Fix"** button next to a high-similarity source.
-4.  **Review Proposal**:
-    - **Original Text**: The exact line from your manuscript that was matched.
-    - **AI Proposal**: A side-by-side rewrite that maintains your scientific findings and citations but uses unique phrasing.
-5.  **Apply/Copy**: Copy the fixed text directly to your clipboard or apply the changes to your working draft.
+### Accessing Analytics
+1. Click **"Analytics"** tab in the main app
+2. View aggregated metrics:
+   - Risk distribution charts
+   - Similarity trends over time
+   - Common plagiarism types
 
-### Academic Styles
-- **Formal/Medical**: Optimized for high-impact journals (BMJ, Lancet, Nature). Maintains rigorous terminology.
-- **Narrative Flow**: Best for literature reviews and discussions where a smooth linguistic transition is key.
-
-> [!IMPORTANT]
-> **Integrity AI** is a decision-support tool. Always verify that the paraphrased text accurately represents your experimental data and research conclusions before final submission.
-
----
-
-## 👨‍💻 Developed By
-
-**Dr. Siddalingaiah H S**
-*   Professor, Community Medicine
-*   Shridevi Institute of Medical Sciences and Research Hospital
-*   Tumkur, Karnataka, India
-*   **Email:** hssling@yahoo.com
+### Exporting Audit Data
+1. Click **"Export CSV"** button
+2. Download includes:
+   - All scan records
+   - Timestamps
+   - Similarity scores
+   - Source matches
 
 ---
 
-*Verified & Powered by PlagiarismGuard Engine v2.4 (Final Stable)*
+## 📄 PDF Certificate
 
+### Generating Reports
+1. After analysis, click **"Export PDF"**
+2. Certificate includes:
+   - **Page 1**: Executive dashboard, QR code
+   - **Page 2**: Detailed findings table
+   - **Page 3**: Source contribution breakdown
+
+### Certificate Features
+- Unique verification ID
+- QR code with scan metadata
+- Professional formatting for journal submission
+
+---
+
+## 🌐 Supported Sources (16+ Databases)
+
+### Academic & Scientific
+| Source | Specialty |
+|--------|-----------|
+| **Semantic Scholar** | AI-driven literature search |
+| **OpenAlex** | 250M+ research works |
+| **Europe PMC / PubMed** | Biomedical & Life Sciences |
+| **CrossRef** | DOI registration data |
+| **CORE** | Open Access papers |
+| **arXiv** | Physics, Math, CS preprints |
+
+### Technical & Reference
+- IEEE Xplore, GitHub, StackExchange, Springer
+
+### Books & Archives
+- Google Books, Open Library, Internet Archive
+
+---
+
+## 🔬 Detection Algorithms
+
+### Text Analysis
+- **TF-IDF Cosine Similarity** - Term frequency comparison
+- **N-gram Shingling (Rabin-Karp)** - Exact phrase detection
+- **Semantic Search** - Meaning-based matching
+
+### Code Analysis
+- **Winnowing Algorithm** - Structure-aware code fingerprinting
+
+### Image Analysis
+- **Perceptual Hash (pHash)** - Visual fingerprinting
+
+---
+
+## 📊 Understanding Results
+
+### Similarity Scores
+
+| Score | Rating | Meaning |
+|-------|--------|---------|
+| 0-10% | 🟢 Excellent | Highly original |
+| 10-20% | 🟢 Good | Acceptable, mostly citations |
+| 20-30% | 🟡 Moderate | Review recommended |
+| 30-50% | 🟠 Fair | Significant similarity |
+| 50%+ | 🔴 High | Major revision required |
+
+### Match Types
+- **Identical**: Exact copy-paste
+- **Similar**: Minor word changes
+- **Cross-Language**: Translated content match
+
+---
+
+## 📱 Browser Extension
+
+### Installation
+1. Download from `extension/` folder
+2. Open Chrome → `chrome://extensions`
+3. Enable "Developer mode"
+4. Click "Load unpacked" → Select extension folder
+
+### Usage
+1. Select text on any webpage
+2. Right-click → "Check with PlagiarismGuard"
+3. View results in floating panel
+4. Click "Remediate" to fix flagged sections
+
+---
+
+## ⚙️ Settings Reference
+
+| Setting | Description |
+|---------|-------------|
+| **AI Provider** | Primary AI for analysis |
+| **Gemini Key** | Google AI API key |
+| **OpenAI Key** | OpenAI API key |
+| **Anthropic Key** | Claude API key |
+| **Analysis Depth** | Quick/Standard/Deep scan |
+
+---
+
+## 🆘 Troubleshooting
+
+### Common Issues
+
+**"AI features not working"**
+- Check API key in Settings
+- Verify key has credits/quota remaining
+- Try alternative provider
+
+**"No matches found"**
+- Text may be highly original
+- Try different analysis depth
+- Ensure text is in English/supported language
+
+**"PDF export fails"**
+- Clear browser cache
+- Try different browser
+- Check for browser extensions blocking
+
+---
+
+## 👨‍💻 Support
+
+**Dr. Siddalingaiah H S**  
+📧 [hssling@yahoo.com](mailto:hssling@yahoo.com)  
+🐙 [@hssling](https://github.com/hssling)
+
+---
+
+*Powered by PlagiarismGuard Engine v3.2.0 - Enterprise & Remediation Edition*

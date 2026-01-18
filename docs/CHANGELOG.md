@@ -5,19 +5,58 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.2.0] - 2026-01-18
+
+### Added
+- ✨ **Remediation Pro**: AI-powered paraphrasing for flagged content with side-by-side comparison
+- 👩‍🏫 **Teacher/Admin Dashboard**: Aggregate analytics and risk distribution charts
+- 📥 **CSV Export**: Full scan history export for auditing
+- 🔌 **Browser Extension**: In-page plagiarism checking and remediation
+- 📄 **Multi-Platform Deployment Guide**: Instructions for Vercel, Netlify, Cloudflare, Railway, AWS, Docker
+
+### Fixed
+- 🐛 PDF character encoding issues (replaced Unicode symbols with ASCII)
+- 🐛 Text overflow in recommendation box
+- 🐛 ESM import extensions for Vercel compatibility
+- 🐛 Missing `translateTextBackend` import in analyze.js
+- 🐛 Test suite failures with `--passWithNoTests`
+
+### Changed
+- 📝 Updated README with comprehensive deployment options
+- 📝 Updated USER_GUIDE with v3.2.0 features
+- 🔄 Version synchronization from package.json to header/footer
+
+---
+
+## [3.0.0] - 2026-01-17
+
+### Added
+- 🧠 **Multi-AI Hub**: Support for Gemini, OpenAI, Claude, xAI, Groq, Cerebras, Mistral
+- 🔄 **Automatic Fallback**: Intelligent routing when AI providers fail
+- 🛡️ **Stability Hotfix**: Resolved Gemini 404 model errors
+
+---
+
+## [2.4.0] - 2026-01-17
+
+### Added
+- 📄 Coordinated PDF extraction with spatial awareness
+- ⚡ Gemini 1.5 Flash integration
+- 🎨 Professional PDF certificates with zero overflow
+
+---
+
 ## [2.1.0] - 2026-01-17
 
 ### Added
-- ✅ **Citation Detection**: Automatic validation for Vancouver and APA styles.
-- ✅ **Batch Processing**: Simultaneous analysis of up to 10 documents.
-- ✅ **Authorship Fingerprinting**: Stylometric analysis to detect mixed writing styles.
-- ✅ **Academic Fallback Mode**: Intelligent search fallback for keyless operation.
-- ✅ **Vercel Proxy Fixes**: Enhanced stability for academic API requests.
+- ✅ Citation Detection (Vancouver/APA validation)
+- ✅ Batch Processing (up to 10 documents)
+- ✅ Authorship Fingerprinting (stylometric analysis)
+- ✅ Academic Fallback Mode (keyless operation)
 
 ### Fixed
-- 🐛 Gemini API initialization bug (object vs string).
-- 🐛 Vercel build configuration (removed legacy runtime).
-- 🐛 Analysis progress bar visibility.
+- 🐛 Gemini API initialization bug
+- 🐛 Vercel build configuration
 
 ---
 
@@ -26,27 +65,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - 🎉 Initial release
 - File upload support (PDF, DOCX, TXT)
-- Text paste input option
 - TF-IDF cosine similarity analysis
-- N-gram (3-5 word) phrase matching
 - Web search integration
-- Academic reference corpus comparison
-- Detailed similarity reports
 - PDF/HTML/JSON export options
-- Modern dark theme UI with glassmorphism
-- Responsive mobile design
-- Real-time analysis progress tracking
-- GitHub Actions CI/CD workflows
-- Vercel deployment configuration
-- Supabase integration for analytics
-- Comprehensive documentation
-
-### Technical
-- React 18 with Vite 5
-- Custom CSS design system
-- Python analysis scripts
-- Multi-API architecture (Copyleaks, ZeroGPT, Google)
-- MIT License
+- Dark theme UI with glassmorphism
 
 ---
 
@@ -54,6 +76,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Date | Highlights |
 |---------|------|------------|
+| 3.2.0 | 2026-01-18 | Remediation Pro, Admin Dashboard |
+| 3.0.0 | 2026-01-17 | Multi-AI Hub |
+| 2.4.0 | 2026-01-17 | PDF improvements, Gemini 1.5 |
+| 2.1.0 | 2026-01-17 | Citation detection, Batch processing |
 | 1.0.0 | 2026-01-15 | Initial public release |
 
 ---
@@ -61,8 +87,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Contributors
 
 - **Dr. Siddalingaiah H S** - Creator & Maintainer
-
----
-
-[Keep a Changelog]: https://keepachangelog.com/en/1.0.0/
-[Semantic Versioning]: https://semver.org/spec/v2.0.0.html

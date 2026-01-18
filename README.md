@@ -3,50 +3,57 @@
 <div align="center">
 
 ![PlagiarismGuard Pro](https://img.shields.io/badge/PlagiarismGuard-Pro-2563eb?style=for-the-badge&logo=shield&logoColor=white)
-![Version](https://img.shields.io/badge/Version-3.0.0-success?style=for-the-badge)
+![Version](https://img.shields.io/badge/Version-3.2.0-success?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)
 ![React](https://img.shields.io/badge/React-18.2-61DAFB?style=for-the-badge&logo=react)
 ![Vite](https://img.shields.io/badge/Vite-5.0-646CFF?style=for-the-badge&logo=vite)
 
 **Academic-Grade Plagiarism Detection • Free & Open Source • No Login Required**
 
-[🚀 Live Demo](https://plagiarism-checker-web-app.vercel.app) • [📖 Documentation](#documentation) • [🤝 Contributing](#contributing)
+[🚀 Live Demo](https://plagiarism-checker-web-app.vercel.app) • [📖 User Guide](docs/USER_GUIDE.md) • [🤝 Contributing](#contributing)
 
 </div>
 
 ---
 
-## ✨ Features
+## ✨ What's New in v3.2.0
 
-### 🌍 Universal "Omni-Scanner" (Not Just Medical)
-While developed by a medical professor, **PlagiarismGuard** works for **ALL** research fields:
-- **⚖️ Law & Humanities** - Google Books, Open Library, JSTOR (via CrossRef)
-- **🛠️ Engineering & CS** - IEEE Xplore, GitHub, StackOverflow, arXiv
-- **🎨 Arts & Literature** - Internet Archive, Project Gutenberg, OpenAlex
-- **🧬 Science & Medicine** - Europe PMC, PubMed, ScienceDirect
+### 🧠 Remediation Pro (NEW!)
+Fix plagiarism issues without ever leaving the webpage:
+- **AI-Powered Paraphrasing**: Side-by-side original vs improved text
+- **Citation Preservation**: Scientific terms and references remain intact
+- **One-Click Copy**: Instantly copy fixed text to clipboard
 
-### 🧠 Cognitive AI (Phase 12 - NEW!)
-Go beyond simple matching with **Google Gemini** integration:
-- **🤖 AI Authorship Detection** - "Did ChatGPT write this?" (Powered by Gemini 1.5 Flash)
-- **🧐 Intent Analysis** - Distinguishes "Sloppy Citation" from "Malicious Copying"
-- **📝 Smart Summary** - Auto-generates 3-bullet executive summary (v2.4 Stable)
+### 👩‍🏫 Teacher/Admin Dashboard
+Institutional-level oversight for educators:
+- **Risk Distribution Charts**: Visualize Safe vs Critical scans
+- **Multi-Scan Analytics**: Track trends across all analyzed documents
+- **CSV Audit Export**: Full scan history for reporting
 
-### 📄 Enterprise Reporting
-- **Official PDF Certificates** - Unforgeable reports with "Verified" badge and simulated QR code
-- **Detailed Evidence** - Full breakdown of every matched phrase and source URL
-- **Word Export** - Classic .doc reports with color-coded highlights
+### 🔌 Browser Extension
+Analyze any webpage content directly:
+- **Context Menu Integration**: Right-click to analyze selected text
+- **Floating Results Panel**: Non-intrusive overlay with full results
+- **Remediate In-Place**: Fix issues directly on the webpage
 
-### 🎯 Core Capabilities
-- **Multi-Format Support** - Upload PDF, DOCX, TXT files or paste text directly
-- **Drag & Drop Images** - Visual plagiarism detection using Perceptual Hashing (pHash)
-- **Code Comparison** - Structure-aware analysis using Winnowing Algorithm
-- **Real-Time Progress** - Live analysis with step-by-step feedback
+---
 
-### 🔓 Free & Open
-- **No Registration Required** - Start checking immediately
-- **No API Limits** - Unlimited checks for everyone
-- **Open Source** - MIT licensed, fully transparent
-- **Privacy First** - Documents are never stored after analysis
+## 🌍 Universal "Omni-Scanner"
+
+Works for **ALL** research fields:
+- **⚖️ Law & Humanities** - Google Books, Open Library, JSTOR
+- **🛠️ Engineering & CS** - IEEE Xplore, GitHub, arXiv
+- **🎨 Arts & Literature** - Internet Archive, Project Gutenberg
+- **🧬 Science & Medicine** - Europe PMC, PubMed, CrossRef
+
+---
+
+## 🧠 Cognitive AI Features
+
+Powered by **Multi-AI Hub** (Gemini, OpenAI, Anthropic, and more):
+- **🤖 AI Authorship Detection** - Detects AI-generated content
+- **🧐 Intent Analysis** - Distinguishes accidental from malicious copying
+- **📝 Smart Summary** - Auto-generates executive summary
 
 ---
 
@@ -58,78 +65,193 @@ Visit [plagiarism-checker-web-app.vercel.app](https://plagiarism-checker-web-app
 ### Run Locally
 
 ```bash
-# Clone the repository
 git clone https://github.com/hssling/Plagiarism_Checker_Web_App.git
 cd Plagiarism_Checker_Web_App
-
-# Install dependencies
 npm install
-
-# Start development server
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+Open [http://localhost:3000](http://localhost:3000)
 
 ---
 
-## 📖 Documentation
+## 🌐 Deploy on Multiple Platforms
 
-### How It Works
+### Option 1: Vercel (Recommended)
 
-```mermaid
-graph LR
-    A[Upload Document] --> B[Text Extraction]
-    B --> C[Preprocessing]
-    C --> D[Multi-Engine Analysis]
-    D --> E[TF-IDF Similarity]
-    D --> F[N-gram Matching]
-    D --> G[Web Search]
-    D --> H[Database Query]
-    E & F & G & H --> I[Score Aggregation]
-    I --> J[Report Generation]
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/hssling/Plagiarism_Checker_Web_App)
+
+**Manual CLI Deployment:**
+```bash
+npm install -g vercel
+vercel login
+vercel --prod
 ```
 
-### Analysis Engines
-
-| Engine | Description | Coverage |
-|--------|-------------|----------|
-| **TF-IDF Cosine** | Term frequency-inverse document frequency similarity | Local corpus + web |
-| **Shingling (Rabin-Karp)** | 4-gram overlap detection | Exact copy-paste detection |
-| **Semantic Search** | Meaning-based similarity (AI) | Paraphrase detection |
-| **Web Crawler** | Real-time internet search | 60T+ web pages |
-| **Academic DB** | Published literature search | OpenAlex (250M+), PubMed/Europe PMC, CrossRef |
-
-### Similarity Score Interpretation
-
-| Score | Rating | What It Means |
-|-------|--------|---------------|
-| 0-10% | 🟢 Excellent | Highly original, ready for publication |
-| 10-20% | 🟢 Good | Acceptable overlap, mostly citations |
-| 20-30% | 🟡 Moderate | Review recommended, check sources |
-| 30-50% | 🟠 Fair | Significant similarity, revise content |
-| 50%+ | 🔴 High | Major revision required |
+**Environment Variables (Vercel Dashboard → Settings → Environment Variables):**
+- `VITE_SUPABASE_URL` - Your Supabase project URL
+- `VITE_SUPABASE_ANON_KEY` - Your Supabase anon key
 
 ---
 
-## 🛠️ Technology Stack
+### Option 2: Netlify
 
-### Frontend
-- **React 18** - UI framework with hooks
-- **Vite 5** - Next-gen build tool
-- **CSS3** - Custom design system with variables
-- **Lucide Icons** - Modern icon set
+[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/hssling/Plagiarism_Checker_Web_App)
 
-### Backend
-- **Python 3.10+** - Analysis scripts
-- **Supabase** - Database & analytics
-- **Vercel** - Serverless deployment
+**Manual Deployment:**
+```bash
+npm install -g netlify-cli
+npm run build
+netlify deploy --prod --dir=dist
+```
 
-### APIs Integrated
-- **16+ Academic Databases** - Semantic Scholar, OpenAlex, Europe PMC, CrossRef, CORE, arXiv, IEEE, Springer
-- **Google Gemini AI** - Authorship detection and smart summaries
-- **Google Custom Search** - Web-wide fallback
-- **jsPDF + autoTable** - Professional PDF generation
+**`netlify.toml` (create in project root):**
+```toml
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+```
+
+> **Note:** Netlify does not support Vercel's `/api` serverless functions. For full API functionality, deploy API routes separately to Netlify Functions or use Vercel.
+
+---
+
+### Option 3: Cloudflare Pages
+
+1. Go to [Cloudflare Dashboard](https://dash.cloudflare.com/) → Pages
+2. Click "Create a project" → "Connect to Git"
+3. Select your repository
+4. Configure build settings:
+   - **Build command:** `npm run build`
+   - **Build output directory:** `dist`
+   - **Node.js version:** 20.x
+5. Add environment variables in Settings
+
+**Using Wrangler CLI:**
+```bash
+npm install -g wrangler
+npm run build
+wrangler pages deploy dist --project-name=plagiarism-guard
+```
+
+---
+
+### Option 4: GitHub Pages (Static Only)
+
+> **Note:** GitHub Pages only hosts static files. API endpoints (`/api/*`) will not work. Use for demo/portfolio purposes only.
+
+1. Update `vite.config.js`:
+```javascript
+export default defineConfig({
+  base: '/Plagiarism_Checker_Web_App/',
+  // ... rest of config
+});
+```
+
+2. Add deploy script to `package.json`:
+```json
+{
+  "scripts": {
+    "deploy:gh": "npm run build && npx gh-pages -d dist"
+  }
+}
+```
+
+3. Run:
+```bash
+npm run deploy:gh
+```
+
+---
+
+### Option 5: Railway
+
+[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/template)
+
+1. Connect your GitHub repository
+2. Railway auto-detects Vite configuration
+3. Set environment variables in dashboard
+4. Deploy!
+
+**Using Railway CLI:**
+```bash
+npm install -g @railway/cli
+railway login
+railway init
+railway up
+```
+
+---
+
+### Option 6: AWS Amplify
+
+1. Go to [AWS Amplify Console](https://console.aws.amazon.com/amplify/)
+2. Click "New app" → "Host web app"
+3. Connect your GitHub repository
+4. Configure build settings:
+   ```yaml
+   version: 1
+   frontend:
+     phases:
+       preBuild:
+         commands:
+           - npm ci
+       build:
+         commands:
+           - npm run build
+     artifacts:
+       baseDirectory: dist
+       files:
+         - '**/*'
+     cache:
+       paths:
+         - node_modules/**/*
+   ```
+5. Add environment variables and deploy
+
+---
+
+### Option 7: Docker (Self-Hosted)
+
+**Create `Dockerfile`:**
+```dockerfile
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+FROM nginx:alpine
+COPY --from=builder /app/dist /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
+```
+
+**Create `nginx.conf`:**
+```nginx
+server {
+    listen 80;
+    root /usr/share/nginx/html;
+    index index.html;
+    
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}
+```
+
+**Build and Run:**
+```bash
+docker build -t plagiarism-guard .
+docker run -p 8080:80 plagiarism-guard
+```
 
 ---
 
@@ -137,210 +259,61 @@ graph LR
 
 ```
 Plagiarism_Checker_Web_App/
-├── .github/
-│   └── workflows/
-│       ├── ci.yml              # Continuous Integration
-│       └── deploy.yml          # Auto-deployment
+├── api/                        # Serverless API functions
+│   ├── analyze.js              # Main analysis endpoint
+│   ├── remediate.js            # AI paraphrasing endpoint
+│   ├── proxy.js                # CORS proxy
+│   └── _lib/                   # Shared utilities
 ├── src/
-│   ├── components/
-│   │   ├── Header.jsx          # App header
-│   │   ├── FileUpload.jsx      # Drag & drop upload
-│   │   ├── TextInput.jsx       # Text paste input
-│   │   ├── AnalysisProgress.jsx # Progress tracking
-│   │   ├── ResultsDashboard.jsx # Results display
-│   │   └── ReportExport.jsx    # Export functionality
-│   ├── lib/
-│   │   ├── plagiarismAnalyzer.js   # Core analysis
-│   │   ├── documentParser.js   # PDF/DOCX parsing
-│   │   ├── webSearch.js        # Internet search
-│   │   └── supabase.js         # Database client
-│   ├── styles/
-│   │   ├── index.css           # Global styles
-│   │   ├── components.css      # Component styles
-│   │   └── animations.css      # Animations
-│   ├── App.jsx                 # Main app
-│   └── main.jsx                # Entry point
-├── scripts/
-│   ├── multi_api_checker.py    # Python backend
-│   └── requirements.txt        # Python deps
-├── api/                        # Serverless functions
-│   └── analyze.js              # Analysis endpoint
-├── public/
-│   ├── favicon.svg
-│   └── og-image.png
-├── docs/
-│   ├── API.md                  # API documentation
-│   ├── ARCHITECTURE.md         # System design
-│   └── CHANGELOG.md            # Version history
-├── tests/                      # Test suites
-├── .env.example                # Environment template
-├── .gitignore
-├── package.json
-├── vite.config.js
-├── vercel.json
-├── LICENSE
-└── README.md
+│   ├── components/             # React components
+│   ├── lib/                    # Core analysis engines
+│   └── styles/                 # CSS stylesheets
+├── extension/                  # Browser extension
+├── docs/                       # Documentation
+├── public/                     # Static assets
+├── vercel.json                 # Vercel config
+└── package.json
 ```
 
 ---
 
-## 🔧 Configuration
+## 🔧 Environment Variables
 
-### Environment Variables
-
-Create `.env.local` from `.env.example`:
-
-```env
-# Required for database (optional)
-VITE_SUPABASE_URL=your_supabase_url
-VITE_SUPABASE_ANON_KEY=your_anon_key
-
-# Optional: Enhanced search
-VITE_GOOGLE_API_KEY=your_google_api_key
-VITE_GOOGLE_CSE_ID=your_cse_id
-
-# Optional: Commercial APIs
-COPYLEAKS_EMAIL=your_email
-COPYLEAKS_API_KEY=your_key
-```
-
----
-
-## 🚀 Deployment
-
-### Vercel (Recommended)
-
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/hssling/Plagiarism_Checker_Web_App)
-
-### Manual Deployment
-
-```bash
-# Build for production
-npm run build
-
-# Preview locally
-npm run preview
-
-# Deploy to Vercel
-vercel --prod
-```
-
----
-
-## 📊 Analytics & Logging
-
-PlagiarismGuard uses Supabase for anonymous usage analytics:
-
-- Total documents analyzed
-- Average similarity scores
-- Popular file formats
-- Error tracking
-
-**No personal data is collected. Documents are never stored.**
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `VITE_SUPABASE_URL` | No | Supabase project URL for analytics |
+| `VITE_SUPABASE_ANON_KEY` | No | Supabase anonymous key |
+| `VERCEL_TOKEN` | CI/CD | For automated deployments |
 
 ---
 
 ## 🗺️ Roadmap
 
-### Version 1.0 (Current)
-- ✅ File upload (PDF, DOCX, TXT)
-- ✅ Text paste input
-- ✅ TF-IDF & N-gram analysis
-- ✅ Advanced Shingling Algorithm (Rabin-Karp)
-- ✅ Web search integration (OpenAlex, PubMed, CrossRef)
-- ✅ Detailed reports with highlighted export
-- ✅ Dark mode UI
+### v3.2.0 (Current)
+- ✅ Remediation Pro with AI paraphrasing
+- ✅ Teacher/Admin Analytics Dashboard
+- ✅ CSV Audit Export
+- ✅ Browser Extension with in-page remediation
 
-### Version 2.0 (Current)
-- ✅ **Phase 11:** Official PDF Reports with Certificates
-- ✅ **Phase 12:** Cognitive AI (Authorship Detection, Intent Analysis, Smart Summary)
-- ✅ Drag & Drop Image Upload
-- ✅ Serverless Proxy for CORS-free API access
-
-### Version 2.1 (Current)
-- ✅ **Citation Detection**: Automatic Vancouver/APA validation.
-- ✅ **Batch Processing**: Multi-document queued analysis.
-- ✅ **Advanced AI Enhancement**: Style fingerprinting and anomalies.
-- ✅ **Keyless Fallback**: Automated academic search mode.
-
-### Version 2.4 (Current)
-- ✅ **PDF Citation Stability**: Coordinated text extraction for higher accuracy.
-- ✅ **Gemini 1.5 Integration**: Stable connection to latest LLM models.
-- ✅ **Layout Polish**: Professional PDF certificates with zero overflow warnings.
-- ✅ **Improved Search**: Enhanced metadata matching for PubMed & CrossRef.
-
-### Version 3.0 (Multi-AI Hub - LATEST)
-- ✅ **AI Hub Resiliency**: Connect Gemini, OpenAI, Claude, and xAI.
-- ✅ **Remediation Pro**: Interactive side-by-side AI paraphrasing.
-- ✅ **Automatic Fallback**: Intelligent routing when one AI provider fails.
-- ✅ **Stability Hotfix**: Resolved Gemini 404 model errors.
-
-### Version 2.2 (Planned)
-- 🔲 Browser extension (Chrome/Edge)
-- 🔲 API documentation for institutional integration
-- 🔲 Enhanced image OCR for deep diagram analysis
+### v3.3.0 (Planned)
+- 🔲 Cloud sync for scan history
+- 🔲 Team collaboration features
+- 🔲 Enhanced image OCR analysis
 
 ---
 
-## 🤝 Contributing
-
-Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md).
-
-```bash
-# Fork the repository
-# Create feature branch
-git checkout -b feature/amazing-feature
-
-# Commit changes
-git commit -m "Add amazing feature"
-
-# Push to branch
-git push origin feature/amazing-feature
-
-# Open Pull Request
-```
-
----
-
-## 👨‍💻 Author & Credits
-
-### Creator
+## 👨‍💻 Author
 
 **Dr. Siddalingaiah H S**  
-*Professor, Community Medicine*  
-Shridevi Institute of Medical Sciences and Research Hospital  
-NH-4, Sira Road, Tumkur - 572106, Karnataka, India
-
-- 📧 Email: [hssling@yahoo.com](mailto:hssling@yahoo.com)
-- 📱 Phone: +91-8941087719
-- 🐙 GitHub: [@hssling](https://github.com/hssling)
-
-### Acknowledgments
-
-- Built with assistance from AI coding tools (VS Code, Codex, Claude)
-- Inspired by iThenticate, Turnitin, and Copyleaks
-- Thanks to the open-source community
+Professor, Community Medicine  
+Shridevi Institute of Medical Sciences  
+📧 [hssling@yahoo.com](mailto:hssling@yahoo.com) • 🐙 [@hssling](https://github.com/hssling)
 
 ---
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-```
-MIT License
-
-Copyright (c) 2026 Dr. Siddalingaiah H S
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files...
-```
-
----
-
-## ⚠️ Disclaimer
-
-PlagiarismGuard is an educational tool. For official academic submissions, use certified services like iThenticate or Turnitin. This tool provides similarity detection but does not guarantee detection of all plagiarism.
+MIT License - see [LICENSE](LICENSE)
 
 ---
 
