@@ -198,9 +198,9 @@ function ResultsDashboard({ results, onReset, text }) {
                                         <div style={{
                                             fontSize: '2rem',
                                             fontWeight: 'bold',
-                                            color: (results.authorship?.confidence || aiAnalysis?.authorship?.confidence) > 50 ? 'var(--warning)' : 'var(--success)'
+                                            color: ((results?.authorship?.confidence || aiAnalysis?.authorship?.confidence) > 50) ? 'var(--warning)' : 'var(--success)'
                                         }}>
-                                            {results.authorship?.confidence || aiAnalysis?.authorship?.confidence || 0}%
+                                            {results?.authorship?.confidence || aiAnalysis?.authorship?.confidence || 0}%
                                         </div>
                                         <div style={{ fontSize: '0.9rem' }}>
                                             Probability of AI Generation<br />
@@ -212,9 +212,12 @@ function ResultsDashboard({ results, onReset, text }) {
                                 <div>
                                     <h4 style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Smart Summary</h4>
                                     <div style={{ fontSize: '0.9rem', lineHeight: '1.5' }}>
-                                        {results.summary || aiAnalysis?.summary ? (results.summary || aiAnalysis?.summary).split('\n').map((line, i) => (
-                                            <div key={i}>{line}</div>
-                                        )) : 'Generating summary...'}
+                                        {(() => {
+                                            const summary = results?.summary || aiAnalysis?.summary;
+                                            return summary ? summary.split('\n').map((line, i) => (
+                                                <div key={i}>{line}</div>
+                                            )) : 'Generating summary...';
+                                        })()}
                                     </div>
                                 </div>
                             </div>
