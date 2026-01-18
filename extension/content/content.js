@@ -157,42 +157,55 @@ function showResultsPopup(results, originalText) {
     const statusLabel = score < 15 ? 'Low Risk' : score < 30 ? 'Moderate Risk' : 'High Risk';
 
     popup.innerHTML = `
-    <div class="pg-popup-header">
-      <span class="pg-logo">🔍 PlagiarismGuard</span>
-      <button class="pg-close" id="pg-close-btn">×</button>
+    <div class="pg-popup-header" style="background: linear-gradient(135deg, #1e293b, #0f172a); border-bottom: 1px solid rgba(255,255,255,0.1); padding: 12px 16px;">
+      <span class="pg-logo" style="font-weight: 800; background: linear-gradient(135deg, #4facfe, #00f2fe); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">🛡️ PlagiarismGuard Pro</span>
+      <button class="pg-close" id="pg-close-btn" style="background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 20px;">×</button>
     </div>
-    <div class="pg-popup-body">
-      <div class="pg-score ${statusClass}">
-        <div class="pg-score-value">${score}%</div>
-        <div class="pg-score-label">Similarity</div>
-      </div>
-      <div class="pg-status ${statusClass}">${statusLabel}</div>
-      <div class="pg-stats">
-        <div class="pg-stat">
-          <span class="pg-stat-label">Sources Found</span>
-          <span class="pg-stat-value">${results.sources.length}</span>
+    <div class="pg-popup-body" style="padding: 20px; background: #0f172a; color: white;">
+      <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 20px;">
+        <div class="pg-score ${statusClass}" style="width: 80px; height: 80px; border-radius: 50%; border: 4px solid var(--score-color, #4facfe); display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(255,255,255,0.05);">
+          <div class="pg-score-value" style="font-size: 18px; font-weight: 800;">${score}%</div>
+          <div class="pg-score-label" style="font-size: 8px; opacity: 0.7;">Similarity</div>
         </div>
-        <div class="pg-stat">
-          <span class="pg-stat-label">Phrases Checked</span>
-          <span class="pg-stat-value">${results.keyPhrases.length}</span>
+        <div>
+          <div class="pg-status ${statusClass}" style="font-size: 16px; font-weight: 700; margin-bottom: 4px; color: var(--score-color, #4facfe);">${statusLabel}</div>
+          <div style="font-size: 11px; color: #94a3b8;">Academic-grade verification complete</div>
         </div>
       </div>
+      
+      <div class="pg-stats" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;">
+        <div class="pg-stat" style="background: rgba(255,255,255,0.03); padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+          <div style="font-size: 9px; color: #94a3b8; text-transform: uppercase;">Sources</div>
+          <div style="font-size: 14px; font-weight: 700;">${results.sources.length}</div>
+        </div>
+        <div class="pg-stat" style="background: rgba(255,255,255,0.03); padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+          <div style="font-size: 9px; color: #94a3b8; text-transform: uppercase;">Words</div>
+          <div style="font-size: 14px; font-weight: 700;">${results.wordCount}</div>
+        </div>
+      </div>
+
       ${results.sources.length > 0 ? `
-        <div class="pg-sources">
-          <div class="pg-sources-title">Top Matches:</div>
-          ${results.sources.slice(0, 3).map(s => `
-            <div class="pg-source">
-              <div class="pg-source-name">${s.name}</div>
-              <div class="pg-source-similarity">${s.similarity.toFixed(1)}%</div>
+        <div class="pg-sources" style="margin-bottom: 20px;">
+          <div style="font-size: 10px; font-weight: 700; color: #94a3b8; margin-bottom: 8px; text-transform: uppercase;">Top Source Matches</div>
+          ${results.sources.slice(0, 2).map(s => `
+            <div class="pg-source" style="display: flex; justify-content: space-between; padding: 8px; background: rgba(255,255,255,0.02); border-radius: 6px; margin-bottom: 6px; border-left: 3px solid #2563eb;">
+              <div style="font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;">${s.name}</div>
+              <div style="font-size: 11px; font-weight: 700; color: #34d399;">${s.similarity.toFixed(1)}%</div>
             </div>
           `).join('')}
         </div>
       ` : ''}
     </div>
-    <div class="pg-popup-footer">
-      <button class="pg-btn pg-btn-secondary" id="pg-clear-highlights">Clear Highlights</button>
-      <button class="pg-btn pg-btn-primary" id="pg-full-report">Full Report</button>
+    <div class="pg-popup-footer" style="padding: 16px; background: #0f172a; border-top: 1px solid rgba(255,255,255,0.1); display: flex; gap: 12px;">
+      <button class="pg-btn pg-btn-secondary" id="pg-clear-highlights" style="flex: 1; padding: 10px; border-radius: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; cursor: pointer; font-size: 11px;">Clear</button>
+      <button class="pg-btn pg-btn-primary" id="pg-full-report" style="flex: 2; padding: 10px; border-radius: 8px; background: linear-gradient(135deg, #2563eb, #1d4ed8); border: none; color: white; font-weight: 700; cursor: pointer; font-size: 11px;">Open Full Report</button>
     </div>
+    <style>
+      .pg-popup-body .good { --score-color: #34d399; }
+      .pg-popup-body .moderate { --score-color: #fbbf24; }
+      .pg-popup-body .high { --score-color: #f87171; }
+      .plagiarism-guard-popup { font-family: 'Inter', sans-serif; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); overflow: hidden; width: 300px; }
+    </style>
   `;
 
     document.body.appendChild(popup);

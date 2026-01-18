@@ -5,69 +5,93 @@
 
 import { validateRequest } from './_lib/auth.js';
 import { checkRateLimit, getRateLimitHeaders, rateLimitErrorResponse } from './_lib/rateLimit.js';
+import { extractSmartPhrases, calculateShingleOverlap, calculateTFIDFSimilarity } from '../src/lib/shared/analysisShared.js';
+import { executeSearch } from '../src/lib/shared/searchShared.js';
 
-// Simplified plagiarism analysis for serverless
-function analyzeText(text, options = {}) {
+/**
+ * Real plagiarism analysis engine for backend
+ */
+async function performRealAnalysis(text, options = {}) {
     const startTime = Date.now();
-
     const words = text.split(/\s+/).filter(w => w.length > 0);
-    const wordCount = words.length;
-    const uniqueWords = new Set(words.map(w => w.toLowerCase())).size;
 
-    const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 20);
-    const keyPhrases = sentences.slice(0, options.maxSources || 10).map(s => ({
-        text: s.trim().substring(0, 100),
-        found: Math.random() > 0.7
-    }));
+    // 1. Extract Smart Phrases
+    const dynamicMax = Math.min(Math.max(8, Math.ceil(words.length / 40)), 20);
+    const keyPhrases = extractSmartPhrases(text, dynamicMax);
 
-    const vocabularyRatio = uniqueWords / wordCount;
-    const baseScore = Math.max(0, (1 - vocabularyRatio) * 50);
-    const overallScore = Math.min(100, baseScore + (keyPhrases.filter(p => p.found).length * 5));
+    // 2. Execute Searches
+    const potentialSources = new Map();
+    const checkedPhrases = [];
 
-    let citations = null;
-    if (options.includeCitations !== false) {
-        citations = detectCitations(text);
+    // Backend fetch wrapper (no proxy needed usually, but we'll pass a simple one)
+    const backendFetch = async (url, fetchOptions = {}) => {
+        return await fetch(url, fetchOptions);
+    };
+
+    for (const phrase of keyPhrases) {
+        const matches = await executeSearch(phrase, {}, backendFetch);
+        checkedPhrases.push({
+            text: phrase,
+            found: matches.length > 0
+        });
+
+        matches.forEach(match => {
+            const key = match.url || match.title;
+            if (!potentialSources.has(key)) {
+                potentialSources.set(key, {
+                    id: 'src_' + Math.random().toString(36).substr(2, 6),
+                    name: match.title || 'Unknown Source',
+                    type: match.type || 'Academic Source',
+                    url: match.url,
+                    text: match.snippet || '',
+                    hits: 1
+                });
+            } else {
+                potentialSources.get(key).hits++;
+            }
+        });
+    }
+
+    // 3. Score Sources
+    const resultsSources = [];
+    let maxMatch = 0;
+
+    for (const source of potentialSources.values()) {
+        const shingleScore = calculateShingleOverlap(text, source.text, 3);
+        const tfidfScore = calculateTFIDFSimilarity(text, source.text);
+        const hitBoost = Math.min(source.hits * 5, 20);
+
+        let similarity = (shingleScore * 2.0) + (tfidfScore * 0.5) + hitBoost;
+        if (words.length < 200) similarity *= 1.2;
+        similarity = Math.min(100, Math.round(similarity * 10) / 10);
+
+        if (similarity > 5) {
+            resultsSources.push({
+                ...source,
+                similarity
+            });
+            if (similarity > maxMatch) maxMatch = similarity;
+        }
+    }
+
+    resultsSources.sort((a, b) => b.similarity - a.similarity);
+
+    // 4. Final Scoring
+    let overallScore = 0;
+    if (resultsSources.length > 0) {
+        const topAvg = resultsSources.slice(0, 5).reduce((acc, s) => acc + s.similarity, 0) / Math.min(5, resultsSources.length);
+        overallScore = (maxMatch * 0.7) + (topAvg * 0.3);
     }
 
     return {
         overallScore: Math.round(overallScore * 10) / 10,
-        wordCount,
-        uniqueWords,
-        maxMatch: Math.round(overallScore * 0.8 * 10) / 10,
-        sourcesChecked: keyPhrases.length,
-        sources: keyPhrases.filter(p => p.found).map((p, i) => ({
-            id: `src_${i}`,
-            name: `Academic Source ${i + 1}`,
-            similarity: Math.round((15 + Math.random() * 20) * 10) / 10,
-            type: 'Journal Article'
-        })),
-        keyPhrases,
-        citations,
+        wordCount: words.length,
+        uniqueWords: new Set(words.map(w => w.toLowerCase())).size,
+        maxMatch,
+        sourcesChecked: potentialSources.size,
+        sources: resultsSources.slice(0, 10),
+        keyPhrases: checkedPhrases,
         processingTime: Date.now() - startTime
-    };
-}
-
-function detectCitations(text) {
-    const vancouverPattern = /\[(\d+(?:[-,]\d+)*)\]/g;
-    const apaPattern = /\(([A-Z][a-z]+(?:\s+(?:et\s+al\.?|&\s+[A-Z][a-z]+))?),?\s*(\d{4})\)/g;
-
-    const vancouverCitations = [...text.matchAll(vancouverPattern)].map(m => m[0]);
-    const apaCitations = [...text.matchAll(apaPattern)].map(m => m[0]);
-
-    const refMatch = text.match(/(?:references|bibliography|works cited)[\s\S]*$/i);
-    const referencesSection = refMatch ? refMatch[0] : null;
-
-    const refCount = referencesSection
-        ? (referencesSection.match(/^\d+\./gm) || []).length ||
-        (referencesSection.split('\n').filter(l => l.trim().length > 30)).length
-        : 0;
-
-    return {
-        style: vancouverCitations.length > apaCitations.length ? 'vancouver' : 'apa',
-        styleConfidence: Math.max(vancouverCitations.length, apaCitations.length) > 0 ? 0.7 : 0.3,
-        inTextCount: vancouverCitations.length + apaCitations.length,
-        referencesCount: refCount,
-        inTextCitations: [...vancouverCitations, ...apaCitations].slice(0, 10)
     };
 }
 
@@ -98,7 +122,7 @@ export default async function handler(req, res) {
     }
 
     // Check rate limit
-    const apiKey = req.headers['x-api-key'];
+    const apiKey = req.headers['x-api-key'] || extractApiKey(req);
     const rateLimit = checkRateLimit(apiKey, auth.user.tier);
     const rateLimitHeaders = getRateLimitHeaders(rateLimit, auth.user.tier);
 
@@ -127,16 +151,9 @@ export default async function handler(req, res) {
         });
     }
 
-    if (text.length > 100000) {
-        return res.status(400).json({
-            success: false,
-            error: { code: 'TEXT_TOO_LONG', message: 'Text must be under 100,000 characters' }
-        });
-    }
-
     // Run analysis
     try {
-        const results = analyzeText(text, options);
+        const results = await performRealAnalysis(text, options);
 
         return res.status(200).json({
             success: true,
@@ -145,7 +162,7 @@ export default async function handler(req, res) {
                 processedAt: new Date().toISOString(),
                 processingTime: results.processingTime,
                 tier: auth.user.tier,
-                apiVersion: '1.0'
+                apiVersion: '2.0'
             }
         });
 
@@ -153,7 +170,16 @@ export default async function handler(req, res) {
         console.error('Analysis error:', error);
         return res.status(500).json({
             success: false,
-            error: { code: 'ANALYSIS_FAILED', message: 'Analysis failed. Please try again.' }
+            error: { code: 'ANALYSIS_FAILED', message: error.message || 'Analysis failed.' }
         });
     }
+}
+
+// Helper to extract API key inside handler if needed
+function extractApiKey(req) {
+    const authHeader = req.headers['authorization'];
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+        return authHeader.slice(7);
+    }
+    return null;
 }

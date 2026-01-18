@@ -1,8 +1,8 @@
 {
     "manifest_version": 3,
-    "name": "PlagiarismGuard",
-    "version": "2.4.0",
-    "description": "Check for plagiarism on any webpage with a right-click. Academic-grade detection powered by AI.",
+    "name": "PlagiarismGuard Pro",
+    "version": "3.0.0",
+    "description": "Premium academic-grade plagiarism detection. v3.0 with Multi-AI Hub, Authorship Detection, and Remediation Pro.",
     "permissions": [
         "contextMenus",
         "activeTab",

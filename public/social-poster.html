@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PlagiarismGuard Pro - Social Media Poster</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3e 50%, #0d0d2b 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .poster {
+            width: 100%;
+            max-width: 600px;
+            background: linear-gradient(180deg,
+                    rgba(15, 15, 35, 0.95) 0%,
+                    rgba(20, 20, 50, 0.98) 50%,
+                    rgba(10, 10, 30, 1) 100%);
+            border-radius: 24px;
+            padding: 40px 32px;
+            position: relative;
+            overflow: hidden;
+            box-shadow:
+                0 0 60px rgba(79, 172, 254, 0.15),
+                0 0 120px rgba(139, 92, 246, 0.1),
+                0 25px 50px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Animated Background Effects */
+        .poster::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background:
+                radial-gradient(circle at 20% 20%, rgba(79, 172, 254, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(236, 72, 153, 0.05) 0%, transparent 50%);
+            animation: rotate 30s linear infinite;
+            pointer-events: none;
+        }
+
+        @keyframes rotate {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .poster-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Header Section */
+        .header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            margin-bottom: 12px;
+        }
+
+        .logo-icon {
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            box-shadow:
+                0 0 30px rgba(79, 172, 254, 0.5),
+                0 10px 30px rgba(0, 0, 0, 0.3);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.05);
+            }
+        }
+
+        .app-title {
+            font-size: 32px;
+            font-weight: 900;
+            background: linear-gradient(135deg, #ffffff 0%, #4facfe 50%, #00f2fe 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.5px;
+        }
+
+        .version-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(236, 72, 153, 0.3));
+            border: 1px solid rgba(139, 92, 246, 0.5);
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            color: #e879f9;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .tagline {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.7);
+            font-weight: 500;
+        }
+
+        .tagline span {
+            color: #4facfe;
+        }
+
+        /* Section Titles */
+        .section-title {
+            font-size: 11px;
+            font-weight: 700;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, rgba(79, 172, 254, 0.3), transparent);
+        }
+
+        /* Features Grid */
+        .features-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .feature-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 16px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--accent, #4facfe), transparent);
+            opacity: 0.6;
+        }
+
+        .feature-card:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(79, 172, 254, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .feature-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, var(--bg-start, rgba(79, 172, 254, 0.2)), var(--bg-end, rgba(0, 242, 254, 0.2)));
+        }
+
+        .feature-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 4px;
+        }
+
+        .feature-desc {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.5);
+            line-height: 1.4;
+        }
+
+        /* Advanced Features - Special Styling */
+        .advanced-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .advanced-card {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(236, 72, 153, 0.1));
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: 14px;
+            padding: 14px;
+            text-align: center;
+        }
+
+        .advanced-card .feature-icon {
+            margin: 0 auto 8px;
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(236, 72, 153, 0.3));
+        }
+
+        /* Tech Stack */
+        .tech-strip {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            margin-bottom: 24px;
+        }
+
+        .tech-badge {
+            padding: 6px 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            font-size: 10px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.7);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .tech-badge .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+        }
+
+        /* Database Logos */
+        .db-section {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        .db-title {
+            font-size: 24px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+        }
+
+        .db-subtitle {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 12px;
+        }
+
+        .db-logos {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+        }
+
+        .db-logo {
+            padding: 6px 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+            font-size: 9px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        /* AI Hub Section */
+        .ai-hub {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(79, 172, 254, 0.15));
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        .ai-hub-title {
+            font-size: 14px;
+            font-weight: 800;
+            color: #e879f9;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .ai-hub-desc {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 12px;
+        }
+
+        .ai-providers {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+        }
+
+        .ai-provider {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .ai-provider-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .ai-provider-name {
+            font-size: 9px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        /* Footer / CTA */
+        .footer {
+            text-align: center;
+        }
+
+        .free-badges {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .free-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.2));
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 700;
+            color: #34d399;
+        }
+
+        .url-container {
+            margin-top: 16px;
+        }
+
+        .url-box {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 24px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(79, 172, 254, 0.3);
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #4facfe;
+        }
+
+        .url-box::before {
+            content: '🌐';
+            font-size: 16px;
+        }
+
+        /* Creator Section */
+        .creator {
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+        }
+
+        .creator-label {
+            font-size: 9px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+        }
+
+        .creator-name {
+            font-size: 12px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        /* NEW Badge Animation */
+        .new-badge {
+            display: inline-block;
+            padding: 2px 6px;
+            background: linear-gradient(135deg, #f43f5e, #ec4899);
+            border-radius: 4px;
+            font-size: 8px;
+            font-weight: 800;
+            color: white;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            animation: glow 1.5s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from {
+                box-shadow: 0 0 5px rgba(244, 63, 94, 0.5);
+            }
+
+            to {
+                box-shadow: 0 0 15px rgba(244, 63, 94, 0.8);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="poster">
+        <div class="poster-content">
+            <!-- Header -->
+            <header class="header">
+                <div class="version-badge">
+                    ✨ Version 3.0 <span class="new-badge">NEW</span>
+                </div>
+                <div class="logo-container">
+                    <div class="logo-icon">🛡️</div>
+                    <h1 class="app-title">PlagiarismGuard Pro</h1>
+                </div>
+                <p class="tagline"><span>Academic-Grade</span> Plagiarism Detection • Free & Open Source</p>
+            </header>
+
+            <!-- Core Features -->
+            <div class="section-title">Core Features</div>
+            <div class="features-grid">
+                <div class="feature-card"
+                    style="--accent: #4facfe; --bg-start: rgba(79, 172, 254, 0.2); --bg-end: rgba(0, 242, 254, 0.2);">
+                    <div class="feature-icon">📄</div>
+                    <div class="feature-title">Multi-Format Support</div>
+                    <div class="feature-desc">PDF, DOCX, TXT & Images</div>
+                </div>
+                <div class="feature-card"
+                    style="--accent: #8b5cf6; --bg-start: rgba(139, 92, 246, 0.2); --bg-end: rgba(167, 139, 250, 0.2);">
+                    <div class="feature-icon">🤖</div>
+                    <div class="feature-title">AI Authorship Detection</div>
+                    <div class="feature-desc">ChatGPT & AI Content Check</div>
+                </div>
+                <div class="feature-card"
+                    style="--accent: #10b981; --bg-start: rgba(16, 185, 129, 0.2); --bg-end: rgba(52, 211, 153, 0.2);">
+                    <div class="feature-icon">📊</div>
+                    <div class="feature-title">PDF Certificates</div>
+                    <div class="feature-desc">Official Reports with QR Code</div>
+                </div>
+                <div class="feature-card"
+                    style="--accent: #f59e0b; --bg-start: rgba(245, 158, 11, 0.2); --bg-end: rgba(251, 191, 36, 0.2);">
+                    <div class="feature-icon">📚</div>
+                    <div class="feature-title">Citation Detection</div>
+                    <div class="feature-desc">APA, Vancouver, IEEE</div>
+                </div>
+            </div>
+
+            <!-- Advanced Features -->
+            <div class="section-title">Advanced Features</div>
+            <div class="advanced-grid">
+                <div class="advanced-card">
+                    <div class="feature-icon">✍️</div>
+                    <div class="feature-title">Remediation Pro</div>
+                    <div class="feature-desc">AI-Powered Paraphrasing</div>
+                </div>
+                <div class="advanced-card">
+                    <div class="feature-icon">🎨</div>
+                    <div class="feature-title">Style Fingerprinting</div>
+                    <div class="feature-desc">Writing Pattern Analysis</div>
+                </div>
+                <div class="advanced-card">
+                    <div class="feature-icon">🌐</div>
+                    <div class="feature-title">Cross-Language</div>
+                    <div class="feature-desc">Multi-Language Detection</div>
+                </div>
+                <div class="advanced-card">
+                    <div class="feature-icon">💻</div>
+                    <div class="feature-title">Code Analysis</div>
+                    <div class="feature-desc">Winnowing Algorithm</div>
+                </div>
+            </div>
+
+            <!-- AI Hub -->
+            <div class="ai-hub">
+                <div class="ai-hub-title">🧠 Multi-AI Hub</div>
+                <div class="ai-hub-desc">Automatic fallback between AI providers for maximum reliability</div>
+                <div class="ai-providers">
+                    <div class="ai-provider">
+                        <div class="ai-provider-icon" style="background: linear-gradient(135deg, #4285f4, #34a853);">G
+                        </div>
+                        <span class="ai-provider-name">Gemini</span>
+                    </div>
+                    <div class="ai-provider">
+                        <div class="ai-provider-icon" style="background: linear-gradient(135deg, #10a37f, #1a7f64);">◯
+                        </div>
+                        <span class="ai-provider-name">OpenAI</span>
+                    </div>
+                    <div class="ai-provider">
+                        <div class="ai-provider-icon" style="background: linear-gradient(135deg, #d97757, #c4694a);">C
+                        </div>
+                        <span class="ai-provider-name">Claude</span>
+                    </div>
+                    <div class="ai-provider">
+                        <div class="ai-provider-icon" style="background: linear-gradient(135deg, #1a1a2e, #16213e);">𝕏
+                        </div>
+                        <span class="ai-provider-name">xAI</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Database Coverage -->
+            <div class="db-section">
+                <div class="db-title">16+</div>
+                <div class="db-subtitle">Academic Databases & Sources Integrated</div>
+                <div class="db-logos">
+                    <span class="db-logo">PubMed</span>
+                    <span class="db-logo">OpenAlex</span>
+                    <span class="db-logo">CrossRef</span>
+                    <span class="db-logo">arXiv</span>
+                    <span class="db-logo">IEEE</span>
+                    <span class="db-logo">CORE</span>
+                    <span class="db-logo">Europe PMC</span>
+                    <span class="db-logo">Semantic Scholar</span>
+                </div>
+            </div>
+
+            <!-- Tech Badges -->
+            <div class="section-title">Algorithms & Technology</div>
+            <div class="tech-strip">
+                <div class="tech-badge"><span class="dot" style="background: #4facfe;"></span> TF-IDF Analysis</div>
+                <div class="tech-badge"><span class="dot" style="background: #8b5cf6;"></span> N-gram Matching</div>
+                <div class="tech-badge"><span class="dot" style="background: #ec4899;"></span> pHash Images</div>
+                <div class="tech-badge"><span class="dot" style="background: #f59e0b;"></span> Rabin-Karp</div>
+                <div class="tech-badge"><span class="dot" style="background: #10b981;"></span> Winnowing</div>
+                <div class="tech-badge"><span class="dot" style="background: #ef4444;"></span> Semantic AI</div>
+            </div>
+
+            <!-- Footer -->
+            <footer class="footer">
+                <div class="free-badges">
+                    <div class="free-badge">✅ 100% Free</div>
+                    <div class="free-badge">🔓 No Login</div>
+                    <div class="free-badge">🔒 Privacy First</div>
+                </div>
+                <div class="url-container">
+                    <div class="url-box">plagiarism-checker-web-app.vercel.app</div>
+                </div>
+
+                <!-- QR Code & Download -->
+                <div style="margin-top: 24px; display: flex; align-items: center; justify-content: center; gap: 24px;">
+                    <div
+                        style="padding: 10px; background: white; border-radius: 12px; box-shadow: 0 0 20px rgba(0,0,0,0.5);">
+                        <!-- Simulated QR Code -->
+                        <div
+                            style="width: 80px; height: 80px; display: grid; grid-template-columns: repeat(8, 1fr); gap: 2px;">
+                            <script>
+                                for (let i = 0; i < 64; i++) {
+                                    document.write(`<div style="background: ${Math.random() > 0.5 ? '#000' : '#fff'}; height: 100%;"></div>`);
+                                }
+                            </script>
+                        </div>
+                        <div
+                            style="text-align: center; color: #000; font-size: 8px; font-weight: 800; margin-top: 4px;">
+                            SCAN ME</div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 20px; text-align: center;">
+                    <button onclick="window.print()"
+                        style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); border: none; padding: 10px 20px; border-radius: 8px; color: white; font-weight: 700; cursor: pointer; font-size: 12px; box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4);">
+                        📸 Capture / Download Poster
+                    </button>
+                    <p style="font-size: 9px; color: rgba(255,255,255,0.4); margin-top: 8px;">Tip: Press Ctrl+P and Save
+                        as PDF for high quality</p>
+                </div>
+                <div class="creator">
+                    <div class="creator-label">Created By</div>
+                    <div class="creator-name">Dr. Siddalingaiah H S • MIT Licensed</div>
+                </div>
+            </footer>
+        </div>
+    </div>
+</body>
+
+</html>
