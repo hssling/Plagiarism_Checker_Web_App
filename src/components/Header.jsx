@@ -12,7 +12,7 @@ function Header({ onOpenSettings }) {
                     </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <span className="header-badge">v3.0.0-alpha.10 - Open Source</span>
+                    <span className="header-badge">v3.2.0 - Pro Edition</span>
                     <button
                         onClick={onOpenSettings}
                         style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '1.2rem', padding: '0.5rem' }}
