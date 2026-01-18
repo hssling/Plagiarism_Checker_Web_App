@@ -3,6 +3,8 @@
  * Environment-agnostic implementation of core detection logic.
  */
 
+import { detectLanguage } from './languageShared';
+
 /**
  * Clean and normalize text for analysis
  */
@@ -96,6 +98,7 @@ export function calculateShingleOverlap(text1, text2, k = 4) {
  * SMART PHRASE EXTRACTION
  */
 export function extractSmartPhrases(text, maxPhrases = 12) {
+    const lang = detectLanguage(text);
     const clean = cleanText(text);
     const words = clean.split(/\s+/).filter(w => w.length > 0);
     const isShortText = words.length < 50;

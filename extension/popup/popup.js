@@ -6,7 +6,7 @@
 // Load recent checks on popup open
 document.addEventListener('DOMContentLoaded', async () => {
     // Load settings
-    const settings = await chrome.storage.local.get(['autoHighlight', 'highlightColor', 'recentChecks', 'apiEndpoint']);
+    const settings = await chrome.storage.local.get(['autoHighlight', 'highlightColor', 'recentChecks', 'apiEndpoint', 'gemini_api_key']);
 
     // Set checkbox state
     document.getElementById('auto-highlight').checked = settings.autoHighlight !== false;
@@ -14,6 +14,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Set color picker
     if (settings.highlightColor) {
         document.getElementById('highlight-color').value = settings.highlightColor;
+    }
+
+    // Set API Key
+    if (settings.gemini_api_key) {
+        document.getElementById('gemini-key').value = settings.gemini_api_key;
     }
 
     // Display recent checks
@@ -26,6 +31,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     document.getElementById('highlight-color').addEventListener('change', (e) => {
         chrome.storage.local.set({ highlightColor: e.target.value });
+    });
+
+    document.getElementById('gemini-key').addEventListener('input', (e) => {
+        chrome.storage.local.set({ gemini_api_key: e.target.value });
     });
 
     document.getElementById('open-app').addEventListener('click', () => {

@@ -25,6 +25,8 @@ export const generatePDF = async (results, text, metadata = {}) => {
     const phrasesAnalyzed = results.keyPhrases?.length || 0;
     const matchesFound = results.keyPhrases?.filter(p => p.found).length || 0;
     const originalityIndex = (100 - score).toFixed(1);
+    const authorship = results.authorship;
+    const lang = results.language || 'en';
 
     // Color scheme
     const COLORS = {
@@ -182,6 +184,31 @@ export const generatePDF = async (results, text, metadata = {}) => {
 
     const dateY = authorY + (authorLines.length * 5);
     doc.text(`Analysis Date: ${scanDate.toLocaleDateString()} at ${scanDate.toLocaleTimeString()}`, 20, dateY);
+    doc.text(`Primary Language: ${lang.toUpperCase()}`, 20, dateY + 5);
+
+    // ============================================================
+    // COGNITIVE AI INSIGHTS PANEL (NEW)
+    // ============================================================
+    const aiStartY = dateY + 15;
+    doc.setFillColor(240, 247, 255);
+    doc.roundedRect(15, aiStartY, pageWidth - 30, 35, 3, 3, 'F');
+
+    doc.setTextColor(...COLORS.primary);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.text("🧠 Cognitive AI Analysis", 20, aiStartY + 10);
+
+    doc.setTextColor(...COLORS.dark);
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+
+    if (authorship) {
+        doc.text(`AI Authorship Probability: ${authorship.confidence}%`, 20, aiStartY + 20);
+        const reasoningLines = doc.splitTextToSize(`Reasoning: ${authorship.reasoning}`, pageWidth - 50);
+        doc.text(reasoningLines, 20, aiStartY + 25);
+    } else {
+        doc.text("AI Authorship: Not Analyzed (Enable AI Hub for style verification)", 20, aiStartY + 20);
+    }
 
     // ============================================================
     // QR CODE
@@ -247,7 +274,7 @@ export const generatePDF = async (results, text, metadata = {}) => {
 
     doc.setTextColor(...COLORS.white);
     doc.setFontSize(7);
-    doc.text("PlagiarismGuard™ Engine v2.4 | Academic Integrity Verification System", pageWidth / 2, pageHeight - 8, { align: 'center' });
+    doc.text("PlagiarismGuard™ Engine v3.1 | Cognitive AI Edition", pageWidth / 2, pageHeight - 8, { align: 'center' });
     doc.text("This certificate is machine-generated and does not require signature.", pageWidth / 2, pageHeight - 3, { align: 'center' });
 
     // ============================================================
@@ -284,13 +311,14 @@ export const generatePDF = async (results, text, metadata = {}) => {
     const tableData = foundPhrases.length > 0 ? foundPhrases.map((p, idx) => [
         (idx + 1).toString(),
         (p.text || '').substring(0, 50) + (p.text?.length > 50 ? '...' : ''),
-        p.source || 'Web',
-        'Identical'
-    ]) : [['—', 'No plagiarism detected in this document.', '—', '—']];
+        p.source || 'Web Search',
+        p.crossLanguage ? 'Cross-Lang' : 'Identical',
+        p.intent?.category || 'N/A'
+    ]) : [['—', 'No plagiarism detected in this document.', '—', '—', '—']];
 
     autoTable(doc, {
         startY: 45,
-        head: [['#', 'Matched Text Fragment', 'Source', 'Type']],
+        head: [['#', 'Matched Text Fragment', 'Source', 'Detection', 'Intent']],
         body: tableData,
         headStyles: {
             fillColor: COLORS.primary,

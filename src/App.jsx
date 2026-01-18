@@ -12,9 +12,11 @@ import { generateImageHash, calculateImageSimilarity } from './lib/imagePlagiari
 import ImageUpload from './components/ImageUpload';
 import SettingsModal from './components/SettingsModal';
 import { initializeAI } from './lib/llmService';
+import { saveToHistory } from './lib/historyService';
+import AnalyticsDashboard from './components/AnalyticsDashboard';
 
 function App() {
-    // Mode: 'text' | 'code' | 'image' | 'batch'
+    // Mode: 'text' | 'code' | 'image' | 'batch' | 'analytics'
     const [mode, setMode] = useState('text');
 
     // Text Mode State
@@ -157,6 +159,9 @@ function App() {
                 if (!text.trim()) throw new Error('Please enter text to analyze.');
                 const analysisResults = await analyzePlagiarism(text, (p) => setProgress(p));
                 setResults(analysisResults);
+
+                // Phase 11: Save to history
+                saveToHistory(analysisResults, text, { mode: 'text' });
             }
             else if (mode === 'code') {
                 if (!code1.trim() || !code2.trim()) throw new Error('Please enter both code snippets.');
@@ -190,14 +195,14 @@ function App() {
             <main className="main-content">
                 {/* MODE TABS */}
                 <div className="tabs" style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-                    {['text', 'code', 'image', 'batch'].map(m => (
+                    {['text', 'code', 'image', 'batch', 'analytics'].map(m => (
                         <button
                             key={m}
                             onClick={() => { setMode(m); handleReset(); }}
                             className={`btn ${mode === m ? 'btn-primary' : 'btn-secondary'}`}
                             style={{ textTransform: 'capitalize', minWidth: '120px' }}
                         >
-                            {m === 'text' ? '📄 Text' : m === 'code' ? '💻 Code' : m === 'image' ? '🖼️ Image' : '📦 Batch'}
+                            {m === 'text' ? '📄 Text' : m === 'code' ? '💻 Code' : m === 'image' ? '🖼️ Image' : m === 'batch' ? '📦 Batch' : '📊 Admin Dashboard'}
                         </button>
                     ))}
                 </div>
@@ -278,6 +283,11 @@ function App() {
                     </div>
                 )}
 
+                {/* ANALYTICS MODE UI */}
+                {mode === 'analytics' && (
+                    <AnalyticsDashboard />
+                )}
+
                 {/* BATCH RESULTS */}
                 {mode === 'batch' && batchSummary && (
                     <div className="batch-section">
@@ -295,7 +305,7 @@ function App() {
                 )}
 
                 {/* ANALYZE BUTTON */}
-                {((mode === 'text' && text) || (mode !== 'text' && !comparisonResult)) && !isAnalyzing && mode !== 'batch' && (
+                {((mode === 'text' && text) || (mode !== 'text' && mode !== 'batch' && mode !== 'analytics' && !comparisonResult)) && !isAnalyzing && mode !== 'batch' && (
                     <div className="action-buttons" style={{ textAlign: 'center', marginTop: '1rem' }}>
                         <button className="btn btn-primary" onClick={handleAnalyze}>
                             🔍 Analyze {mode === 'text' ? 'Internet' : 'Similarity'}
@@ -352,14 +362,14 @@ function App() {
                     </div>
                 </div>
                 <div className="footer-meta">
-                    <p>PlagiarismGuard v2.4 | Open Source Academic Plagiarism Checker</p>
+                    <p>PlagiarismGuard v3.2 Enterprise & Remediation Edition | Open Source Academic Plagiarism Checker</p>
                     <a
                         href="https://github.com/hssling/Plagiarism_Checker_Web_App/blob/main/docs/USER_GUIDE.md"
                         target="_blank"
                         rel="noopener noreferrer"
                         style={{ color: 'var(--text-muted)', textDecoration: 'underline', marginTop: '0.5rem', display: 'inline-block' }}
                     >
-                        📘 How it Works (User Guide)
+                        📘 User Guide & Methodology
                     </a>
                 </div>
             </footer>

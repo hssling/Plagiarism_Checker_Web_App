@@ -188,9 +188,12 @@ function showResultsPopup(results, originalText) {
         <div class="pg-sources" style="margin-bottom: 20px;">
           <div style="font-size: 10px; font-weight: 700; color: #94a3b8; margin-bottom: 8px; text-transform: uppercase;">Top Source Matches</div>
           ${results.sources.slice(0, 2).map(s => `
-            <div class="pg-source" style="display: flex; justify-content: space-between; padding: 8px; background: rgba(255,255,255,0.02); border-radius: 6px; margin-bottom: 6px; border-left: 3px solid #2563eb;">
-              <div style="font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;">${s.name}</div>
-              <div style="font-size: 11px; font-weight: 700; color: #34d399;">${s.similarity.toFixed(1)}%</div>
+            <div class="pg-source" style="padding: 8px; background: rgba(255,255,255,0.02); border-radius: 6px; margin-bottom: 6px; border-left: 3px solid #2563eb;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                <div style="font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;">${s.name}</div>
+                <div style="font-size: 11px; font-weight: 700; color: #34d399;">${s.similarity.toFixed(1)}%</div>
+              </div>
+              <button class="pg-remediate-btn" data-text="${escapeHtml(s.text || results.keyPhrases?.find(p => p.found)?.text || "")}" data-source="${escapeHtml(s.name)}" style="width: 100%; padding: 4px; font-size: 9px; background: rgba(37, 99, 235, 0.1); border: 1px solid rgba(37, 99, 235, 0.3); color: #60a5fa; border-radius: 4px; cursor: pointer;">✨ Remediate (AI Fix)</button>
             </div>
           `).join('')}
         </div>
@@ -233,6 +236,15 @@ function showResultsPopup(results, originalText) {
         });
     });
 
+    // Remediate buttons
+    popup.querySelectorAll('.pg-remediate-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const text = btn.getAttribute('data-text');
+            const source = btn.getAttribute('data-source');
+            handleRemediation(text, source);
+        });
+    });
+
     // Auto-hide after 30 seconds
     setTimeout(() => {
         if (popup.parentNode) {
@@ -268,6 +280,97 @@ function showNotification(message, type = 'info') {
  */
 function escapeRegex(string) {
     return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+/**
+ * Handle Remediation (Paraphrasing)
+ */
+async function handleRemediation(text, source) {
+    try {
+        showNotification('Integrity AI is rewriting...', 'loading');
+
+        const { endpoint } = await chrome.runtime.sendMessage({ action: 'getApiEndpoint' });
+        // Extension needs to get AI key from storage
+        const { gemini_api_key } = await chrome.storage.local.get(['gemini_api_key']);
+
+        if (!gemini_api_key) {
+            showNotification('Please add Gemini API Key in Extension Settings to use Remediation.', 'error');
+            return;
+        }
+
+        const response = await fetch(`${endpoint}/api/remediate`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-ai-key': gemini_api_key
+            },
+            body: JSON.stringify({ text, context: source, style: 'formal' })
+        });
+
+        if (!response.ok) throw new Error('Remediation failed');
+
+        const result = await response.json();
+        showRemediationOverlay(text, result.paraphrased, source, result.integrityScore);
+
+    } catch (e) {
+        showNotification(`Remediation failed: ${e.message}`, 'error');
+    }
+}
+
+/**
+ * Side-by-side Remediation UI
+ */
+function showRemediationOverlay(original, fixed, source, score) {
+    const overlay = document.createElement('div');
+    overlay.className = 'pg-remediation-overlay';
+    overlay.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.8); backdrop-filter: blur(8px);
+        z-index: 2147483647; display: flex; align-items: center; justify-content: center;
+        font-family: 'Inter', sans-serif;
+    `;
+
+    overlay.innerHTML = `
+        <div style="background: #0f172a; width: 80%; max-width: 900px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);">
+            <div style="padding: 16px 24px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="margin: 0; color: white;">🛡️ Remediation Pro <span style="font-size: 10px; background: #2563eb; padding: 2px 6px; border-radius: 4px; margin-left: 8px;">INTEGRITY AI</span></h3>
+                <button id="pg-rem-close" style="background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 24px;">×</button>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 24px; max-height: 400px; overflow-y: auto;">
+                <div>
+                    <div style="font-size: 10px; color: #94a3b8; text-transform: uppercase; margin-bottom: 8px;">Original Fragment</div>
+                    <div style="background: rgba(255,255,255,0.03); padding: 12px; border-radius: 8px; color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); font-size: 13px; line-height: 1.6;">${original}</div>
+                    <div style="font-size: 10px; color: #64748b; margin-top: 8px;">Source: ${source}</div>
+                </div>
+                <div>
+                    <div style="font-size: 10px; color: #34d399; text-transform: uppercase; margin-bottom: 8px;">AI Improved Fix</div>
+                    <div style="background: rgba(52, 211, 153, 0.05); padding: 12px; border-radius: 8px; color: #34d399; border: 1px solid rgba(52, 211, 153, 0.2); font-size: 13px; line-height: 1.6;">${fixed}</div>
+                    <div style="font-size: 10px; color: #64748b; margin-top: 8px;">Integrity Score: ${score || 100}%</div>
+                </div>
+            </div>
+
+            <div style="padding: 16px 24px; background: rgba(0,0,0,0.2); display: flex; justify-content: flex-end; gap: 12px;">
+                <button id="pg-rem-copy" style="padding: 8px 16px; border-radius: 6px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; cursor: pointer; font-size: 12px;">Copy Fix</button>
+                <button id="pg-rem-done" style="padding: 8px 16px; border-radius: 6px; background: #2563eb; border: none; color: white; cursor: pointer; font-size: 12px; font-weight: 600;">Done</button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    document.getElementById('pg-rem-close').onclick = () => overlay.remove();
+    document.getElementById('pg-rem-done').onclick = () => overlay.remove();
+    document.getElementById('pg-rem-copy').onclick = () => {
+        navigator.clipboard.writeText(fixed);
+        showNotification('Copied to clipboard!', 'success');
+    };
 }
 
 console.log('[PlagiarismGuard] Content script loaded');

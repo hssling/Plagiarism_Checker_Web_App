@@ -167,6 +167,10 @@ function ResultsDashboard({ results, onReset, text }) {
                                 <div className="value">{results.uniqueWords.toLocaleString()}</div>
                             </div>
                             <div className="metric-item">
+                                <div className="label">Language</div>
+                                <div className="value" style={{ textTransform: 'uppercase' }}>{results.language || 'en'}</div>
+                            </div>
+                            <div className="metric-item">
                                 <div className="label">Max Single Match</div>
                                 <div className="value">{results.maxMatch.toFixed(1)}%</div>
                             </div>
@@ -185,7 +189,7 @@ function ResultsDashboard({ results, onReset, text }) {
                             {aiLoading && <small>Thinking...</small>}
                         </div>
 
-                        {aiAnalysis ? (
+                        {aiAnalysis || results.authorship ? (
                             <div className="ai-insights-grid">
                                 {/* Authorship */}
                                 <div>
@@ -194,13 +198,13 @@ function ResultsDashboard({ results, onReset, text }) {
                                         <div style={{
                                             fontSize: '2rem',
                                             fontWeight: 'bold',
-                                            color: aiAnalysis.authorship.confidence > 50 ? 'var(--warning)' : 'var(--success)'
+                                            color: (results.authorship?.confidence || aiAnalysis?.authorship?.confidence) > 50 ? 'var(--warning)' : 'var(--success)'
                                         }}>
-                                            {aiAnalysis.authorship.confidence || 0}%
+                                            {results.authorship?.confidence || aiAnalysis?.authorship?.confidence || 0}%
                                         </div>
                                         <div style={{ fontSize: '0.9rem' }}>
                                             Probability of AI Generation<br />
-                                            <span style={{ color: 'var(--text-muted)' }}>{aiAnalysis.authorship.reasoning}</span>
+                                            <span style={{ color: 'var(--text-muted)' }}>{results.authorship?.reasoning || aiAnalysis?.authorship?.reasoning || 'No generation detected'}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -208,7 +212,7 @@ function ResultsDashboard({ results, onReset, text }) {
                                 <div>
                                     <h4 style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Smart Summary</h4>
                                     <div style={{ fontSize: '0.9rem', lineHeight: '1.5' }}>
-                                        {aiAnalysis.summary ? aiAnalysis.summary.split('\n').map((line, i) => (
+                                        {results.summary || aiAnalysis?.summary ? (results.summary || aiAnalysis?.summary).split('\n').map((line, i) => (
                                             <div key={i}>{line}</div>
                                         )) : 'Generating summary...'}
                                     </div>
@@ -305,6 +309,7 @@ function ResultsDashboard({ results, onReset, text }) {
                                 <tr>
                                     <th>Source</th>
                                     <th>Similarity</th>
+                                    <th>Intent (AI)</th>
                                     <th>Status</th>
                                     <th>Action</th>
                                 </tr>
@@ -322,11 +327,38 @@ function ResultsDashboard({ results, onReset, text }) {
                                         <td>
                                             <strong>{source.name}</strong>
                                             {source.type && <span style={{ color: 'var(--text-muted)', marginLeft: '0.5rem', fontSize: '0.85rem' }}>({source.type})</span>}
+                                            {source.isCrossLanguage && (
+                                                <span
+                                                    style={{
+                                                        marginLeft: '0.5rem',
+                                                        padding: '0.1rem 0.4rem',
+                                                        background: 'rgba(56, 189, 248, 0.2)',
+                                                        color: '#0ea5e9',
+                                                        border: '1px solid #0ea5e9',
+                                                        borderRadius: '4px',
+                                                        fontSize: '0.7rem'
+                                                    }}
+                                                >
+                                                    🌐 Cross-Language
+                                                </span>
+                                            )}
                                         </td>
                                         <td>
                                             <span style={{ fontWeight: 'bold', color: getProgressColor(source.similarity) }}>
                                                 {source.similarity.toFixed(1)}%
                                             </span>
+                                        </td>
+                                        <td>
+                                            {source.intent ? (
+                                                <div style={{ fontSize: '0.75rem' }}>
+                                                    <div style={{ fontWeight: '600', color: source.intent.category === 'Direct Copy' ? 'var(--danger)' : 'var(--warning)' }}>
+                                                        {source.intent.category}
+                                                    </div>
+                                                    <div style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>{source.intent.explanation}</div>
+                                                </div>
+                                            ) : (
+                                                <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>Not analyzed</span>
+                                            )}
                                         </td>
                                         <td>
                                             <span
