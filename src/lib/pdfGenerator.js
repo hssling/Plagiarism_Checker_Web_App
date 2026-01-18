@@ -119,7 +119,7 @@ export const generatePDF = async (results, text, metadata = {}) => {
     // METRICS DASHBOARD GRID
     // ============================================================
 
-    const metricsStartY = 125;
+    const metricsStartY = 110; // Moved up from 120
     const colWidth = (pageWidth - 30) / 4;
 
     const metrics = [
@@ -161,7 +161,7 @@ export const generatePDF = async (results, text, metadata = {}) => {
     // DOCUMENT INFORMATION PANEL
     // ============================================================
 
-    const infoStartY = metricsStartY + 80;
+    const infoStartY = metricsStartY + 60; // Moved up from 70
 
     doc.setFillColor(250, 250, 250);
     doc.roundedRect(15, infoStartY, pageWidth - 70, 45, 3, 3, 'F');
@@ -189,7 +189,7 @@ export const generatePDF = async (results, text, metadata = {}) => {
     // ============================================================
     // COGNITIVE AI INSIGHTS PANEL (NEW)
     // ============================================================
-    const aiStartY = dateY + 15;
+    const aiStartY = dateY + 10; // Refined spacing
     doc.setFillColor(240, 247, 255);
     doc.roundedRect(15, aiStartY, pageWidth - 30, 35, 3, 3, 'F');
 
@@ -209,6 +209,8 @@ export const generatePDF = async (results, text, metadata = {}) => {
     } else {
         doc.text("AI Authorship: Not Analyzed (Enable AI Hub for style verification)", 20, aiStartY + 20);
     }
+
+    const aiPanelEnd = aiStartY + 35;
 
     // ============================================================
     // QR CODE
@@ -246,10 +248,11 @@ export const generatePDF = async (results, text, metadata = {}) => {
     // VERIFICATION STATEMENT
     // ============================================================
 
-    const stmtY = infoStartY + 55;
+    // Use currentY to avoid overlap
+    const stmtY = aiPanelEnd + 5;
 
     doc.setFillColor(score < 15 ? 230 : 255, score < 15 ? 255 : 243, score < 15 ? 230 : 230);
-    doc.roundedRect(15, stmtY, pageWidth - 30, 30, 3, 3, 'F');
+    doc.roundedRect(15, stmtY, pageWidth - 30, 22, 3, 3, 'F'); // Slightly smaller height
 
     doc.setTextColor(...COLORS.dark);
     doc.setFontSize(8);
@@ -262,8 +265,7 @@ export const generatePDF = async (results, text, metadata = {}) => {
             : "✗ High similarity detected. Significant revision recommended before submission.";
 
     const verdictLines = doc.splitTextToSize(verdict, pageWidth - 50);
-    // Align left to be safer with margins
-    doc.text(verdictLines, 25, stmtY + 10);
+    doc.text(verdictLines, 25, stmtY + 8);
 
     // ============================================================
     // FOOTER
