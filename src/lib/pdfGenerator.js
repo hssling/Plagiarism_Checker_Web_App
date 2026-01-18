@@ -109,28 +109,28 @@ export const generatePDF = async (results, text, metadata = {}) => {
 
     // Status badge
     doc.setFillColor(...scoreColor);
-    doc.roundedRect(pageWidth / 2 - 25, 100, 50, 12, 3, 3, 'F');
+    doc.roundedRect(pageWidth / 2 - 25, 98, 50, 10, 3, 3, 'F'); // Moved up and height reduced
     doc.setTextColor(...COLORS.white);
     doc.setFontSize(8);
     doc.setFont('helvetica', 'bold');
-    doc.text(statusLabel, pageWidth / 2, 108, { align: 'center' });
+    doc.text(statusLabel, pageWidth / 2, 105, { align: 'center' }); // Adjusted Y
 
     // ============================================================
     // METRICS DASHBOARD GRID
     // ============================================================
 
-    const metricsStartY = 110; // Moved up from 120
-    const colWidth = (pageWidth - 30) / 4;
+    const metricsStartY = 115; // Set to 115 to clear the status badge (ends at 108)
+    const colWidth = (pageWidth - 15) / 4; // Use full width with margins
 
     const metrics = [
-        { label: 'Word Count', value: wordCount.toLocaleString(), icon: '📄' },
-        { label: 'Unique Words', value: uniqueWords.toLocaleString(), icon: '🔤' },
-        { label: 'Sources Checked', value: sourcesChecked.toString(), icon: '🔍' },
-        { label: 'Max Single Match', value: `${maxMatch.toFixed(1)}%`, icon: '📊' },
-        { label: 'Phrases Analyzed', value: phrasesAnalyzed.toString(), icon: '📝' },
-        { label: 'Matches Found', value: matchesFound.toString(), icon: '⚠️' },
-        { label: 'Originality Index', value: `${originalityIndex}%`, icon: '✅' },
-        { label: 'Scan Duration', value: '< 30s', icon: '⏱️' }
+        { label: 'Word Count', value: wordCount.toLocaleString() },
+        { label: 'Unique Words', value: uniqueWords.toLocaleString() },
+        { label: 'Sources Checked', value: sourcesChecked.toString() },
+        { label: 'Max Single Match', value: `${maxMatch.toFixed(1)}%` },
+        { label: 'Phrases Analyzed', value: phrasesAnalyzed.toString() },
+        { label: 'Matches Found', value: matchesFound.toString() },
+        { label: 'Originality Index', value: `${originalityIndex}%` },
+        { label: 'Scan Duration', value: '< 30s' }
     ];
 
     // Draw metric cards
@@ -138,11 +138,11 @@ export const generatePDF = async (results, text, metadata = {}) => {
         const row = Math.floor(index / 4);
         const col = index % 4;
         const x = 15 + col * colWidth;
-        const y = metricsStartY + row * 35;
+        const y = metricsStartY + row * 28; // Reduced row spacing
 
         // Card background
         doc.setFillColor(...COLORS.light);
-        doc.roundedRect(x, y, colWidth - 5, 30, 2, 2, 'F');
+        doc.roundedRect(x, y, colWidth - 5, 24, 2, 2, 'F'); // Reduced height
 
         // Metric value
         doc.setTextColor(...COLORS.dark);
@@ -161,10 +161,10 @@ export const generatePDF = async (results, text, metadata = {}) => {
     // DOCUMENT INFORMATION PANEL
     // ============================================================
 
-    const infoStartY = metricsStartY + 60; // Moved up from 70
+    const infoStartY = metricsStartY + 60;
 
     doc.setFillColor(250, 250, 250);
-    doc.roundedRect(15, infoStartY, pageWidth - 70, 45, 3, 3, 'F');
+    doc.roundedRect(15, infoStartY, pageWidth - 70, 40, 3, 3, 'F'); // Reduced height to 40
 
     doc.setTextColor(...COLORS.dark);
     doc.setFontSize(10);
@@ -189,28 +189,28 @@ export const generatePDF = async (results, text, metadata = {}) => {
     // ============================================================
     // COGNITIVE AI INSIGHTS PANEL (NEW)
     // ============================================================
-    const aiStartY = dateY + 10; // Refined spacing
+    const aiStartY = dateY + 8; // Refined spacing
     doc.setFillColor(240, 247, 255);
-    doc.roundedRect(15, aiStartY, pageWidth - 30, 35, 3, 3, 'F');
+    doc.roundedRect(15, aiStartY, pageWidth - 30, 30, 3, 3, 'F'); // Reduced height
 
     doc.setTextColor(...COLORS.primary);
     doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
-    doc.text("🧠 Cognitive AI Analysis", 20, aiStartY + 10);
+    doc.text("COGNITIVE AI ANALYSIS", 20, aiStartY + 9);
 
     doc.setTextColor(...COLORS.dark);
     doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
 
     if (authorship) {
-        doc.text(`AI Authorship Probability: ${authorship.confidence}%`, 20, aiStartY + 20);
+        doc.text(`AI Authorship Probability: ${authorship.confidence}%`, 20, aiStartY + 18);
         const reasoningLines = doc.splitTextToSize(`Reasoning: ${authorship.reasoning}`, pageWidth - 50);
-        doc.text(reasoningLines, 20, aiStartY + 25);
+        doc.text(reasoningLines, 20, aiStartY + 23);
     } else {
-        doc.text("AI Authorship: Not Analyzed (Enable AI Hub for style verification)", 20, aiStartY + 20);
+        doc.text("AI Authorship: Not Analyzed (Enable AI Hub for style verification)", 20, aiStartY + 18);
     }
 
-    const aiPanelEnd = aiStartY + 35;
+    const aiPanelEnd = aiStartY + 30;
 
     // ============================================================
     // QR CODE
@@ -265,7 +265,7 @@ export const generatePDF = async (results, text, metadata = {}) => {
             : "✗ High similarity detected. Significant revision recommended before submission.";
 
     const verdictLines = doc.splitTextToSize(verdict, pageWidth - 50);
-    doc.text(verdictLines, 25, stmtY + 8);
+    doc.text(verdictLines, 25, stmtY + 7);
 
     // ============================================================
     // FOOTER
