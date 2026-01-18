@@ -3,7 +3,7 @@
  * Environment-agnostic implementation of core detection logic.
  */
 
-import { detectLanguage } from './languageShared';
+import { detectLanguage } from './languageShared.js';
 
 /**
  * Clean and normalize text for analysis

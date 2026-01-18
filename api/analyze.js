@@ -8,7 +8,7 @@ import { checkRateLimit, getRateLimitHeaders, rateLimitErrorResponse } from './_
 import { extractSmartPhrases, calculateShingleOverlap, calculateTFIDFSimilarity } from '../src/lib/shared/analysisShared.js';
 import { executeSearch } from '../src/lib/shared/searchShared.js';
 import { detectLanguage } from '../src/lib/shared/languageShared.js';
-import { analyzeIntentBackend, checkAuthorshipBackend } from './_lib/ai.js';
+import { analyzeIntentBackend, checkAuthorshipBackend, translateTextBackend } from './_lib/ai.js';
 
 /**
  * Real plagiarism analysis engine for backend with Cognitive AI
