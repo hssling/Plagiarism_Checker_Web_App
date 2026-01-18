@@ -1,5 +1,5 @@
-import { paraphraseBackend } from './_lib/ai';
-import { validateRequest } from './_lib/auth';
+import { paraphraseBackend } from './_lib/ai.js';
+import { validateRequest } from './_lib/auth.js';
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
