@@ -1,7 +1,7 @@
 // PlagiarismGuard Service Worker
 // Provides offline caching and app-like experience
 
-const CACHE_NAME = 'plagiarismguard-v1';
+const CACHE_NAME = 'plagiarismguard-v3.2';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
@@ -39,8 +39,8 @@ self.addEventListener('fetch', (event) => {
     if (event.request.method !== 'GET') return;
     if (!event.request.url.startsWith(self.location.origin)) return;
 
-    // Skip API calls - always fetch fresh
-    if (event.request.url.includes('/api/')) return;
+    // Skip API calls and index.html - always fetch fresh
+    if (event.request.url.includes('/api/') || event.request.url.endsWith('/index.html') || event.request.url === self.location.origin + '/') return;
 
     event.respondWith(
         caches.match(event.request).then((cachedResponse) => {
