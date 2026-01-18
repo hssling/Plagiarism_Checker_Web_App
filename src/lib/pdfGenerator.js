@@ -69,7 +69,7 @@ export const generatePDF = async (results, text, metadata = {}) => {
     doc.setTextColor(...COLORS.white);
     doc.setFontSize(22);
     doc.setFont('helvetica', 'bold');
-    doc.text("PlagiarismGuard™", 15, 18);
+    doc.text("PlagiarismGuard", 15, 18);
 
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
@@ -259,13 +259,13 @@ export const generatePDF = async (results, text, metadata = {}) => {
     doc.setFont('helvetica', 'bold');
 
     const verdict = score < 15
-        ? "✓ This document has passed plagiarism verification and is suitable for submission."
+        ? "[PASS] This document has passed plagiarism verification and is suitable for submission."
         : score < 25
-            ? "⚠ This document requires review. Some similarity detected with existing sources."
-            : "✗ High similarity detected. Significant revision recommended before submission.";
+            ? "[REVIEW] This document requires review. Some similarity detected with existing sources."
+            : "[ALERT] High similarity detected. Significant revision recommended before submission.";
 
-    const verdictLines = doc.splitTextToSize(verdict, pageWidth - 50);
-    doc.text(verdictLines, 25, stmtY + 7);
+    const verdictLines = doc.splitTextToSize(verdict, pageWidth - 60);
+    doc.text(verdictLines, 20, stmtY + 8);
 
     // ============================================================
     // FOOTER
@@ -276,7 +276,7 @@ export const generatePDF = async (results, text, metadata = {}) => {
 
     doc.setTextColor(...COLORS.white);
     doc.setFontSize(7);
-    doc.text("PlagiarismGuard™ Engine v3.1 | Cognitive AI Edition", pageWidth / 2, pageHeight - 8, { align: 'center' });
+    doc.text("PlagiarismGuard Engine v3.2 | Cognitive AI Edition", pageWidth / 2, pageHeight - 8, { align: 'center' });
     doc.text("This certificate is machine-generated and does not require signature.", pageWidth / 2, pageHeight - 3, { align: 'center' });
 
     // ============================================================
