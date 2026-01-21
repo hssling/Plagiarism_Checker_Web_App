@@ -105,9 +105,12 @@ function SettingsModal({ isOpen, onClose, onSave }) {
 
                     {/* Gemini */}
                     <div style={{ marginBottom: '1.25rem' }}>
-                        <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                            <span style={{ fontWeight: 600 }}>Google Gemini</span>
-                            <input type="radio" name="primaryAI" checked={primaryAI === 'gemini'} onChange={() => setPrimaryAI('gemini')} />
+                        <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <span style={{ fontWeight: 600 }}>Google Gemini</span>
+                                <input type="radio" name="primaryAI" checked={primaryAI === 'gemini'} onChange={() => setPrimaryAI('gemini')} />
+                            </div>
+                            <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.8rem', color: '#3b82f6' }}>Get Key ↗</a>
                         </label>
                         <input
                             type="password"
@@ -121,9 +124,12 @@ function SettingsModal({ isOpen, onClose, onSave }) {
 
                     {/* OpenAI */}
                     <div style={{ marginBottom: '1.25rem' }}>
-                        <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                            <span style={{ fontWeight: 600 }}>OpenAI (ChatGPT)</span>
-                            <input type="radio" name="primaryAI" checked={primaryAI === 'openai'} onChange={() => setPrimaryAI('openai')} />
+                        <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <span style={{ fontWeight: 600 }}>OpenAI (ChatGPT)</span>
+                                <input type="radio" name="primaryAI" checked={primaryAI === 'openai'} onChange={() => setPrimaryAI('openai')} />
+                            </div>
+                            <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.8rem', color: '#3b82f6' }}>Get Key ↗</a>
                         </label>
                         <input
                             type="password"
@@ -137,9 +143,12 @@ function SettingsModal({ isOpen, onClose, onSave }) {
 
                     {/* Anthropic */}
                     <div style={{ marginBottom: '1.25rem' }}>
-                        <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                            <span style={{ fontWeight: 600 }}>Anthropic (Claude)</span>
-                            <input type="radio" name="primaryAI" checked={primaryAI === 'anthropic'} onChange={() => setPrimaryAI('anthropic')} />
+                        <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <span style={{ fontWeight: 600 }}>Anthropic (Claude)</span>
+                                <input type="radio" name="primaryAI" checked={primaryAI === 'anthropic'} onChange={() => setPrimaryAI('anthropic')} />
+                            </div>
+                            <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.8rem', color: '#3b82f6' }}>Get Key ↗</a>
                         </label>
                         <input
                             type="password"
@@ -153,9 +162,12 @@ function SettingsModal({ isOpen, onClose, onSave }) {
 
                     {/* xAI */}
                     <div style={{ marginBottom: '1.25rem' }}>
-                        <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                            <span style={{ fontWeight: 600 }}>xAI (Grok)</span>
-                            <input type="radio" name="primaryAI" checked={primaryAI === 'xai'} onChange={() => setPrimaryAI('xai')} />
+                        <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <span style={{ fontWeight: 600 }}>xAI (Grok)</span>
+                                <input type="radio" name="primaryAI" checked={primaryAI === 'xai'} onChange={() => setPrimaryAI('xai')} />
+                            </div>
+                            <a href="https://console.x.ai/" target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.8rem', color: '#3b82f6' }}>Get Key ↗</a>
                         </label>
                         <input
                             type="password"
@@ -169,9 +181,12 @@ function SettingsModal({ isOpen, onClose, onSave }) {
 
                     {/* OpenRouter */}
                     <div style={{ marginBottom: '1.25rem' }}>
-                        <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                            <span style={{ fontWeight: 600 }}>OpenRouter (DeepSeek R1)</span>
-                            <input type="radio" name="primaryAI" checked={primaryAI === 'openrouter'} onChange={() => setPrimaryAI('openrouter')} />
+                        <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <span style={{ fontWeight: 600 }}>OpenRouter (DeepSeek R1)</span>
+                                <input type="radio" name="primaryAI" checked={primaryAI === 'openrouter'} onChange={() => setPrimaryAI('openrouter')} />
+                            </div>
+                            <a href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.8rem', color: '#3b82f6' }}>Get Key ↗</a>
                         </label>
                         <input
                             type="password"
@@ -188,9 +203,12 @@ function SettingsModal({ isOpen, onClose, onSave }) {
 
                     {/* Groq */}
                     <div style={{ marginBottom: '1.25rem' }}>
-                        <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                            <span style={{ fontWeight: 600 }}>Groq (Llama 3.3)</span>
-                            <input type="radio" name="primaryAI" checked={primaryAI === 'groq'} onChange={() => setPrimaryAI('groq')} />
+                        <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <span style={{ fontWeight: 600 }}>Groq (Llama 3.3)</span>
+                                <input type="radio" name="primaryAI" checked={primaryAI === 'groq'} onChange={() => setPrimaryAI('groq')} />
+                            </div>
+                            <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.8rem', color: '#3b82f6' }}>Get Key ↗</a>
                         </label>
                         <input
                             type="password"
@@ -204,9 +222,12 @@ function SettingsModal({ isOpen, onClose, onSave }) {
 
                     {/* Hugging Face */}
                     <div style={{ marginBottom: '1.25rem' }}>
-                        <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                            <span style={{ fontWeight: 600 }}>Hugging Face (Mistral)</span>
-                            <input type="radio" name="primaryAI" checked={primaryAI === 'huggingface'} onChange={() => setPrimaryAI('huggingface')} />
+                        <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <span style={{ fontWeight: 600 }}>Hugging Face (Mistral)</span>
+                                <input type="radio" name="primaryAI" checked={primaryAI === 'huggingface'} onChange={() => setPrimaryAI('huggingface')} />
+                            </div>
+                            <a href="https://huggingface.co/settings/tokens" target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.8rem', color: '#3b82f6' }}>Get Key ↗</a>
                         </label>
                         <input
                             type="password"
@@ -220,9 +241,12 @@ function SettingsModal({ isOpen, onClose, onSave }) {
 
                     {/* Cohere */}
                     <div style={{ marginBottom: '1.25rem' }}>
-                        <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                            <span style={{ fontWeight: 600 }}>Cohere (Command-R)</span>
-                            <input type="radio" name="primaryAI" checked={primaryAI === 'cohere'} onChange={() => setPrimaryAI('cohere')} />
+                        <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <span style={{ fontWeight: 600 }}>Cohere (Command-R)</span>
+                                <input type="radio" name="primaryAI" checked={primaryAI === 'cohere'} onChange={() => setPrimaryAI('cohere')} />
+                            </div>
+                            <a href="https://dashboard.cohere.com/api-keys" target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.8rem', color: '#3b82f6' }}>Get Key ↗</a>
                         </label>
                         <input
                             type="password"
@@ -236,9 +260,12 @@ function SettingsModal({ isOpen, onClose, onSave }) {
 
                     {/* Cerebras (India-friendly) */}
                     <div style={{ marginBottom: '1.25rem' }}>
-                        <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                            <span style={{ fontWeight: 600 }}>Cerebras (Llama 3.1) 🇮🇳</span>
-                            <input type="radio" name="primaryAI" checked={primaryAI === 'cerebras'} onChange={() => setPrimaryAI('cerebras')} />
+                        <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <span style={{ fontWeight: 600 }}>Cerebras (Llama 3.1) 🇮🇳</span>
+                                <input type="radio" name="primaryAI" checked={primaryAI === 'cerebras'} onChange={() => setPrimaryAI('cerebras')} />
+                            </div>
+                            <a href="https://inference.cerebras.ai/" target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.8rem', color: '#3b82f6' }}>Get Key ↗</a>
                         </label>
                         <input
                             type="password"
@@ -252,9 +279,12 @@ function SettingsModal({ isOpen, onClose, onSave }) {
 
                     {/* Mistral (India-friendly) */}
                     <div style={{ marginBottom: '1.25rem' }}>
-                        <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                            <span style={{ fontWeight: 600 }}>Mistral AI (Open-Mistral) 🇮🇳</span>
-                            <input type="radio" name="primaryAI" checked={primaryAI === 'mistral'} onChange={() => setPrimaryAI('mistral')} />
+                        <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <span style={{ fontWeight: 600 }}>Mistral AI (Open-Mistral) 🇮🇳</span>
+                                <input type="radio" name="primaryAI" checked={primaryAI === 'mistral'} onChange={() => setPrimaryAI('mistral')} />
+                            </div>
+                            <a href="https://console.mistral.ai/api-keys/" target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.8rem', color: '#3b82f6' }}>Get Key ↗</a>
                         </label>
                         <input
                             type="password"
@@ -271,7 +301,10 @@ function SettingsModal({ isOpen, onClose, onSave }) {
                 <div className="section" style={{ marginBottom: '2rem' }}>
                     <h3 style={{ fontSize: '1rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem', marginBottom: '1rem' }}>🌐 Web Search Engine</h3>
                     <div style={{ marginBottom: '1rem' }}>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Google Search API Key</label>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                            <label style={{ fontWeight: 500 }}>Google Search API Key</label>
+                            <a href="https://developers.google.com/custom-search/v1/overview" target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.8rem', color: '#3b82f6' }}>Get Key ↗</a>
+                        </div>
                         <input
                             type="password"
                             value={searchApiKey}
@@ -282,7 +315,10 @@ function SettingsModal({ isOpen, onClose, onSave }) {
                         />
                     </div>
                     <div>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Search Engine ID (CX)</label>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                            <label style={{ fontWeight: 500 }}>Search Engine ID (CX)</label>
+                            <a href="https://programmablesearchengine.google.com/controlpanel/create" target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.8rem', color: '#3b82f6' }}>Create Engine ↗</a>
+                        </div>
                         <input
                             type="text"
                             value={searchCx}
