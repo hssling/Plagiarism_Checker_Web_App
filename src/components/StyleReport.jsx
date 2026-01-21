@@ -109,13 +109,23 @@ function StyleReport({ text }) {
                         <div className="metric-card">
                             <div className="metric-value">{styleData.avgSentenceLength}</div>
                             <div className="metric-label">Avg Sentence Length</div>
-                            <div className="metric-hint">words per sentence</div>
+                            <div className="metric-hint">
+                                words/sentence
+                                <span className={styleData.avgSentenceLength > 25 ? 'warning' : 'good'} style={{ marginLeft: '5px', fontSize: '0.8em', fontWeight: 'bold' }}>
+                                    ({styleData.avgSentenceLength > 25 ? 'Long' : styleData.avgSentenceLength < 15 ? 'Short' : 'Standard'})
+                                </span>
+                            </div>
                         </div>
 
                         <div className="metric-card">
                             <div className="metric-value">{styleData.complexityScore}</div>
                             <div className="metric-label">Complexity Score</div>
-                            <div className="metric-hint">syllables per word</div>
+                            <div className="metric-hint">
+                                syllables/word
+                                <span className={styleData.complexityScore > 2.0 ? 'warning' : 'good'} style={{ marginLeft: '5px', fontSize: '0.8em', fontWeight: 'bold' }}>
+                                    ({styleData.complexityScore > 2.0 ? 'Complex' : styleData.complexityScore < 1.4 ? 'Simple' : 'Standard'})
+                                </span>
+                            </div>
                         </div>
 
                         <div className="metric-card">
@@ -196,8 +206,8 @@ function StyleReport({ text }) {
                             <p>{translationData.summary}</p>
                         </div>
                         <div className="status-confidence">
-                            <span className="confidence-value">{translationData.confidence}%</span>
-                            <span className="confidence-label">Confidence</span>
+                            <span className="confidence-value">{translationData.translationProbability}%</span>
+                            <span className="confidence-label">Probability</span>
                         </div>
                     </div>
 

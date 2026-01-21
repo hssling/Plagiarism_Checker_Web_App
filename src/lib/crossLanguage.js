@@ -234,7 +234,7 @@ export async function detectTranslatedContent(text) {
 
     return {
         isLikelyTranslated,
-        confidence: translationScore,
+        translationProbability: translationScore,
         detectedLanguage: languageResult.language,
         languageConfidence: languageResult.confidence,
         artifacts: artifacts.map(a => ({

@@ -198,9 +198,9 @@ function ResultsDashboard({ results, onReset, text }) {
                                         <div style={{
                                             fontSize: '2rem',
                                             fontWeight: 'bold',
-                                            color: ((results?.authorship?.confidence || aiAnalysis?.authorship?.confidence) > 50) ? 'var(--warning)' : 'var(--success)'
+                                            color: ((results?.authorship?.aiProbability || aiAnalysis?.authorship?.aiProbability) > 50) ? 'var(--warning)' : 'var(--success)'
                                         }}>
-                                            {results?.authorship?.confidence || aiAnalysis?.authorship?.confidence || 0}%
+                                            {results?.authorship?.aiProbability || aiAnalysis?.authorship?.aiProbability || 0}%
                                         </div>
                                         <div style={{ fontSize: '0.9rem' }}>
                                             Probability of AI Generation<br />

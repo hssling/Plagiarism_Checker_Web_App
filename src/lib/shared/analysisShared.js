@@ -115,6 +115,10 @@ export function getShingleMatches(text1, text2, k = 5, excludedRanges = []) {
 
         if (!excluded) {
             const shingle = words1.slice(i, i + k).join(' ');
+
+            // Skip common academic phrases to avoid false positives
+            if (isCommonChain(shingle)) continue;
+
             if (!shingles1.has(shingle)) {
                 shingles1.set(shingle, []);
             }

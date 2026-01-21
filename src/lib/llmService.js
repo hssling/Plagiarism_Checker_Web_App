@@ -373,8 +373,7 @@ export const checkAIAuthorship = async (text) => {
 
     Respond with ONLY a JSON object:
     {
-        "isAI": boolean,
-        "confidence": number (0-100),
+        "aiProbability": number (0-100), // 0 = Definitely Human, 100 = Definitely AI
         "reasoning": "string (max 20 words)"
     }`;
 
