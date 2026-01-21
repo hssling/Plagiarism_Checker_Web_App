@@ -44,7 +44,12 @@ function App() {
     const [batchDocs, setBatchDocs] = useState([]);
     const [batchResults, setBatchResults] = useState([]);
     const [batchSummary, setBatchSummary] = useState(null);
+    const [batchSummary, setBatchSummary] = useState(null);
     const [currentDoc, setCurrentDoc] = useState('');
+
+    // Analysis Options
+    const [excludeCitations, setExcludeCitations] = useState(true);
+    const [excludeCommonPhrases, setExcludeCommonPhrases] = useState(true);
 
     // Initialize AI Hub on load
     React.useEffect(() => {
@@ -158,7 +163,10 @@ function App() {
         try {
             if (mode === 'text') {
                 if (!text.trim()) throw new Error('Please enter text to analyze.');
-                const analysisResults = await analyzePlagiarism(text, (p) => setProgress(p));
+                const analysisResults = await analyzePlagiarism(text, (p) => setProgress(p), {
+                    excludeCitations,
+                    excludeCommonPhrases
+                });
                 setResults(analysisResults);
 
                 // Phase 11: Save to history
@@ -217,6 +225,29 @@ function App() {
                             file={file}
                             text={text}
                         />
+
+                        {/* Analysis Options */}
+                        <div style={{ display: 'flex', justifyContent: 'center', gap: '2rem', marginTop: '1rem' }}>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', userSelect: 'none' }}>
+                                <input
+                                    type="checkbox"
+                                    checked={excludeCitations}
+                                    onChange={(e) => setExcludeCitations(e.target.checked)}
+                                    style={{ width: '1.2em', height: '1.2em' }}
+                                />
+                                <span style={{ color: 'var(--text-primary)' }}>Exclude Cited Sources</span>
+                            </label>
+
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', userSelect: 'none' }}>
+                                <input
+                                    type="checkbox"
+                                    checked={excludeCommonPhrases}
+                                    onChange={(e) => setExcludeCommonPhrases(e.target.checked)}
+                                    style={{ width: '1.2em', height: '1.2em' }}
+                                />
+                                <span style={{ color: 'var(--text-primary)' }}>Exclude Common Phrases (4-5 words)</span>
+                            </label>
+                        </div>
                     </div>
                 )}
 

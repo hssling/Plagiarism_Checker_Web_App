@@ -9,13 +9,16 @@ import {
     cleanText,
     calculateTFIDFSimilarity,
     calculateShingleOverlap,
-    extractSmartPhrases
+    getShingleMatches,
+    extractSmartPhrases,
+    isCommonChain
 } from './shared/analysisShared';
 
 /**
- * Main plagiarism analysis function (ENHANCED)
+ * Main plagiarism analysis function (SCIENTIFIC & ENHANCED)
+ * Updated to be less aggressive and support exclusions.
  */
-export async function analyzePlagiarism(text, onProgress) {
+export async function analyzePlagiarism(text, onProgress, options = { excludeCitations: true, excludeCommonPhrases: true }) {
     const results = {
         overallScore: 0,
         wordCount: 0,
@@ -25,26 +28,54 @@ export async function analyzePlagiarism(text, onProgress) {
         sources: [],
         keyPhrases: [],
         ngramMatches: [],
-        citations: null  // Citation analysis results
+        citations: null,
+        excludedRanges: []
     };
 
-    // Step 1: Preprocessing
+    // Step 0: Citation Analysis (First, to define exclusions)
     onProgress(5);
+    try {
+        results.citations = analyzeCitationsLocal(text);
+
+        // Define Excluded Ranges
+        if (options.excludeCitations && results.citations.inTextCitations) {
+            results.excludedRanges = results.citations.inTextCitations.map(c => ({
+                start: c.start,
+                end: c.end
+            }));
+
+            // Also exclude the References section if found
+            const refSection = results.citations.found ? results.citations : null;
+            // Note: analyzeCitationsLocal calls extractReferencesSection but returns summary. 
+            // We trust the parser would separate it, but here we might want to ensure we don't scan the biblio.
+            // For now, inTextCitations ranges are the main focus for inline exclusions.
+        }
+    } catch (err) {
+        console.warn('Citation analysis warning:', err);
+    }
+
+    // Step 1: Preprocessing
+    onProgress(10);
     const words = cleanText(text).split(/\s+/).filter(w => w.length > 0);
     results.wordCount = words.length;
     results.uniqueWords = new Set(words.map(w => w.toLowerCase())).size;
 
-    await new Promise(resolve => setTimeout(resolve, 200));
+    await new Promise(resolve => setTimeout(resolve, 100));
 
-    // Step 2: Smart Phrase Selection
-    onProgress(10);
-    // Dynamic depth: check 1 phrase for every 40 words, min 8, max 30
-    const dynamicMax = Math.min(Math.max(8, Math.ceil(words.length / 40)), 30);
-    const keyPhrases = extractSmartPhrases(text, dynamicMax);
+    // Step 2: Smart Phrase Selection (Aligned with new 5-word logic)
     onProgress(15);
+    // Dynamic depth: check 1 phrase for every 50 words (less frequent)
+    const dynamicMax = Math.min(Math.max(6, Math.ceil(words.length / 50)), 25);
+    const initialKeyPhrases = extractSmartPhrases(text, dynamicMax);
+
+    // Filter common phrases if requested
+    const keyPhrases = options.excludeCommonPhrases
+        ? initialKeyPhrases.filter(p => !isCommonChain(p))
+        : initialKeyPhrases;
+
+    onProgress(20);
 
     // Step 3: Deep Web Search (OpenAlex, PubMed, etc.)
-    onProgress(20);
     const potentialSources = new Map();
 
     for (let i = 0; i < keyPhrases.length; i++) {
@@ -66,27 +97,21 @@ export async function analyzePlagiarism(text, onProgress) {
                     potentialSources.set(key, {
                         id: 'src_' + Math.random().toString(36).substr(2, 9),
                         name: match.title || 'Unknown Source',
-                        type: match.type || match.source,     // e.g. "Medical Research"
+                        type: match.type || match.source,
                         text: (match.snippet || '') + ' ' + (match.title || ''),
                         url: match.url,
                         matches: 0
                     });
                 }
-
-                // Prioritize 'Book' type if found later
-                if (match.type === 'Book') {
-                    potentialSources.get(key).type = 'Book';
-                }
-
                 potentialSources.get(key).matches++;
             });
         }
 
         onProgress(20 + ((i + 1) / keyPhrases.length) * 60); // Up to 80%
-        await new Promise(resolve => setTimeout(resolve, 300)); // Rate limiting
+        await new Promise(resolve => setTimeout(resolve, 300));
     }
 
-    onProgress(80);
+    onProgress(85);
 
     // Step 4: Advanced Source Analysis (Shingling & TF-IDF)
     const sourcesArray = Array.from(potentialSources.values());
@@ -95,36 +120,36 @@ export async function analyzePlagiarism(text, onProgress) {
     for (let i = 0; i < sourcesArray.length; i++) {
         const source = sourcesArray[i];
 
-        // 1. Shingling (Exact/Near-Exact Copy Detection) - Weight: 60%
-        const shingleScore = calculateShingleOverlap(text, source.text, 3);
+        // 1. Shingling (Exact/Near-Exact Copy Detection)
+        // Updated: k=5, and PASSING excludedRanges
+        const shingleScore = calculateShingleOverlap(text, source.text, 5, results.excludedRanges);
 
-        // 2. TF-IDF (Topic/Keyword Similarity) - Weight: 20%
+        // 2. TF-IDF (Topic/Keyword Similarity)
         const tfidfScore = calculateTFIDFSimilarity(text, source.text);
 
-        // 3. Phrase Hits Boost - Weight: 20%
-        // If we found this source via 3 different searches, it's very likely a match.
-        const matchesBoost = Math.min(source.matches * 10, 30);
+        // 3. Phrase Hits Boost (Reduced significantly)
+        // Cap at 15% bonus
+        const matchesBoost = Math.min(source.matches * 3, 15);
 
-        // Combined Score
-        // We prioritize Shingling because it proves structural similarity (plagiarism)
-        // rather than just topical similarity.
-        let combinedScore = (shingleScore * 2.5) + (tfidfScore * 0.3) + matchesBoost;
+        // Combined Score - SCIENTIFIC FORMULA
+        // No arbitrary multipliers > 1. 
+        // We weight shingling heavily as it proves *copying*, but we don't multiply it.
+        // Formula: 60% Shingling + 20% TF-IDF + 20% Boost
 
-        // Boost for short text (less than 200 words) where shingling is harder
-        if (words.length < 200) {
-            combinedScore *= 1.5;
-        }
+        let combinedScore = (shingleScore * 0.6) + (tfidfScore * 0.2) + matchesBoost;
 
-        // Normalization & Cap
         if (combinedScore > 100) combinedScore = 100;
 
-        if (combinedScore > 3) { // Lowered Threshold for better sensitivity
+        // Threshold: Only report if score > 5% (filtering noise)
+        if (combinedScore > 5) {
             results.sources.push({
                 id: source.id,
                 name: source.name,
                 type: source.type,
                 similarity: combinedScore,
-                url: source.url
+                url: source.url,
+                // Passing snippet back for highlighting if needed
+                snippet: source.text.substring(0, 200) + '...'
             });
 
             if (combinedScore > results.maxMatch) {
@@ -133,33 +158,21 @@ export async function analyzePlagiarism(text, onProgress) {
         }
     }
 
-    onProgress(90);
-
     // Step 5: Final Scoring
     results.sources.sort((a, b) => b.similarity - a.similarity);
     const topSources = results.sources.slice(0, 10);
 
     if (topSources.length > 0) {
-        // Blended Scoring: Max match (most critical) + Weighted Average of others
+        // Weighted Average: 80% Max Match + 20% Avg of Top 5
+        // This prevents one high score from being diluted too much, but also prevents 10 low scores from looking like 0.
         const maxScore = results.maxMatch;
-        const avgScore = topSources.reduce((sum, s) => sum + s.similarity, 0) / topSources.length;
+        const avgTop5 = topSources.slice(0, 5).reduce((sum, s) => sum + s.similarity, 0) / Math.min(topSources.length, 5);
 
-        // Final score leans heavily on the worst offender (max match)
-        results.overallScore = (maxScore * 0.7) + (avgScore * 0.3);
+        results.overallScore = (maxScore * 0.8) + (avgTop5 * 0.2);
     } else {
         results.overallScore = 0;
     }
 
-    // Step 6: Citation Analysis (runs in parallel-ish, non-blocking)
-    onProgress(92);
-    try {
-        results.citations = analyzeCitationsLocal(text);
-    } catch (err) {
-        console.warn('Citation analysis failed:', err);
-        results.citations = { found: false, error: err.message };
-    }
-
-    await new Promise(resolve => setTimeout(resolve, 200));
     onProgress(100);
 
     return results;

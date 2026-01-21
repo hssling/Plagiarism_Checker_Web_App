@@ -314,6 +314,7 @@ export function parseReference(refText, style = 'auto') {
 
 /**
  * Find all in-text citations and their positions
+ * Updated to return full ranges (start, end)
  */
 export function findInTextCitations(text) {
     const citations = [];
@@ -327,6 +328,8 @@ export function findInTextCitations(text) {
             type: 'vancouver',
             text: match[0],
             position: match.index,
+            start: match.index,
+            end: match.index + match[0].length,
             references: numbers
         });
     }
@@ -338,6 +341,8 @@ export function findInTextCitations(text) {
             type: 'apa',
             text: match[0],
             position: match.index,
+            start: match.index,
+            end: match.index + match[0].length,
             author: match[1],
             year: match[2]
         });
@@ -356,6 +361,8 @@ export function findInTextCitations(text) {
                 type: 'superscript',
                 text: match[0],
                 position: match.index,
+                start: match.index,
+                end: match.index + match[0].length,
                 references: numbers
             });
         }
