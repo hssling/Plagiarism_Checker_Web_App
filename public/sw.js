@@ -1,7 +1,7 @@
 // PlagiarismGuard Service Worker
 // Provides offline caching and app-like experience
 
-const CACHE_NAME = 'plagiarismguard-v3.2';
+const CACHE_NAME = 'plagiarismguard-v3.2.1';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
