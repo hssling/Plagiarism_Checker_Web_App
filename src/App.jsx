@@ -44,7 +44,6 @@ function App() {
     const [batchDocs, setBatchDocs] = useState([]);
     const [batchResults, setBatchResults] = useState([]);
     const [batchSummary, setBatchSummary] = useState(null);
-    const [batchSummary, setBatchSummary] = useState(null);
     const [currentDoc, setCurrentDoc] = useState('');
 
     // Analysis Options
