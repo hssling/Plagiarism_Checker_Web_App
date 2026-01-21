@@ -2,170 +2,140 @@
 
 ## Overview
 
-PlagiarismGuard Pro is a modern web application built with a decoupled architecture that separates concerns between the frontend, analysis engines, and optional backend services.
+PlagiarismGuard Pro v3.2.0 uses a modern, loosely-coupled architecture designed for **privacy**, **resiliency**, and **scientific accuracy**.
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                         CLIENT BROWSER                          │
-├─────────────────────────────────────────────────────────────────┤
-│   ┌─────────────────────────────────────────────────────────┐   │
-│   │                    React Frontend                        │   │
-│   │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐   │   │
-│   │  │  Upload  │ │  Input   │ │ Progress │ │ Results  │   │   │
-│   │  │Component │ │Component │ │Component │ │Dashboard │   │   │
-│   │  └──────────┘ └──────────┘ └──────────┘ └──────────┘   │   │
-│   └─────────────────────────────────────────────────────────┘   │
-│                              │                                   │
-│   ┌─────────────────────────────────────────────────────────┐   │
-│   │              Analysis Engine (JavaScript)                │   │
-│   │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐   │   │
-│   │  │  TF-IDF  │ │  N-gram  │ │  Parser  │ │  Report  │   │   │
-│   │  │  Engine  │ │  Engine  │ │  Engine  │ │Generator │   │   │
-│   │  └──────────┘ └──────────┘ └──────────┘ └──────────┘   │   │
-│   └─────────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                     EXTERNAL SERVICES                            │
-├─────────────────────────────────────────────────────────────────┤
-│   ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐       │
-│   │ Supabase │  │  Google  │  │Copyleaks │  │CrossRef  │       │
-│   │    DB    │  │  Search  │  │   API    │  │   API    │       │
-│   └──────────┘  └──────────┘  └──────────┘  └──────────┘       │
-└─────────────────────────────────────────────────────────────────┘
+```mermaid
+graph TD
+    User[User / Client Browser]
+    
+    subgraph Frontend [React Application]
+        UI[App.jsx / UI Layer]
+        Router[Mode Router]
+        Dashboard[Results Dashboard]
+    end
+    
+    subgraph CoreEngine [Analysis Engine]
+        DocParser[Document Parser]
+        Cleaner[Text Cleaner]
+        Shingler[Scientific Shingler (k=5)]
+        Scorer[Exact Coverage Calculator]
+    end
+    
+    subgraph AI_Hub [Cognitive AI Hub]
+        Orchestrator[AI Service Orchestrator]
+        Gemini[Google Gemini]
+        OpenAI[OpenAI GPT-4]
+        Anthropic[Claude 3]
+        LocalModels[Local/Free Models]
+    end
+    
+    style User fill:#f9f,stroke:#333,stroke-width:2px
+    style AI_Hub fill:#e1f5fe,stroke:#0277bd,stroke-width:2px
+    style CoreEngine fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+
+    User -->|Uploads File| UI
+    UI -->|Router| CoreEngine
+    CoreEngine -->|Request Check| AI_Hub
+    AI_Hub -->|Authorship Analysis| CoreEngine
+    CoreEngine -->|Final Score| Dashboard
+    Dashboard -->|View| User
 ```
 
 ## Component Architecture
 
-### Frontend Components
+### 1. The Core Analysis Pipeline (Scientific Standard)
 
-| Component | Purpose | State |
-|-----------|---------|-------|
-| `App.jsx` | Main container, routing | Global app state |
-| `Header.jsx` | Branding, navigation | None |
-| `FileUpload.jsx` | File drag-drop, selection | File, upload status |
-| `TextInput.jsx` | Text paste input | Text content |
-| `AnalysisProgress.jsx` | Progress display | Progress % |
-| `ResultsDashboard.jsx` | Results visualization | Analysis results |
-| `ReportExport.jsx` | Export functionality | Export format |
+Unlike traditional tools that use fuzzy logic, PlagiarismGuard Pro uses an **Exact Coverage** model aligned with industry standards (Turnitin/iThenticate).
 
-### Analysis Library (`src/lib/`)
-
-```javascript
-// Analysis pipeline
-const pipeline = [
-  documentParser,    // Extract text from PDF/DOCX
-  textPreprocessor,  // Clean, normalize, tokenize
-  tfidfAnalyzer,     // TF-IDF similarity
-  ngramAnalyzer,     // Phrase matching
-  webSearcher,       // Optional web search
-  scoreAggregator,   // Combine scores
-  reportGenerator    // Generate output
-];
+```mermaid
+flowchart LR
+    Input[Raw Text] --> Tokenizer[Tokenizer & Normalizer]
+    Tokenizer --> Shingler[Shingle Generator (k=5)]
+    
+    subgraph Exclusions [Exclusion Filters]
+        Citations[Citation Parser]
+        Common[Common Phrase Detector]
+    end
+    
+    Tokenizer --> Citations
+    Tokenizer --> Common
+    
+    Shingler --> Matcher{Match with Database?}
+    Citations -->|Exclude Range| Matcher
+    Common -->|Exclude Range| Matcher
+    
+    Matcher -->|Yes| MatchedSet[Unique Matched Words]
+    Matcher -->|No| Ignored
+    
+    MatchedSet --> Calculator[coverage = (matched / total) * 100]
+    Calculator --> Score[Final Similarity Index]
 ```
 
-### Data Flow
+### 2. Cognitive AI Hub (Resiliency Layer)
 
-```
-Document Input
-      │
-      ▼
-┌─────────────┐
-│  Document   │
-│   Parser    │──────> Raw Text
-└─────────────┘
-      │
-      ▼
-┌─────────────┐
-│  Text       │
-│ Preprocessor│──────> Clean Tokens
-└─────────────┘
-      │
-      ├──────────────────┬──────────────────┐
-      ▼                  ▼                  ▼
-┌───────────┐    ┌───────────┐    ┌─────────────┐
-│  TF-IDF   │    │  N-gram   │    │ Web Search  │
-│  Engine   │    │  Engine   │    │   Engine    │
-└───────────┘    └───────────┘    └─────────────┘
-      │                  │                  │
-      └──────────────────┴──────────────────┘
-                         │
-                         ▼
-                ┌─────────────┐
-                │   Score     │
-                │ Aggregator  │──────> Final Score
-                └─────────────┘
-                         │
-                         ▼
-                ┌─────────────┐
-                │  Report     │
-                │ Generator   │──────> Detailed Report
-                └─────────────┘
+The AI Hub manages connections to multiple LLM providers. It implements a **Fallback Strategy** to ensure the system works even if one provider is down or a key quota is exhausted.
+
+```mermaid
+sequenceDiagram
+    participant App as Application
+    participant Hub as AI Service Hub
+    participant Gemini as Google Gemini
+    participant OpenAI as OpenAI
+    participant Free as Free Tier (Groq/Mistral)
+
+    App->>Hub: Request Authorship Check
+    
+    alt Primary Provider Active
+        Hub->>Gemini: API Call
+        Gemini-->>Hub: Success Response
+    else Primary Fails
+        Hub->>Gemini: API Call (Error/Timeout)
+        Hub->>OpenAI: Fallback Call 1
+        OpenAI-->>Hub: Success Response
+    else Secondary Fails
+        Hub->>OpenAI: API Call (Error)
+        Hub->>Free: Fallback Call 2 (Unlimited)
+        Free-->>Hub: Success Response
+    end
+    
+    Hub-->>App: Final Analysis
 ```
 
-## Technology Decisions
+### 3. Data Privacy & Security Model
 
-### Why React + Vite?
-- Fast development with HMR
-- Optimized production builds
-- Modern JavaScript support
-- Large ecosystem
+We adhere to a **"Client-First"** security model.
 
-### Why Client-Side Analysis?
-- Privacy: Documents never leave browser
-- Speed: No network latency for local analysis
-- Cost: No server infrastructure needed
-- Scalability: Unlimited users
+*   **Local Processing**: Document parsing (PDF/DOCX) happens entirely in the browser using WebAssembly libraries (`pdfjs-dist`, `mammoth`).
+*   **Ephemeral Analysis**: Text sent to AI providers is stateless. We do not store user documents on our servers.
+*   **Encrypted Keys**: API keys are stored in the user's browser `localStorage` and never transmitted to our backend.
 
-### Why Supabase?
-- PostgreSQL database
-- Real-time subscriptions
-- Row-level security
-- Generous free tier
-- Easy integration
-
-## Security Considerations
-
-1. **No document storage** - Files processed in memory only
-2. **Client-side analysis** - Sensitive content stays local
-3. **Optional backend** - APIs only used when configured
-4. **Environment variables** - Secrets never in code
-
-## Performance Optimizations
-
-1. **Lazy loading** - Components loaded on demand
-2. **Web Workers** - Analysis runs off main thread (planned)
-3. **Caching** - Reference corpus cached locally
-4. **Chunked processing** - Large documents split for analysis
-
-## Future Architecture
-
-### Version 2.0 Plans
+## File Structure
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                     PlagiarismGuard 2.0                          │
-├─────────────────────────────────────────────────────────────────┤
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │  React App  │  │  ML Models  │  │   Browser   │             │
-│  │  (Current)  │  │  (TensorFlow│  │  Extension  │             │
-│  │             │  │    .js)     │  │             │             │
-│  └─────────────┘  └─────────────┘  └─────────────┘             │
-│            │              │              │                       │
-│            └──────────────┴──────────────┘                       │
-│                         │                                        │
-│                         ▼                                        │
-│  ┌──────────────────────────────────────────────────────────┐   │
-│  │              Supabase Backend                             │   │
-│  │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐    │   │
-│  │  │ Database │ │   Auth   │ │  Edge    │ │ Storage  │    │   │
-│  │  │(Postgres)│ │ (Optional│ │Functions │ │  (Docs)  │    │   │
-│  │  └──────────┘ └──────────┘ └──────────┘ └──────────┘    │   │
-│  └──────────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────────┘
+d:\plagiarism-checker-app\
+├── src\
+│   ├── components\     # React UI Components
+│   │   ├── SettingsModal.jsx  # AI Hub Configuration
+│   │   └── ResultsDashboard.jsx # Visual Reporting
+│   ├── lib\            # Logic Core
+│   │   ├── plagiarismAnalyzer.js # Main Orchestrator
+│   │   ├── shared\analysisShared.js # Shingling Algorithms
+│   │   └── llmService.js      # AI Hub & Fallbacks
+│   └── App.jsx         # Main Entry Point
+├── api\                # Serverless Proxies (Optional)
+├── extension\          # Browser Extension Integration
+└── public\             # Static Assets
 ```
+
+## Technology Stack
+
+| Layer | Technology | Reason |
+|-------|------------|--------|
+| **Frontend** | React 18 + Vite | High performance, component-based UI |
+| **Styling** | Vanilla CSS + Variables | Lightweight, themeable without external libs |
+| **Analysis** | JavaScript (ES6+) | Runs universally in browser & Node.js |
+| **Parsing** | PDF.js / Mammoth | Client-side file reading |
+| **AI Layer** | Multiple SDKs | Google GenAI, OpenAI, Anthropic |
 
 ---
-
-*Last updated: 2026-01-15*
+*Architecture updated for v3.2.0 - Scientific Coverage Update*
