@@ -203,7 +203,7 @@ export const generatePDF = async (results, text, metadata = {}) => {
     doc.setFont('helvetica', 'normal');
 
     if (authorship) {
-        doc.text(`AI Authorship Probability: ${authorship.confidence}%`, 20, aiStartY + 18);
+        doc.text(`AI Authorship Probability: ${authorship.aiProbability || authorship.confidence || 0}%`, 20, aiStartY + 18);
         const reasoningLines = doc.splitTextToSize(`Reasoning: ${authorship.reasoning}`, pageWidth - 50);
         doc.text(reasoningLines, 20, aiStartY + 23);
     } else {
@@ -276,7 +276,7 @@ export const generatePDF = async (results, text, metadata = {}) => {
 
     doc.setTextColor(...COLORS.white);
     doc.setFontSize(7);
-    doc.text("PlagiarismGuard Engine v3.2 | Cognitive AI Edition", pageWidth / 2, pageHeight - 8, { align: 'center' });
+    doc.text("PlagiarismGuard Engine v3.2.1 | Cognitive AI Edition", pageWidth / 2, pageHeight - 8, { align: 'center' });
     doc.text("This certificate is machine-generated and does not require signature.", pageWidth / 2, pageHeight - 3, { align: 'center' });
 
     // ============================================================

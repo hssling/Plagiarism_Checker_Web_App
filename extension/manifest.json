@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "PlagiarismGuard Pro",
-    "version": "3.2.0",
+    "version": "3.2.1",
     "description": "Premium academic-grade plagiarism detection. v3.0 with Multi-AI Hub, Authorship Detection, and Remediation Pro.",
     "permissions": [
         "contextMenus",
