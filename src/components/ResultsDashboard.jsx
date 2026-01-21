@@ -77,7 +77,14 @@ function ResultsDashboard({ results, onReset, text }) {
 
     const handlePDFExport = async () => {
         try {
-            await generatePDF(results, text || "", {
+            // Merge AI analysis state into results for the report
+            const reportResults = {
+                ...results,
+                authorship: aiAnalysis?.authorship || results.authorship,
+                summary: aiAnalysis?.summary || results.summary
+            };
+
+            await generatePDF(reportResults, text || "", {
                 title: "Analysis Report",
                 author: "PlagiarismGuard User"
             });
