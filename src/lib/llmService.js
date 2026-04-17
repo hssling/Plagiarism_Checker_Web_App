@@ -11,7 +11,9 @@ let providers = {
     huggingface: { key: null, name: "Hugging Face" },
     cohere: { key: null, name: "Cohere" },
     cerebras: { key: null, name: "Cerebras" },
-    mistral: { key: null, name: "Mistral" }
+    mistral: { key: null, name: "Mistral" },
+    together: { key: null, name: "Together AI" },
+    hf_qwen: { key: null, name: "HF Qwen" }
 };
 
 let primaryProvider = 'gemini';
@@ -20,7 +22,7 @@ let primaryProvider = 'gemini';
  * Initialize AI Providers
  */
 export const initializeAI = (config = {}) => {
-    const { gemini, openai, anthropic, xai, openrouter, groq, huggingface, cohere, cerebras, mistral, primary } = config;
+    const { gemini, openai, anthropic, xai, openrouter, groq, huggingface, cohere, cerebras, mistral, together, hf_qwen, primary } = config;
 
     if (gemini) {
         providers.gemini.key = gemini.trim();
@@ -42,6 +44,8 @@ export const initializeAI = (config = {}) => {
     if (cohere) providers.cohere.key = cohere.trim();
     if (cerebras) providers.cerebras.key = cerebras.trim();
     if (mistral) providers.mistral.key = mistral.trim();
+    if (together) providers.together.key = together.trim();
+    if (hf_qwen) providers.hf_qwen.key = hf_qwen.trim();
     if (primary) primaryProvider = primary;
 
     return isAIInitialized();
@@ -51,14 +55,14 @@ export const initializeAI = (config = {}) => {
  * Check if at least one AI is initialized
  */
 export const isAIInitialized = () => {
-    return providers.gemini.model !== null || providers.openai.key || providers.anthropic.key || providers.xai.key || providers.openrouter.key || providers.groq.key || providers.huggingface.key || providers.cohere.key || providers.cerebras.key || providers.mistral.key;
+    return providers.gemini.model !== null || providers.openai.key || providers.anthropic.key || providers.xai.key || providers.openrouter.key || providers.groq.key || providers.huggingface.key || providers.cohere.key || providers.cerebras.key || providers.mistral.key || providers.together.key || providers.hf_qwen.key;
 };
 
 /**
  * Primary AI Call with Fallbacks
  */
 export const callAI = async (prompt, systemPrompt = "You are an academic integrity expert.") => {
-    const order = [primaryProvider, 'gemini', 'openai', 'anthropic', 'xai', 'openrouter', 'groq', 'huggingface', 'cohere', 'cerebras', 'mistral'].filter((v, i, a) => a.indexOf(v) === i);
+    const order = [primaryProvider, 'gemini', 'openai', 'anthropic', 'xai', 'openrouter', 'groq', 'huggingface', 'hf_qwen', 'together', 'cohere', 'cerebras', 'mistral'].filter((v, i, a) => a.indexOf(v) === i);
     let lastError = null;
 
     // Debug: Show which providers have keys configured
@@ -72,7 +76,9 @@ export const callAI = async (prompt, systemPrompt = "You are an academic integri
         huggingface: !!providers.huggingface.key,
         cohere: !!providers.cohere.key,
         cerebras: !!providers.cerebras.key,
-        mistral: !!providers.mistral.key
+        mistral: !!providers.mistral.key,
+        together: !!providers.together.key,
+        hf_qwen: !!providers.hf_qwen.key
     });
 
     for (const provider of order) {
@@ -350,6 +356,57 @@ export const callAI = async (prompt, systemPrompt = "You are an academic integri
                 }
                 return wrapper.data?.choices?.[0]?.message?.content || "";
             }
+
+            // Together AI Provider
+            if (provider === 'together' && providers.together.key) {
+                const proxyUrl = `/api/proxy?url=${encodeURIComponent('https://api.together.xyz/v1/chat/completions')}`;
+                const res = await fetch(proxyUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${providers.together.key}`
+                    },
+                    body: JSON.stringify({
+                        model: "meta-llama/Llama-3-70b-chat-hf", // using a reliable fast model from together
+                        messages: [
+                            { role: "system", content: systemPrompt },
+                            { role: "user", content: prompt }
+                        ]
+                    })
+                });
+                const wrapper = await res.json();
+                if (!wrapper.upstreamOk) {
+                    throw new Error(`Together AI Error: ${wrapper.data?.error?.message || wrapper.upstreamStatus}`);
+                }
+                return wrapper.data?.choices?.[0]?.message?.content || "";
+            }
+
+            // Hugging Face Qwen Provider (using Inference Client Chat Completions endpoint)
+            if (provider === 'hf_qwen' && providers.hf_qwen.key) {
+                // HF chat completions API
+                const proxyUrl = `/api/proxy?url=${encodeURIComponent('https://api-inference.huggingface.co/models/Qwen/Qwen3.5-397B-A17B:fastest/v1/chat/completions')}`;
+                const res = await fetch(proxyUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${providers.hf_qwen.key}`
+                    },
+                    body: JSON.stringify({
+                        model: "Qwen/Qwen3.5-397B-A17B:fastest",
+                        messages: [
+                            { role: "system", content: systemPrompt },
+                            { role: "user", content: prompt }
+                        ],
+                        max_tokens: 1024,
+                        stream: false
+                    })
+                });
+                const wrapper = await res.json();
+                if (!wrapper.upstreamOk) {
+                    throw new Error(`HF Qwen Error: ${wrapper.data?.error?.message || wrapper.data?.error || wrapper.upstreamStatus}`);
+                }
+                return wrapper.data?.choices?.[0]?.message?.content || "";
+            }
         } catch (e) {
             console.warn(`${provider} failed, trying next...`, e);
             lastError = e;
@@ -357,6 +414,187 @@ export const callAI = async (prompt, systemPrompt = "You are an academic integri
     }
 
     throw new Error(lastError ? lastError.message : "No AI providers available or all failed");
+};
+
+export const getProviderKey = (provider) => providers[provider]?.key || null;
+
+export const createOpenAIEmbeddings = async (inputs, options = {}) => {
+    const apiKey = providers.openai.key;
+    const normalizedInputs = Array.isArray(inputs) ? inputs.filter(Boolean) : [inputs].filter(Boolean);
+
+    if (!apiKey || normalizedInputs.length === 0) {
+        return null;
+    }
+
+    const proxyUrl = `/api/proxy?url=${encodeURIComponent('https://api.openai.com/v1/embeddings')}`;
+    const res = await fetch(proxyUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+            model: options.model || 'text-embedding-3-large',
+            input: normalizedInputs
+        })
+    });
+
+    const wrapper = await res.json();
+    if (!wrapper.upstreamOk) {
+        throw new Error(wrapper.data?.error?.message || `OpenAI embeddings failed with status ${wrapper.upstreamStatus}`);
+    }
+
+    return wrapper.data?.data?.map(item => item.embedding) || null;
+};
+
+export const callOpenAIResponsesJson = async ({
+    instructions,
+    input,
+    schemaName = 'structured_response',
+    schema,
+    model = 'gpt-5-mini'
+}) => {
+    const apiKey = providers.openai.key;
+    if (!apiKey) {
+        return null;
+    }
+
+    const proxyUrl = `/api/proxy?url=${encodeURIComponent('https://api.openai.com/v1/responses')}`;
+    const res = await fetch(proxyUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+            model,
+            instructions,
+            input,
+            text: {
+                format: {
+                    type: 'json_schema',
+                    name: schemaName,
+                    strict: true,
+                    schema
+                }
+            }
+        })
+    });
+
+    const wrapper = await res.json();
+    if (!wrapper.upstreamOk) {
+        throw new Error(wrapper.data?.error?.message || `OpenAI structured response failed with status ${wrapper.upstreamStatus}`);
+    }
+
+    const outputText = wrapper.data?.output_text;
+    if (!outputText) {
+        throw new Error('OpenAI structured response returned no output text');
+    }
+
+    return JSON.parse(outputText);
+};
+
+export const reviewLanguageQuality = async (text, localReview = null) => {
+    const schema = {
+        type: 'object',
+        additionalProperties: false,
+        required: [
+            'overallScore',
+            'readabilityScore',
+            'grammarScore',
+            'clarityScore',
+            'toneScore',
+            'issueCount',
+            'executiveSummary',
+            'issues',
+            'recommendations',
+            'editedText'
+        ],
+        properties: {
+            overallScore: { type: 'number' },
+            readabilityScore: { type: 'number' },
+            grammarScore: { type: 'number' },
+            clarityScore: { type: 'number' },
+            toneScore: { type: 'number' },
+            issueCount: { type: 'number' },
+            executiveSummary: { type: 'string' },
+            editedText: { type: 'string' },
+            recommendations: {
+                type: 'array',
+                items: { type: 'string' },
+                maxItems: 6
+            },
+            highlights: {
+                type: 'array',
+                items: {
+                    type: 'object',
+                    additionalProperties: false,
+                    required: ['category', 'severity', 'text'],
+                    properties: {
+                        category: { type: 'string' },
+                        severity: { type: 'string', enum: ['low', 'medium', 'high'] },
+                        text: { type: 'string' }
+                    }
+                },
+                maxItems: 8
+            },
+            issues: {
+                type: 'array',
+                items: {
+                    type: 'object',
+                    additionalProperties: false,
+                    required: ['category', 'severity', 'title', 'detail', 'examples'],
+                    properties: {
+                        category: { type: 'string' },
+                        severity: { type: 'string', enum: ['low', 'medium', 'high'] },
+                        title: { type: 'string' },
+                        detail: { type: 'string' },
+                        examples: {
+                            type: 'array',
+                            items: { type: 'string' },
+                            maxItems: 3
+                        }
+                    }
+                },
+                maxItems: 8
+            }
+        }
+    };
+
+    try {
+        const promptInput = [
+            {
+                role: 'user',
+                content: [
+                    {
+                        type: 'input_text',
+                        text: `Review the following academic or professional document for language quality and provide an edited version that improves clarity, grammar, concision, and tone without changing meaning.\n\nLocal diagnostic context:\n${JSON.stringify(localReview || {}, null, 2)}\n\nDocument:\n${text.substring(0, 12000)}`
+                    }
+                ]
+            }
+        ];
+
+        return await callOpenAIResponsesJson({
+            instructions: 'You are a senior academic editor. Produce a rigorous language-quality review suitable for journal or thesis submission. Keep domain-specific meaning intact. Do not invent citations or facts.',
+            input: promptInput,
+            schemaName: 'language_quality_review',
+            schema
+        });
+    } catch (error) {
+        console.warn('Structured language review failed, using fallback prompt:', error);
+    }
+
+    try {
+        const fallback = await callAI(
+            `Review this text for language quality. Return JSON only with keys overallScore, readabilityScore, grammarScore, clarityScore, toneScore, issueCount, executiveSummary, issues, recommendations, editedText.\n\nLocal diagnostic context:\n${JSON.stringify(localReview || {}, null, 2)}\n\nText:\n${text.substring(0, 5000)}`,
+            'You are a senior academic editor.'
+        );
+        const jsonMatch = fallback.match(/\{[\s\S]*\}/);
+        return jsonMatch ? JSON.parse(jsonMatch[0]) : null;
+    } catch (error) {
+        console.error('Fallback language review failed:', error);
+        return null;
+    }
 };
 
 /**

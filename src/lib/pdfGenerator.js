@@ -27,6 +27,11 @@ export const generatePDF = async (results, text, metadata = {}) => {
     const originalityIndex = (100 - score).toFixed(1);
     const authorship = results.authorship;
     const lang = results.language || 'en';
+    const qualityReport = metadata.qualityReport || results.qualityReport || null;
+    const qualityScore = qualityReport?.overallScore || 0;
+    const grammarScore = qualityReport?.grammarScore || 0;
+    const clarityScore = qualityReport?.clarityScore || 0;
+    const qualitySummary = qualityReport?.executiveSummary || 'Language quality review was not attached to this certificate.';
 
     // Color scheme
     const COLORS = {
@@ -130,7 +135,7 @@ export const generatePDF = async (results, text, metadata = {}) => {
         { label: 'Phrases Analyzed', value: phrasesAnalyzed.toString() },
         { label: 'Matches Found', value: matchesFound.toString() },
         { label: 'Originality Index', value: `${originalityIndex}%` },
-        { label: 'Scan Duration', value: '< 30s' }
+        { label: 'Language QA', value: qualityReport ? `${qualityScore}%` : 'Pending' }
     ];
 
     // Draw metric cards
@@ -213,6 +218,31 @@ export const generatePDF = async (results, text, metadata = {}) => {
     const aiPanelEnd = aiStartY + 30;
 
     // ============================================================
+    // LANGUAGE QA PANEL
+    // ============================================================
+    const qaStartY = aiPanelEnd + 5;
+    doc.setFillColor(245, 249, 245);
+    doc.roundedRect(15, qaStartY, pageWidth - 30, 30, 3, 3, 'F');
+
+    doc.setTextColor(...COLORS.success);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.text("LANGUAGE QUALITY ASSURANCE", 20, qaStartY + 9);
+
+    doc.setTextColor(...COLORS.dark);
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    if (qualityReport) {
+        doc.text(`Overall QA Score: ${qualityScore}% | Grammar: ${grammarScore}% | Clarity: ${clarityScore}%`, 20, qaStartY + 18);
+        const qaLines = doc.splitTextToSize(qualitySummary, pageWidth - 42);
+        doc.text(qaLines, 20, qaStartY + 24);
+    } else {
+        doc.text('Language QA was not generated for this run. Configure an AI provider for editorial review.', 20, qaStartY + 18);
+    }
+
+    const qaPanelEnd = qaStartY + 30;
+
+    // ============================================================
     // QR CODE
     // ============================================================
 
@@ -249,7 +279,7 @@ export const generatePDF = async (results, text, metadata = {}) => {
     // ============================================================
 
     // Use currentY to avoid overlap
-    const stmtY = aiPanelEnd + 5;
+    const stmtY = qaPanelEnd + 5;
 
     doc.setFillColor(score < 15 ? 230 : 255, score < 15 ? 255 : 243, score < 15 ? 230 : 230);
     doc.roundedRect(15, stmtY, pageWidth - 30, 22, 3, 3, 'F'); // Slightly smaller height
@@ -305,7 +335,10 @@ export const generatePDF = async (results, text, metadata = {}) => {
     doc.setFontSize(8);
     doc.text(`Total Matches: ${matchesFound}`, 15, 34);
     doc.text(`Similarity: ${score.toFixed(1)}%`, 70, 34);
-    doc.text(`Originality: ${originalityIndex}%`, 125, 34);
+    doc.text(`Originality: ${originalityIndex}%`, 120, 34);
+    if (qualityReport) {
+        doc.text(`QA: ${qualityScore}%`, 165, 34);
+    }
 
     // Matches Table - Now includes source type
     const foundPhrases = results.keyPhrases?.filter(p => p.found) || [];
@@ -385,6 +418,41 @@ export const generatePDF = async (results, text, metadata = {}) => {
             },
             margin: { left: 15, right: 15 },
             tableWidth: 'auto'
+        });
+    }
+
+    if (qualityReport && doc.lastAutoTable) {
+        let qaY = doc.lastAutoTable.finalY + 12;
+        if (qaY > pageHeight - 45) {
+            doc.addPage();
+            qaY = 25;
+        }
+
+        doc.setTextColor(...COLORS.dark);
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.text("Editorial QA Findings", 15, qaY);
+
+        const qaRows = (qualityReport.issues || []).slice(0, 6).map(issue => [
+            issue.category || 'language',
+            issue.severity || 'medium',
+            issue.title || 'Editorial issue',
+            issue.detail || ''
+        ]);
+
+        autoTable(doc, {
+            startY: qaY + 4,
+            head: [['Category', 'Severity', 'Issue', 'Detail']],
+            body: qaRows.length ? qaRows : [['language', 'low', 'No major issue detected', '']],
+            headStyles: { fillColor: [39, 174, 96], fontSize: 8 },
+            styles: { fontSize: 6.5, overflow: 'linebreak' },
+            columnStyles: {
+                0: { cellWidth: 24 },
+                1: { cellWidth: 18 },
+                2: { cellWidth: 42 },
+                3: { cellWidth: 86 }
+            },
+            margin: { left: 15, right: 15 }
         });
     }
 
@@ -505,6 +573,23 @@ export const generatePDF = async (results, text, metadata = {}) => {
     doc.setFontSize(7);
     doc.text(`Document Hash: ${docHash}`, 20, currentY + 16);
     doc.text(`Verification URL: https://plagiarism-checker-web-app.vercel.app/verify/${scanId}`, 20, currentY + 22);
+
+    if (qualityReport) {
+        currentY = Math.min(currentY + 32, pageHeight - 50);
+        doc.setFillColor(245, 249, 245);
+        doc.roundedRect(15, currentY, pageWidth - 30, 24, 2, 2, 'F');
+        doc.setTextColor(...COLORS.success);
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Certificate Addendum: Language Quality', 20, currentY + 8);
+        doc.setTextColor(...COLORS.dark);
+        doc.setFont('helvetica', 'normal');
+        const qaText = doc.splitTextToSize(
+            `This document achieved a language quality score of ${qualityScore}% with ${qualityReport.issueCount || 0} flagged editorial issue(s).`,
+            pageWidth - 42
+        );
+        doc.text(qaText, 20, currentY + 15);
+    }
 
     // Page 3 Footer
     doc.setFillColor(...COLORS.primary);

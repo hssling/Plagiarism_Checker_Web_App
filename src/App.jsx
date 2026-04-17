@@ -63,6 +63,8 @@ function App() {
             cohere: localStorage.getItem('cohere_api_key'),
             cerebras: localStorage.getItem('cerebras_api_key'),
             mistral: localStorage.getItem('mistral_api_key'),
+            together: localStorage.getItem('together_api_key'),
+            hf_qwen: localStorage.getItem('hf_qwen_api_key'),
             primary: localStorage.getItem('primary_ai_provider') || 'gemini'
         };
         initializeAI(config);

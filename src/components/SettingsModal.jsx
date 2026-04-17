@@ -11,6 +11,8 @@ function SettingsModal({ isOpen, onClose, onSave }) {
     const [cohereKey, setCohereKey] = useState('');
     const [cerebrasKey, setCerebrasKey] = useState('');
     const [mistralKey, setMistralKey] = useState('');
+    const [togetherKey, setTogetherKey] = useState('');
+    const [hfQwenKey, setHfQwenKey] = useState('');
     const [primaryAI, setPrimaryAI] = useState('gemini');
 
     const [searchApiKey, setSearchApiKey] = useState('');
@@ -27,6 +29,8 @@ function SettingsModal({ isOpen, onClose, onSave }) {
         const savedCohere = localStorage.getItem('cohere_api_key');
         const savedCerebras = localStorage.getItem('cerebras_api_key');
         const savedMistral = localStorage.getItem('mistral_api_key');
+        const savedTogether = localStorage.getItem('together_api_key');
+        const savedHfQwen = localStorage.getItem('hf_qwen_api_key');
         const savedPrimary = localStorage.getItem('primary_ai_provider') || 'gemini';
 
         const savedSearchKey = localStorage.getItem('google_search_api_key');
@@ -42,6 +46,8 @@ function SettingsModal({ isOpen, onClose, onSave }) {
         if (savedCohere) setCohereKey(savedCohere);
         if (savedCerebras) setCerebrasKey(savedCerebras);
         if (savedMistral) setMistralKey(savedMistral);
+        if (savedTogether) setTogetherKey(savedTogether);
+        if (savedHfQwen) setHfQwenKey(savedHfQwen);
         setPrimaryAI(savedPrimary);
 
         if (savedSearchKey) setSearchApiKey(savedSearchKey);
@@ -59,6 +65,8 @@ function SettingsModal({ isOpen, onClose, onSave }) {
         localStorage.setItem('cohere_api_key', cohereKey);
         localStorage.setItem('cerebras_api_key', cerebrasKey);
         localStorage.setItem('mistral_api_key', mistralKey);
+        localStorage.setItem('together_api_key', togetherKey);
+        localStorage.setItem('hf_qwen_api_key', hfQwenKey);
         localStorage.setItem('primary_ai_provider', primaryAI);
 
         localStorage.setItem('google_search_api_key', searchApiKey);
@@ -75,6 +83,8 @@ function SettingsModal({ isOpen, onClose, onSave }) {
             cohere: cohereKey,
             cerebras: cerebrasKey,
             mistral: mistralKey,
+            together: togetherKey,
+            hf_qwen: hfQwenKey,
             primary: primaryAI,
             searchApiKey,
             searchCx
@@ -291,6 +301,44 @@ function SettingsModal({ isOpen, onClose, onSave }) {
                             value={mistralKey}
                             onChange={(e) => setMistralKey(e.target.value)}
                             placeholder="Mistral API Key"
+                            className="text-input"
+                            style={{ width: '100%', padding: '0.6rem', borderRadius: '0.5rem', background: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'white' }}
+                        />
+                    </div>
+
+                    {/* Together AI */}
+                    <div style={{ marginBottom: '1.25rem' }}>
+                        <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <span style={{ fontWeight: 600 }}>Together AI</span>
+                                <input type="radio" name="primaryAI" checked={primaryAI === 'together'} onChange={() => setPrimaryAI('together')} />
+                            </div>
+                            <a href="https://api.together.xyz/settings/api-keys" target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.8rem', color: '#3b82f6' }}>Get Key ↗</a>
+                        </label>
+                        <input
+                            type="password"
+                            value={togetherKey}
+                            onChange={(e) => setTogetherKey(e.target.value)}
+                            placeholder="Together AI API Key"
+                            className="text-input"
+                            style={{ width: '100%', padding: '0.6rem', borderRadius: '0.5rem', background: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'white' }}
+                        />
+                    </div>
+
+                    {/* HF Qwen */}
+                    <div style={{ marginBottom: '1.25rem' }}>
+                        <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <span style={{ fontWeight: 600 }}>HF Qwen (Inference API)</span>
+                                <input type="radio" name="primaryAI" checked={primaryAI === 'hf_qwen'} onChange={() => setPrimaryAI('hf_qwen')} />
+                            </div>
+                            <a href="https://huggingface.co/settings/tokens" target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.8rem', color: '#3b82f6' }}>Get Key ↗</a>
+                        </label>
+                        <input
+                            type="password"
+                            value={hfQwenKey}
+                            onChange={(e) => setHfQwenKey(e.target.value)}
+                            placeholder="HF API Key for Qwen"
                             className="text-input"
                             style={{ width: '100%', padding: '0.6rem', borderRadius: '0.5rem', background: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'white' }}
                         />

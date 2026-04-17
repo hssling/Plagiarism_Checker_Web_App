@@ -6,6 +6,7 @@ import CitationResults from './CitationResults';
 import StyleReport from './StyleReport';
 import RemediationTool from './RemediationTool';
 import { batchValidateReferences } from '../lib/citationValidator';
+import { analyzeLanguageQualityLocal } from '../lib/languageQuality';
 
 function ResultsDashboard({ results, onReset, text }) {
     const [aiAnalysis, setAIAnalysis] = React.useState(null);
@@ -77,16 +78,19 @@ function ResultsDashboard({ results, onReset, text }) {
 
     const handlePDFExport = async () => {
         try {
+            const qualityReport = analyzeLanguageQualityLocal(text || "");
             // Merge AI analysis state into results for the report
             const reportResults = {
                 ...results,
                 authorship: aiAnalysis?.authorship || results.authorship,
-                summary: aiAnalysis?.summary || results.summary
+                summary: aiAnalysis?.summary || results.summary,
+                qualityReport
             };
 
             await generatePDF(reportResults, text || "", {
                 title: "Analysis Report",
-                author: "PlagiarismGuard User"
+                author: "PlagiarismGuard User",
+                qualityReport
             });
         } catch (err) {
             console.error("PDF Export failed:", err);
@@ -296,6 +300,21 @@ function ResultsDashboard({ results, onReset, text }) {
                                             "{selectedSource.text || selectedSource.snippet || "Available preview text for this source is limited. Please visit the original URL for full content."}"
                                         </p>
                                     </div>
+
+                                    {!!selectedSource.passageMatches?.length && (
+                                        <div style={{ marginTop: '1rem', display: 'grid', gap: '0.75rem' }}>
+                                            {selectedSource.passageMatches.map((match, matchIndex) => (
+                                                <div key={matchIndex} style={{ border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.85rem' }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', marginBottom: '0.5rem' }}>
+                                                        <strong>Matched Passage</strong>
+                                                        <span style={{ color: 'var(--primary)' }}>{match.score.toFixed(1)}%</span>
+                                                    </div>
+                                                    <div style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>{match.passage}</div>
+                                                    <div style={{ fontSize: '0.84rem', color: '#475569', fontStyle: 'italic' }}>{match.sourceExcerpt}</div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
 
                                     <div style={{ marginTop: '2rem', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
                                         <p><strong>Comparison Tip:</strong> The highlighted text on the left matches content found in this source.</p>

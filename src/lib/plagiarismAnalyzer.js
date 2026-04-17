@@ -5,14 +5,158 @@
 
 import { searchPhrase } from './webSearch';
 import { analyzeCitationsLocal } from './citationParser';
+import { createOpenAIEmbeddings } from './llmService';
 import {
     cleanText,
     calculateTFIDFSimilarity,
     calculateShingleOverlap,
-    getShingleMatches,
     extractSmartPhrases,
     isCommonChain
 } from './shared/analysisShared';
+
+function cosineSimilarity(vecA, vecB) {
+    if (!vecA || !vecB || vecA.length !== vecB.length) return 0;
+    let dot = 0;
+    let normA = 0;
+    let normB = 0;
+
+    for (let i = 0; i < vecA.length; i++) {
+        dot += vecA[i] * vecB[i];
+        normA += vecA[i] * vecA[i];
+        normB += vecB[i] * vecB[i];
+    }
+
+    if (!normA || !normB) return 0;
+    return dot / (Math.sqrt(normA) * Math.sqrt(normB));
+}
+
+function splitIntoPassages(text) {
+    const paragraphs = text
+        .split(/\n{2,}/)
+        .map(part => part.trim())
+        .filter(part => part.length > 60);
+
+    const passages = [];
+
+    paragraphs.forEach((paragraph, index) => {
+        const words = paragraph.split(/\s+/).filter(Boolean);
+        if (words.length <= 90) {
+            passages.push({ id: `p_${index}_0`, text: paragraph });
+            return;
+        }
+
+        for (let i = 0; i < words.length; i += 55) {
+            const windowWords = words.slice(i, i + 90);
+            if (windowWords.length < 30) continue;
+            passages.push({
+                id: `p_${index}_${i}`,
+                text: windowWords.join(' ')
+            });
+        }
+    });
+
+    if (passages.length === 0) {
+        passages.push({ id: 'p_fallback', text: text.split(/\s+/).slice(0, 120).join(' ') });
+    }
+
+    return passages.slice(0, 18);
+}
+
+async function fetchSourcePreview(url) {
+    if (!url || !/^https?:/i.test(url)) return '';
+
+    try {
+        const proxyUrl = `/api/proxy?url=${encodeURIComponent(url)}`;
+        const res = await fetch(proxyUrl);
+        const wrapper = await res.json();
+        if (!wrapper.upstreamOk || typeof wrapper.data !== 'string') {
+            return '';
+        }
+
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(wrapper.data, 'text/html');
+        const text = [
+            doc.querySelector('meta[name="description"]')?.getAttribute('content') || '',
+            doc.querySelector('article')?.innerText || '',
+            doc.querySelector('main')?.innerText || '',
+            doc.body?.innerText || ''
+        ].join(' ');
+
+        return text.replace(/\s+/g, ' ').trim().slice(0, 8000);
+    } catch (error) {
+        console.warn('Unable to fetch source preview:', url, error);
+        return '';
+    }
+}
+
+async function enrichSources(sources) {
+    const enriched = [];
+    for (const source of sources) {
+        const fetchedText = await fetchSourcePreview(source.url);
+        enriched.push({
+            ...source,
+            sourceText: [source.name, source.text, fetchedText].filter(Boolean).join(' ').trim()
+        });
+    }
+    return enriched;
+}
+
+async function embedTexts(passages, sourceTexts) {
+    try {
+        const vectors = await createOpenAIEmbeddings([
+            ...passages.map(item => item.text),
+            ...sourceTexts
+        ]);
+
+        if (!vectors) return null;
+
+        return {
+            passageVectors: vectors.slice(0, passages.length),
+            sourceVectors: vectors.slice(passages.length)
+        };
+    } catch (error) {
+        console.warn('Semantic embedding stage skipped:', error);
+        return null;
+    }
+}
+
+function extractEvidenceSnippet(sourceText, passageText) {
+    if (!sourceText) return '';
+    const passageWords = cleanText(passageText).split(/\s+/).filter(word => word.length > 4);
+    const anchor = passageWords.find(word => sourceText.toLowerCase().includes(word));
+    if (!anchor) return sourceText.slice(0, 260);
+
+    const index = sourceText.toLowerCase().indexOf(anchor);
+    const start = Math.max(0, index - 100);
+    const end = Math.min(sourceText.length, index + 180);
+    return sourceText.slice(start, end).trim();
+}
+
+function scorePassagesAgainstSource(passages, source, embeddingBundle) {
+    const sourceText = source.sourceText || source.text || '';
+    const sourceVector = embeddingBundle?.sourceVectors?.[source.embeddingIndex];
+
+    return passages
+        .map((passage, index) => {
+            const lexicalScore = (calculateShingleOverlap(passage.text, sourceText, 5) * 0.6) +
+                (calculateTFIDFSimilarity(passage.text, sourceText) * 0.4);
+            const semanticScore = sourceVector && embeddingBundle?.passageVectors?.[index]
+                ? cosineSimilarity(embeddingBundle.passageVectors[index], sourceVector) * 100
+                : lexicalScore;
+            const score = (lexicalScore * 0.45) + (semanticScore * 0.55);
+
+            return {
+                passage: passage.text,
+                score: Math.min(100, score),
+                lexicalScore: Math.min(100, lexicalScore),
+                semanticScore: Math.min(100, semanticScore),
+                sourceExcerpt: extractEvidenceSnippet(sourceText, passage.text)
+            };
+        })
+        .filter(match => match.score >= 18)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 3);
+}
 
 /**
  * Main plagiarism analysis function (SCIENTIFIC & ENHANCED)
@@ -27,9 +171,13 @@ export async function analyzePlagiarism(text, onProgress, options = { excludeCit
         sourcesChecked: 0,
         sources: [],
         keyPhrases: [],
-        ngramMatches: [],
         citations: null,
-        excludedRanges: []
+        excludedRanges: [],
+        methodology: {
+            retrieval: 'multi-source phrase retrieval',
+            reranking: 'lexical passage alignment',
+            semantic: 'disabled'
+        }
     };
 
     // Step 0: Citation Analysis (First, to define exclusions)
@@ -100,7 +248,8 @@ export async function analyzePlagiarism(text, onProgress, options = { excludeCit
                         type: match.type || match.source,
                         text: (match.snippet || '') + ' ' + (match.title || ''),
                         url: match.url,
-                        matches: 0
+                        matches: 0,
+                        source: match.source
                     });
                 }
                 potentialSources.get(key).matches++;
@@ -113,43 +262,53 @@ export async function analyzePlagiarism(text, onProgress, options = { excludeCit
 
     onProgress(85);
 
-    // Step 4: Advanced Source Analysis (Shingling & TF-IDF)
-    const sourcesArray = Array.from(potentialSources.values());
+    // Step 4: Advanced Source Analysis (retrieval enrichment + semantic reranking)
+    const sourcesArray = await enrichSources(Array.from(potentialSources.values()).slice(0, 12));
     results.sourcesChecked = sourcesArray.length;
+    const passages = splitIntoPassages(text);
+    const embeddingBundle = await embedTexts(passages, sourcesArray.map(source => source.sourceText || source.text || ''));
+    if (embeddingBundle) {
+        results.methodology.semantic = 'OpenAI text-embedding-3-large';
+        results.methodology.reranking = 'hybrid lexical + embedding passage alignment';
+    }
 
     for (let i = 0; i < sourcesArray.length; i++) {
-        const source = sourcesArray[i];
+        const source = {
+            ...sourcesArray[i],
+            embeddingIndex: i
+        };
+        const sourceText = source.sourceText || source.text || '';
+        const passageMatches = scorePassagesAgainstSource(passages, source, embeddingBundle);
+        const topPassage = passageMatches[0];
 
-        // 1. Shingling (Exact/Near-Exact Copy Detection)
-        // Updated: k=5, and PASSING excludedRanges
-        const shingleScore = calculateShingleOverlap(text, source.text, 5, results.excludedRanges);
+        const shingleScore = calculateShingleOverlap(text, sourceText, 5, results.excludedRanges);
+        const tfidfScore = calculateTFIDFSimilarity(text, sourceText);
+        const passageScore = topPassage?.score || 0;
+        const semanticScore = topPassage?.semanticScore || 0;
 
-        // 2. TF-IDF (Topic/Keyword Similarity)
-        const tfidfScore = calculateTFIDFSimilarity(text, source.text);
-
-        // 3. Phrase Hits Boost (Reduced significantly)
-        // Cap at 15% bonus
-        const matchesBoost = Math.min(source.matches * 3, 15);
-
-        // Combined Score - SCIENTIFIC FORMULA
-        // No arbitrary multipliers > 1. 
-        // We weight shingling heavily as it proves *copying*, but we don't multiply it.
-        // Formula: 60% Shingling + 20% TF-IDF + 20% Boost
-
-        let combinedScore = (shingleScore * 0.6) + (tfidfScore * 0.2) + matchesBoost;
+        const matchesBoost = Math.min(source.matches * 4, 16);
+        let combinedScore = (passageScore * 0.44) + (shingleScore * 0.28) + (tfidfScore * 0.14) + matchesBoost;
+        if (hasMeaningfulSemanticLift(shingleScore, semanticScore)) {
+            combinedScore += 4;
+        }
 
         if (combinedScore > 100) combinedScore = 100;
 
-        // Threshold: Only report if score > 5% (filtering noise)
-        if (combinedScore > 5) {
+        if (combinedScore > 8) {
             results.sources.push({
                 id: source.id,
                 name: source.name,
                 type: source.type,
                 similarity: combinedScore,
                 url: source.url,
-                // Passing snippet back for highlighting if needed
-                snippet: source.text.substring(0, 200) + '...'
+                source: source.source,
+                matches: source.matches,
+                snippet: sourceText.substring(0, 280) + (sourceText.length > 280 ? '...' : ''),
+                text: sourceText.substring(0, 1200),
+                passageMatches,
+                retrievalConfidence: Math.round(Math.max(passageScore, shingleScore)),
+                semanticScore: Math.round(semanticScore * 10) / 10,
+                exactMatchScore: Math.round(shingleScore * 10) / 10
             });
 
             if (combinedScore > results.maxMatch) {
@@ -163,12 +322,10 @@ export async function analyzePlagiarism(text, onProgress, options = { excludeCit
     const topSources = results.sources.slice(0, 10);
 
     if (topSources.length > 0) {
-        // Weighted Average: 80% Max Match + 20% Avg of Top 5
-        // This prevents one high score from being diluted too much, but also prevents 10 low scores from looking like 0.
         const maxScore = results.maxMatch;
         const avgTop5 = topSources.slice(0, 5).reduce((sum, s) => sum + s.similarity, 0) / Math.min(topSources.length, 5);
-
-        results.overallScore = (maxScore * 0.8) + (avgTop5 * 0.2);
+        const evidenceDensity = topSources.reduce((sum, source) => sum + (source.passageMatches?.length || 0), 0);
+        results.overallScore = Math.min(100, (maxScore * 0.7) + (avgTop5 * 0.2) + Math.min(10, evidenceDensity * 0.8));
     } else {
         results.overallScore = 0;
     }
@@ -176,6 +333,10 @@ export async function analyzePlagiarism(text, onProgress, options = { excludeCit
     onProgress(100);
 
     return results;
+}
+
+function hasMeaningfulSemanticLift(shingleScore, semanticScore) {
+    return semanticScore > (shingleScore * 0.9) + 10;
 }
 
 /**

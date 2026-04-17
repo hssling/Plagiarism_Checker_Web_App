@@ -1,17 +1,32 @@
-/**
- * StyleReport Component
- * Displays writing style analysis and cross-language detection results
- */
-
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { analyzeWritingStyle } from '../lib/styleAnalyzer';
 import { detectTranslatedContent } from '../lib/crossLanguage';
+import { analyzeLanguageQualityLocal, mergeLanguageQuality } from '../lib/languageQuality';
+import { isAIInitialized, reviewLanguageQuality } from '../lib/llmService';
+
+function ScorePill({ score, label }) {
+    const color = score >= 85 ? 'var(--success)' : score >= 70 ? 'var(--warning)' : 'var(--danger)';
+    return (
+        <div style={{
+            border: '1px solid var(--border-color)',
+            borderRadius: '8px',
+            padding: '0.85rem 1rem',
+            background: 'var(--bg-secondary)'
+        }}>
+            <div style={{ fontSize: '1.3rem', fontWeight: 700, color }}>{score}</div>
+            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{label}</div>
+        </div>
+    );
+}
 
 function StyleReport({ text }) {
     const [styleData, setStyleData] = useState(null);
     const [translationData, setTranslationData] = useState(null);
+    const [qualityData, setQualityData] = useState(null);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
-    const [activeTab, setActiveTab] = useState('style');
+    const [qualityLoading, setQualityLoading] = useState(false);
+    const [activeTab, setActiveTab] = useState('quality');
+    const [copied, setCopied] = useState(false);
 
     useEffect(() => {
         if (text && text.length > 100) {
@@ -23,39 +38,72 @@ function StyleReport({ text }) {
         setIsAnalyzing(true);
 
         try {
-            // Style analysis (synchronous)
-            const style = analyzeWritingStyle(text);
-            setStyleData(style);
+            const localQuality = analyzeLanguageQualityLocal(text);
+            setQualityData(localQuality);
 
-            // Translation detection (async - uses AI)
-            const translation = await detectTranslatedContent(text);
+            const [style, translation] = await Promise.all([
+                Promise.resolve(analyzeWritingStyle(text)),
+                detectTranslatedContent(text)
+            ]);
+
+            setStyleData(style);
             setTranslationData(translation);
+
+            if (isAIInitialized()) {
+                setQualityLoading(true);
+                const aiQuality = await reviewLanguageQuality(text, localQuality);
+                if (aiQuality) {
+                    setQualityData(mergeLanguageQuality(localQuality, aiQuality));
+                }
+            }
         } catch (error) {
             console.error('Style analysis failed:', error);
         } finally {
             setIsAnalyzing(false);
+            setQualityLoading(false);
         }
+    };
+
+    const rerunQuality = async () => {
+        const localQuality = analyzeLanguageQualityLocal(text);
+        setQualityData(localQuality);
+
+        if (!isAIInitialized()) {
+            return;
+        }
+
+        setQualityLoading(true);
+        try {
+            const aiQuality = await reviewLanguageQuality(text, localQuality);
+            if (aiQuality) {
+                setQualityData(mergeLanguageQuality(localQuality, aiQuality));
+            }
+        } catch (error) {
+            console.error('Language QA refresh failed:', error);
+        } finally {
+            setQualityLoading(false);
+        }
+    };
+
+    const handleCopyEdited = async () => {
+        if (!qualityData?.editedText) return;
+        await navigator.clipboard.writeText(qualityData.editedText);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1800);
     };
 
     if (!text || text.length < 100) {
         return null;
     }
 
-    if (isAnalyzing) {
+    if (isAnalyzing && !styleData && !translationData && !qualityData) {
         return (
             <div className="style-report loading">
                 <div className="spinner"></div>
-                <p>Analyzing writing style...</p>
+                <p>Analyzing writing quality...</p>
             </div>
         );
     }
-
-    const getScoreClass = (score) => {
-        if (score >= 80) return 'excellent';
-        if (score >= 60) return 'good';
-        if (score >= 40) return 'moderate';
-        return 'low';
-    };
 
     const getConsistencyLabel = (score) => {
         if (score >= 80) return 'Highly Consistent';
@@ -66,96 +114,137 @@ function StyleReport({ text }) {
 
     return (
         <div className="style-report">
-            {/* Tab Navigation */}
             <div className="style-tabs">
-                <button
-                    className={`style-tab ${activeTab === 'style' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('style')}
-                >
-                    ✍️ Writing Style
+                <button className={`style-tab ${activeTab === 'quality' ? 'active' : ''}`} onClick={() => setActiveTab('quality')}>
+                    Language QA
                 </button>
-                <button
-                    className={`style-tab ${activeTab === 'translation' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('translation')}
-                >
-                    🌐 Language Check
+                <button className={`style-tab ${activeTab === 'style' ? 'active' : ''}`} onClick={() => setActiveTab('style')}>
+                    Writing Style
+                </button>
+                <button className={`style-tab ${activeTab === 'translation' ? 'active' : ''}`} onClick={() => setActiveTab('translation')}>
+                    Language Check
                 </button>
             </div>
 
-            {/* Style Analysis Tab */}
+            {activeTab === 'quality' && qualityData && (
+                <div style={{ display: 'grid', gap: '1rem' }}>
+                    <div className="score-card" style={{ marginBottom: 0 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
+                            <div>
+                                <h3 style={{ marginTop: 0, marginBottom: '0.35rem' }}>Professional Language QA</h3>
+                                <p style={{ margin: 0, color: 'var(--text-muted)' }}>{qualityData.executiveSummary}</p>
+                            </div>
+                            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                                {qualityLoading && <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Refreshing editorial review...</span>}
+                                <button className="btn btn-secondary" onClick={rerunQuality}>Refresh Review</button>
+                                <button className="btn btn-primary" onClick={handleCopyEdited} disabled={!qualityData.editedText}>
+                                    {copied ? 'Copied' : 'Copy Edited Text'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '0.75rem' }}>
+                        <ScorePill score={qualityData.overallScore} label="Overall" />
+                        <ScorePill score={qualityData.grammarScore} label="Grammar" />
+                        <ScorePill score={qualityData.clarityScore} label="Clarity" />
+                        <ScorePill score={qualityData.readabilityScore} label="Readability" />
+                        <ScorePill score={qualityData.toneScore} label="Tone" />
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(280px, 1fr) minmax(320px, 1.2fr)', gap: '1rem' }}>
+                        <div className="score-card" style={{ marginBottom: 0 }}>
+                            <h4 style={{ marginTop: 0 }}>Findings</h4>
+                            <div style={{ display: 'grid', gap: '0.75rem' }}>
+                                {qualityData.issues?.length ? qualityData.issues.map((issue, index) => (
+                                    <div key={index} style={{ border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.85rem' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', marginBottom: '0.35rem' }}>
+                                            <strong>{issue.title}</strong>
+                                            <span style={{ textTransform: 'capitalize', color: issue.severity === 'high' ? 'var(--danger)' : issue.severity === 'medium' ? 'var(--warning)' : 'var(--text-muted)' }}>
+                                                {issue.severity}
+                                            </span>
+                                        </div>
+                                        <div style={{ color: 'var(--text-muted)', fontSize: '0.92rem' }}>{issue.detail}</div>
+                                        {!!issue.examples?.length && (
+                                            <div style={{ marginTop: '0.5rem', fontSize: '0.86rem' }}>
+                                                {issue.examples.map((example, itemIndex) => (
+                                                    <div key={itemIndex} style={{ color: 'var(--text-secondary)' }}>"{example}"</div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                )) : (
+                                    <div style={{ color: 'var(--text-muted)' }}>No material language issues detected.</div>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="score-card" style={{ marginBottom: 0 }}>
+                            <h4 style={{ marginTop: 0 }}>Edited Version</h4>
+                            {qualityData.editedText ? (
+                                <div style={{ whiteSpace: 'pre-wrap', lineHeight: '1.65', fontSize: '0.95rem' }}>
+                                    {qualityData.editedText}
+                                </div>
+                            ) : (
+                                <div style={{ color: 'var(--text-muted)' }}>
+                                    Connect an AI provider in Settings to generate a professional edited draft. Local QA findings are already available.
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="score-card" style={{ marginBottom: 0 }}>
+                        <h4 style={{ marginTop: 0 }}>Recommendations</h4>
+                        <div style={{ display: 'grid', gap: '0.5rem' }}>
+                            {qualityData.recommendations?.map((item, index) => (
+                                <div key={index} style={{ color: 'var(--text-secondary)' }}>{index + 1}. {item}</div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {activeTab === 'style' && styleData && (
                 <div className="style-content">
-                    {/* Consistency Score */}
                     <div className="consistency-card">
-                        <div className={`consistency-score ${getScoreClass(styleData.consistencyScore)}`}>
+                        <div className="consistency-score">
                             <span className="score-value">{styleData.consistencyScore}%</span>
                             <span className="score-label">{getConsistencyLabel(styleData.consistencyScore)}</span>
                         </div>
-                        <p className="consistency-desc">
-                            Style consistency across the document
-                        </p>
+                        <p className="consistency-desc">Style consistency across the document</p>
                     </div>
 
-                    {/* Metrics Grid */}
                     <div className="style-metrics">
                         <div className="metric-card">
                             <div className="metric-value">{styleData.vocabularyRichness}%</div>
                             <div className="metric-label">Vocabulary Richness</div>
-                            <div className="metric-bar">
-                                <div className="metric-fill" style={{ width: `${styleData.vocabularyRichness}%` }}></div>
-                            </div>
                         </div>
-
                         <div className="metric-card">
                             <div className="metric-value">{styleData.avgSentenceLength}</div>
                             <div className="metric-label">Avg Sentence Length</div>
-                            <div className="metric-hint">
-                                words/sentence
-                                <span className={styleData.avgSentenceLength > 25 ? 'warning' : 'good'} style={{ marginLeft: '5px', fontSize: '0.8em', fontWeight: 'bold' }}>
-                                    ({styleData.avgSentenceLength > 25 ? 'Long' : styleData.avgSentenceLength < 15 ? 'Short' : 'Standard'})
-                                </span>
-                            </div>
                         </div>
-
                         <div className="metric-card">
                             <div className="metric-value">{styleData.complexityScore}</div>
                             <div className="metric-label">Complexity Score</div>
-                            <div className="metric-hint">
-                                syllables/word
-                                <span className={styleData.complexityScore > 2.0 ? 'warning' : 'good'} style={{ marginLeft: '5px', fontSize: '0.8em', fontWeight: 'bold' }}>
-                                    ({styleData.complexityScore > 2.0 ? 'Complex' : styleData.complexityScore < 1.4 ? 'Simple' : 'Standard'})
-                                </span>
-                            </div>
                         </div>
-
                         <div className="metric-card">
                             <div className="metric-value">{styleData.passiveVoicePercentage}%</div>
                             <div className="metric-label">Passive Voice</div>
-                            <div className="metric-bar">
-                                <div
-                                    className="metric-fill warning"
-                                    style={{ width: `${Math.min(100, styleData.passiveVoicePercentage * 2)}%` }}
-                                ></div>
-                            </div>
                         </div>
                     </div>
 
-                    {/* Style Summary */}
-                    {styleData.summary && styleData.summary.length > 0 && (
+                    {styleData.summary?.length > 0 && (
                         <div className="style-summary">
                             <h4>Style Characteristics</h4>
                             <ul>
-                                {styleData.summary.map((point, i) => (
-                                    <li key={i}>{point}</li>
-                                ))}
+                                {styleData.summary.map((point, i) => <li key={i}>{point}</li>)}
                             </ul>
                         </div>
                     )}
 
-                    {/* Anomalies */}
                     {styleData.anomalies?.hasAnomalies && (
                         <div className="style-anomalies">
-                            <h4>⚠️ Style Anomalies Detected</h4>
+                            <h4>Style Anomalies Detected</h4>
                             <p>{styleData.anomalies.anomalyCount} section(s) with different writing style</p>
                             <div className="anomaly-list">
                                 {styleData.anomalies.anomalySections.map((section, i) => (
@@ -167,42 +256,14 @@ function StyleReport({ text }) {
                             </div>
                         </div>
                     )}
-
-                    {/* Fingerprint Visualization */}
-                    <div className="fingerprint-section">
-                        <h4>Style Fingerprint</h4>
-                        <div className="fingerprint-chart">
-                            {styleData.fingerprint && Object.entries(styleData.fingerprint).map(([key, value]) => (
-                                <div key={key} className="fingerprint-bar">
-                                    <span className="fp-label">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
-                                    <div className="fp-track">
-                                        <div
-                                            className="fp-fill"
-                                            style={{ width: `${value * 100}%` }}
-                                        ></div>
-                                    </div>
-                                    <span className="fp-value">{Math.round(value * 100)}%</span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
                 </div>
             )}
 
-            {/* Translation Detection Tab */}
             {activeTab === 'translation' && translationData && (
                 <div className="translation-content">
-                    {/* Translation Status */}
                     <div className={`translation-status ${translationData.isLikelyTranslated ? 'warning' : 'clear'}`}>
-                        <div className="status-icon">
-                            {translationData.isLikelyTranslated ? '⚠️' : '✅'}
-                        </div>
                         <div className="status-text">
-                            <h3>
-                                {translationData.isLikelyTranslated
-                                    ? 'Possible Translated Content'
-                                    : 'Original English Text'}
-                            </h3>
+                            <h3>{translationData.isLikelyTranslated ? 'Possible Translated Content' : 'Original English Text'}</h3>
                             <p>{translationData.summary}</p>
                         </div>
                         <div className="status-confidence">
@@ -211,42 +272,24 @@ function StyleReport({ text }) {
                         </div>
                     </div>
 
-                    {/* Language Detection */}
                     <div className="language-info">
                         <div className="language-card">
-                            <span className="lang-icon">🌍</span>
                             <span className="lang-name">{translationData.detectedLanguage}</span>
                             <span className="lang-confidence">{Math.round(translationData.languageConfidence * 100)}% confidence</span>
                         </div>
                     </div>
 
-                    {/* Artifacts */}
-                    {translationData.artifacts && translationData.artifacts.length > 0 && (
+                    {translationData.artifacts?.length > 0 && (
                         <div className="artifacts-section">
                             <h4>Translation Artifacts Found</h4>
                             <div className="artifacts-list">
                                 {translationData.artifacts.map((artifact, i) => (
                                     <div key={i} className={`artifact-item ${artifact.severity}`}>
                                         <span className="artifact-type">{artifact.message || artifact.type}</span>
-                                        <span className={`artifact-severity ${artifact.severity}`}>
-                                            {artifact.severity}
-                                        </span>
+                                        <span className={`artifact-severity ${artifact.severity}`}>{artifact.severity}</span>
                                     </div>
                                 ))}
                             </div>
-                        </div>
-                    )}
-
-                    {/* AI Analysis */}
-                    {translationData.aiAnalysis && (
-                        <div className="ai-analysis">
-                            <h4>🤖 AI Analysis</h4>
-                            <p>{translationData.aiAnalysis.explanation}</p>
-                            {translationData.aiAnalysis.sourceLanguage && (
-                                <p className="source-lang">
-                                    Possible source language: <strong>{translationData.aiAnalysis.sourceLanguage}</strong>
-                                </p>
-                            )}
                         </div>
                     )}
                 </div>
