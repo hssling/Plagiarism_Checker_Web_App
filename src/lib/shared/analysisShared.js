@@ -143,13 +143,41 @@ export function getShingleMatches(text1, text2, k = 5, excludedRanges = []) {
         }
     }
 
+    const matchedCharRanges = [];
+    if (matchedWordIndices.size > 0) {
+        const sortedWordIdx = Array.from(matchedWordIndices).sort((a, b) => a - b);
+        let blockStart = sortedWordIdx[0];
+        let prev = sortedWordIdx[0];
+
+        for (let idx = 1; idx < sortedWordIdx.length; idx++) {
+            const current = sortedWordIdx[idx];
+            if (current === prev + 1) {
+                prev = current;
+                continue;
+            }
+
+            matchedCharRanges.push({
+                start: pos1[blockStart],
+                end: pos1[prev] + (words1[prev]?.length || 0)
+            });
+            blockStart = current;
+            prev = current;
+        }
+
+        matchedCharRanges.push({
+            start: pos1[blockStart],
+            end: pos1[prev] + (words1[prev]?.length || 0)
+        });
+    }
+
     // Calculate coverage relative to TOTAL VALID words
     const coverage = words1.length > 0 ? (matchedWordIndices.size / words1.length) * 100 : 0;
 
     return {
         coverage,
         matchedIndices: matchedWordIndices,
-        totalWords: words1.length
+        totalWords: words1.length,
+        matchedCharRanges
     };
 }
 

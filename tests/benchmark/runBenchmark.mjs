@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { calculateShingleOverlap, calculateTFIDFSimilarity } from '../../src/lib/shared/analysisShared.js';
+import { calculateShingleOverlap, calculateTFIDFSimilarity, getShingleMatches } from '../../src/lib/shared/analysisShared.js';
 import { analyzeLanguageQualityLocal } from '../../src/lib/languageQuality.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -44,6 +44,27 @@ for (const item of dataset.plagiarism_cases) {
     }
 }
 
+const alignmentProbeText = 'Alpha beta gamma delta epsilon zeta eta theta.';
+const alignmentProbeSource = 'Noise alpha beta gamma delta epsilon zeta noise.';
+const alignment = getShingleMatches(alignmentProbeText, alignmentProbeSource, 5, []);
+addCheck(
+    'alignment_ranges_exist',
+    Array.isArray(alignment.matchedCharRanges) && alignment.matchedCharRanges.length > 0,
+    { matchedCharRanges: alignment.matchedCharRanges }
+);
+
+const excluded = getShingleMatches(
+    alignmentProbeText,
+    alignmentProbeSource,
+    5,
+    [{ start: 0, end: alignmentProbeText.length }]
+);
+addCheck(
+    'alignment_exclusion_works',
+    excluded.coverage === 0,
+    { coverage: excluded.coverage }
+);
+
 for (const item of dataset.ai_authorship_schema_cases) {
     addCheck(
         `ai_schema_${item.id}`,
@@ -70,4 +91,3 @@ console.log(JSON.stringify(report, null, 2));
 if (!report.ok) {
     process.exit(1);
 }
-

@@ -12,6 +12,7 @@ import {
     cleanText,
     calculateTFIDFSimilarity,
     calculateShingleOverlap,
+    getShingleMatches,
     extractSmartPhrases,
     isCommonChain
 } from './shared/analysisShared';
@@ -33,33 +34,60 @@ function cosineSimilarity(vecA, vecB) {
     return dot / (Math.sqrt(normA) * Math.sqrt(normB));
 }
 
-function splitIntoPassages(text) {
+function isRangeOverlapping(start, end, ranges = []) {
+    return ranges.some(range => start < range.end && end > range.start);
+}
+
+function splitIntoPassages(text, excludedRanges = []) {
     const paragraphs = text
         .split(/\n{2,}/)
         .map(part => part.trim())
         .filter(part => part.length > 60);
 
     const passages = [];
+    let searchCursor = 0;
 
     paragraphs.forEach((paragraph, index) => {
         const words = paragraph.split(/\s+/).filter(Boolean);
+        const paragraphStart = text.indexOf(paragraph, searchCursor);
+        if (paragraphStart >= 0) {
+            searchCursor = paragraphStart + paragraph.length;
+        }
         if (words.length <= 90) {
-            passages.push({ id: `p_${index}_0`, text: paragraph });
+            const pStart = paragraphStart >= 0 ? paragraphStart : 0;
+            const pEnd = pStart + paragraph.length;
+            if (!isRangeOverlapping(pStart, pEnd, excludedRanges)) {
+                passages.push({ id: `p_${index}_0`, text: paragraph, start: pStart, end: pEnd });
+            }
             return;
         }
 
         for (let i = 0; i < words.length; i += 55) {
             const windowWords = words.slice(i, i + 90);
             if (windowWords.length < 30) continue;
+            const windowText = windowWords.join(' ');
+            const localStart = paragraph.indexOf(windowText);
+            const start = paragraphStart >= 0 && localStart >= 0 ? paragraphStart + localStart : Math.max(0, paragraphStart);
+            const end = start + windowText.length;
+            if (isRangeOverlapping(start, end, excludedRanges)) continue;
             passages.push({
                 id: `p_${index}_${i}`,
-                text: windowWords.join(' ')
+                text: windowText,
+                start,
+                end
             });
         }
     });
 
     if (passages.length === 0) {
-        passages.push({ id: 'p_fallback', text: text.split(/\s+/).slice(0, 120).join(' ') });
+        const fallback = text.split(/\s+/).slice(0, 120).join(' ');
+        const fallbackStart = text.indexOf(fallback);
+        passages.push({
+            id: 'p_fallback',
+            text: fallback,
+            start: Math.max(0, fallbackStart),
+            end: Math.max(0, fallbackStart) + fallback.length
+        });
     }
 
     return passages.slice(0, 18);
@@ -160,6 +188,68 @@ function findReferenceSectionRange(text) {
     }
 }
 
+function collectPatternRanges(text, pattern) {
+    const ranges = [];
+    const globalPattern = new RegExp(pattern.source, pattern.flags.includes('g') ? pattern.flags : `${pattern.flags}g`);
+    let match;
+    while ((match = globalPattern.exec(text)) !== null) {
+        ranges.push({
+            start: match.index,
+            end: match.index + match[0].length
+        });
+    }
+    return ranges;
+}
+
+function normalizeRanges(ranges = [], textLength = 0) {
+    if (!ranges.length) return [];
+    const prepared = ranges
+        .map(range => ({
+            start: Math.max(0, Math.min(range.start, textLength)),
+            end: Math.max(0, Math.min(range.end, textLength))
+        }))
+        .filter(range => range.end > range.start)
+        .sort((a, b) => a.start - b.start);
+
+    const merged = [prepared[0]];
+    for (let i = 1; i < prepared.length; i++) {
+        const current = prepared[i];
+        const prev = merged[merged.length - 1];
+        if (current.start <= prev.end) {
+            prev.end = Math.max(prev.end, current.end);
+        } else {
+            merged.push(current);
+        }
+    }
+    return merged;
+}
+
+function collectStructuralExclusions(text) {
+    const ranges = [];
+
+    const refRange = findReferenceSectionRange(text);
+    if (refRange) ranges.push(refRange);
+
+    ranges.push(...collectPatternRanges(text, /```[\s\S]*?```/g));
+    ranges.push(...collectPatternRanges(text, /(^|\n)\s{4,}[^\n]+/g));
+    ranges.push(...collectPatternRanges(text, /(^|\n)>\s+[^\n]+/g));
+    ranges.push(...collectPatternRanges(text, /"[^"\n]{180,}"/g));
+
+    return normalizeRanges(ranges, text.length);
+}
+
+function applyExclusionsToText(text, ranges = []) {
+    if (!ranges.length) return text;
+
+    const chars = text.split('');
+    ranges.forEach(range => {
+        for (let i = range.start; i < range.end && i < chars.length; i++) {
+            chars[i] = ' ';
+        }
+    });
+    return chars.join('');
+}
+
 async function buildPhraseVariants(phrase, maxVariants = 3) {
     const variants = new Set([phrase]);
     try {
@@ -207,6 +297,7 @@ function buildSourcePassageMatches(passages, retrievalIndex, embeddingBundle) {
             if (!grouped.has(sourceId)) grouped.set(sourceId, []);
             grouped.get(sourceId).push({
                 passage: passage.text,
+                passageRange: { start: passage.start, end: passage.end },
                 score: Math.min(100, result.finalScore),
                 lexicalScore: Math.min(100, result.lexicalScore),
                 semanticScore: Math.min(100, result.semanticScore),
@@ -255,6 +346,7 @@ function scorePassagesAgainstSource(passages, source, embeddingBundle) {
 
             return {
                 passage: passage.text,
+                passageRange: { start: passage.start, end: passage.end },
                 score: Math.min(100, score),
                 lexicalScore: Math.min(100, lexicalScore),
                 semanticScore: Math.min(100, semanticScore),
@@ -294,26 +386,26 @@ export async function analyzePlagiarism(text, onProgress, options = { excludeCit
     onProgress(5);
     try {
         results.citations = analyzeCitationsLocal(text);
+        const structuralRanges = collectStructuralExclusions(text);
+        results.excludedRanges.push(...structuralRanges);
 
         // Define Excluded Ranges
         if (options.excludeCitations && results.citations.inTextCitations) {
-            results.excludedRanges = results.citations.inTextCitations.map(c => ({
+            results.excludedRanges.push(...results.citations.inTextCitations.map(c => ({
                 start: c.start,
                 end: c.end
-            }));
-
-            const refRange = findReferenceSectionRange(text);
-            if (refRange) {
-                results.excludedRanges.push(refRange);
-            }
+            })));
         }
+        results.excludedRanges = normalizeRanges(results.excludedRanges, text.length);
     } catch (err) {
         console.warn('Citation analysis warning:', err);
     }
 
+    const analysisText = applyExclusionsToText(text, results.excludedRanges);
+
     // Step 1: Preprocessing
     onProgress(10);
-    const words = cleanText(text).split(/\s+/).filter(w => w.length > 0);
+    const words = cleanText(analysisText).split(/\s+/).filter(w => w.length > 0);
     results.wordCount = words.length;
     results.uniqueWords = new Set(words.map(w => w.toLowerCase())).size;
 
@@ -323,7 +415,7 @@ export async function analyzePlagiarism(text, onProgress, options = { excludeCit
     onProgress(15);
     // Dynamic depth: check 1 phrase for every 50 words (less frequent)
     const dynamicMax = Math.min(Math.max(6, Math.ceil(words.length / 50)), 25);
-    const initialKeyPhrases = extractSmartPhrases(text, dynamicMax);
+    const initialKeyPhrases = extractSmartPhrases(analysisText, dynamicMax);
 
     // Filter common phrases if requested
     const keyPhrases = options.excludeCommonPhrases
@@ -383,7 +475,7 @@ export async function analyzePlagiarism(text, onProgress, options = { excludeCit
     // Step 4: Advanced Source Analysis (retrieval enrichment + semantic reranking)
     const sourcesArray = await enrichSources(Array.from(potentialSources.values()).slice(0, 12));
     results.sourcesChecked = sourcesArray.length;
-    const passages = splitIntoPassages(text);
+    const passages = splitIntoPassages(text, results.excludedRanges);
     const chunkDocs = buildSourceChunkDocuments(sourcesArray);
     const retrievalIndex = new HybridRetrievalIndex();
     retrievalIndex.addDocuments(chunkDocs);
@@ -419,7 +511,8 @@ export async function analyzePlagiarism(text, onProgress, options = { excludeCit
         const passageMatches = sourcePassageMap.get(source.id) || scorePassagesAgainstSource(passages, source, embeddingBundle);
         const topPassage = passageMatches[0];
 
-        const shingleScore = calculateShingleOverlap(text, sourceText, 5, results.excludedRanges);
+        const shingleDetail = getShingleMatches(text, sourceText, 5, results.excludedRanges);
+        const shingleScore = shingleDetail.coverage;
         const tfidfScore = calculateTFIDFSimilarity(text, sourceText);
         const passageScore = topPassage?.score || 0;
         const semanticScore = topPassage?.semanticScore || 0;
@@ -444,6 +537,7 @@ export async function analyzePlagiarism(text, onProgress, options = { excludeCit
                 snippet: sourceText.substring(0, 280) + (sourceText.length > 280 ? '...' : ''),
                 text: sourceText.substring(0, 1200),
                 passageMatches,
+                matchedCharRanges: shingleDetail.matchedCharRanges.slice(0, 25),
                 retrievalConfidence: Math.round(Math.max(passageScore, shingleScore, tfidfScore)),
                 semanticScore: Math.round(semanticScore * 10) / 10,
                 exactMatchScore: Math.round(shingleScore * 10) / 10

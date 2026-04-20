@@ -5,23 +5,96 @@
 
 import { validateRequest } from './_lib/auth.js';
 import { checkRateLimit, getRateLimitHeaders, rateLimitErrorResponse } from './_lib/rateLimit.js';
-import { extractSmartPhrases, calculateShingleOverlap, calculateTFIDFSimilarity } from '../src/lib/shared/analysisShared.js';
+import { extractSmartPhrases, calculateShingleOverlap, calculateTFIDFSimilarity, getShingleMatches } from '../src/lib/shared/analysisShared.js';
 import { executeSearch } from '../src/lib/shared/searchShared.js';
 import { detectLanguage, semanticTranslationCheck } from '../src/lib/shared/languageShared.js';
 import { analyzeIntentBackend, checkAuthorshipBackend, translateTextBackend } from './_lib/ai.js';
 import { calibrateSimilarityRisk } from '../src/lib/scoringCalibration.js';
+import { analyzeCitationsLocal, extractReferencesSection } from '../src/lib/citationParser.js';
+
+function collectPatternRanges(text, pattern) {
+    const ranges = [];
+    const globalPattern = new RegExp(pattern.source, pattern.flags.includes('g') ? pattern.flags : `${pattern.flags}g`);
+    let match;
+    while ((match = globalPattern.exec(text)) !== null) {
+        ranges.push({ start: match.index, end: match.index + match[0].length });
+    }
+    return ranges;
+}
+
+function normalizeRanges(ranges = [], textLength = 0) {
+    if (!ranges.length) return [];
+    const prepared = ranges
+        .map(range => ({
+            start: Math.max(0, Math.min(range.start, textLength)),
+            end: Math.max(0, Math.min(range.end, textLength))
+        }))
+        .filter(range => range.end > range.start)
+        .sort((a, b) => a.start - b.start);
+
+    const merged = [prepared[0]];
+    for (let i = 1; i < prepared.length; i++) {
+        const current = prepared[i];
+        const prev = merged[merged.length - 1];
+        if (current.start <= prev.end) {
+            prev.end = Math.max(prev.end, current.end);
+        } else {
+            merged.push(current);
+        }
+    }
+    return merged;
+}
+
+function findReferenceSectionRange(text) {
+    const refSection = extractReferencesSection(text);
+    if (!refSection.found || !refSection.text) return null;
+    const anchor = refSection.text.slice(0, Math.min(80, refSection.text.length));
+    const start = text.indexOf(anchor);
+    if (start < 0) return null;
+    return { start, end: start + refSection.text.length };
+}
+
+function collectStructuralExclusions(text) {
+    const ranges = [];
+    const refRange = findReferenceSectionRange(text);
+    if (refRange) ranges.push(refRange);
+
+    ranges.push(...collectPatternRanges(text, /```[\s\S]*?```/g));
+    ranges.push(...collectPatternRanges(text, /(^|\n)\s{4,}[^\n]+/g));
+    ranges.push(...collectPatternRanges(text, /(^|\n)>\s+[^\n]+/g));
+    ranges.push(...collectPatternRanges(text, /"[^"\n]{180,}"/g));
+    return normalizeRanges(ranges, text.length);
+}
+
+function applyExclusionsToText(text, ranges = []) {
+    if (!ranges.length) return text;
+    const chars = text.split('');
+    ranges.forEach(range => {
+        for (let i = range.start; i < range.end && i < chars.length; i++) {
+            chars[i] = ' ';
+        }
+    });
+    return chars.join('');
+}
 
 /**
  * Real plagiarism analysis engine for backend with Cognitive AI
  */
 async function performRealAnalysis(text, options = {}, aiKey = null) {
     const startTime = Date.now();
-    const words = text.split(/\s+/).filter(w => w.length > 0);
+    const citations = analyzeCitationsLocal(text);
+    const excludedRanges = collectStructuralExclusions(text);
+    if (options.excludeCitations !== false && citations?.inTextCitations?.length) {
+        excludedRanges.push(...citations.inTextCitations.map(item => ({ start: item.start, end: item.end })));
+    }
+    const normalizedExclusions = normalizeRanges(excludedRanges, text.length);
+    const analysisText = applyExclusionsToText(text, normalizedExclusions);
+    const words = analysisText.split(/\s+/).filter(w => w.length > 0);
     const lang = detectLanguage(text);
 
     // 1. Extract Smart Phrases
     const dynamicMax = Math.min(Math.max(8, Math.ceil(words.length / 40)), 20);
-    const keyPhrases = extractSmartPhrases(text, dynamicMax);
+    const keyPhrases = extractSmartPhrases(analysisText, dynamicMax);
 
     // 2. Execute Searches
     const potentialSources = new Map();
@@ -83,7 +156,8 @@ async function performRealAnalysis(text, options = {}, aiKey = null) {
     let maxMatch = 0;
 
     for (const source of potentialSources.values()) {
-        const shingleScore = calculateShingleOverlap(text, source.text, 3);
+        const shingleDetails = getShingleMatches(text, source.text, 3, normalizedExclusions);
+        const shingleScore = shingleDetails.coverage;
         const tfidfScore = calculateTFIDFSimilarity(text, source.text);
         const hitBoost = Math.min(source.hits * 5, 20);
 
@@ -101,6 +175,7 @@ async function performRealAnalysis(text, options = {}, aiKey = null) {
             resultsSources.push({
                 ...source,
                 similarity,
+                matchedCharRanges: shingleDetails.matchedCharRanges.slice(0, 20),
                 intent
             });
             if (similarity > maxMatch) maxMatch = similarity;
