@@ -562,7 +562,7 @@ export async function analyzePlagiarism(text, onProgress, options = { excludeCit
             : 0;
         results.rawOverallScore = Math.min(100, (maxScore * 0.7) + (avgTop5 * 0.2) + Math.min(10, evidenceDensity * 0.8));
         const calibration = calibrateSimilarityRisk(results.rawOverallScore, {
-            maxMatch,
+            maxMatch: maxScore,
             sourceCount: topSources.length,
             evidenceDensity,
             semanticLift: avgSemanticLift
