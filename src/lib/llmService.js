@@ -601,27 +601,43 @@ export const reviewLanguageQuality = async (text, localReview = null) => {
  * AI Authorship Detection
  */
 export const checkAIAuthorship = async (text) => {
-    const prompt = `Analyze the following text for signs of AI generation. 
-    Focus on:
-    1. Uniformity of sentence length (Low Burstiness).
-    2. Overly polite or neutral tone.
-    3. Lack of specific, anecdotal details.
-    
-    Text: "${text.substring(0, 1000)}..." (truncated)
+    const prompt = `Analyze this text for likelihood of AI-assisted writing. 
+Provide a screening estimate, not a definitive verdict.
 
-    Respond with ONLY a JSON object:
-    {
-        "aiProbability": number (0-100), // 0 = Definitely Human, 100 = Definitely AI
-        "reasoning": "string (max 20 words)"
-    }`;
+Text: "${text.substring(0, 1400)}"
+
+Return JSON only:
+{
+  "aiProbability": number,
+  "reasoning": "short explanation",
+  "signals": ["up to 4 concise signals"]
+}`;
 
     try {
-        const result = await callAI(prompt, "You are a stylometrics expert.");
+        const result = await callAI(prompt, "You are a stylometrics analyst. Be conservative about false positives.");
         const clean = result.replace(/```json|```/g, '').trim();
-        return JSON.parse(clean);
+        const parsed = JSON.parse(clean);
+        const aiProbability = Math.max(0, Math.min(100, Number(parsed.aiProbability || parsed.confidence || 0)));
+        return {
+            aiProbability,
+            confidenceBand: aiProbability >= 70 ? 'high' : aiProbability >= 40 ? 'medium' : 'low',
+            reasoning: parsed.reasoning || 'Pattern-based estimate only.',
+            signals: Array.isArray(parsed.signals) ? parsed.signals.slice(0, 4) : [],
+            shouldReviewManually: true,
+            disclaimer: 'AI authorship score is a screening signal and must not be used as sole evidence.',
+            modelUsed: 'llm_screening_v1'
+        };
     } catch (e) {
         console.error("AI Authorship Check Failed:", e);
-        return { isAI: false, confidence: 0, reasoning: e.message };
+        return {
+            aiProbability: 0,
+            confidenceBand: 'low',
+            reasoning: e.message,
+            signals: [],
+            shouldReviewManually: true,
+            disclaimer: 'AI authorship score is a screening signal and must not be used as sole evidence.',
+            modelUsed: 'llm_screening_v1'
+        };
     }
 };
 

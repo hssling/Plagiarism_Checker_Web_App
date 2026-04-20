@@ -11,7 +11,8 @@
         "lint": "eslint src --ext js,jsx --report-unused-disable-directives --max-warnings 0",
         "format": "prettier --write \"src/**/*.{js,jsx,css}\"",
         "test": "vitest run --passWithNoTests",
-        "test:watch": "vitest"
+        "test:watch": "vitest",
+        "benchmark": "node tests/benchmark/runBenchmark.mjs"
     },
     "dependencies": {
         "@google/generative-ai": "^0.24.1",

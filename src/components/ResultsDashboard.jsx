@@ -209,13 +209,15 @@ function ResultsDashboard({ results, onReset, text }) {
                                         <div style={{
                                             fontSize: '2rem',
                                             fontWeight: 'bold',
-                                            color: ((results?.authorship?.aiProbability || aiAnalysis?.authorship?.aiProbability) > 50) ? 'var(--warning)' : 'var(--success)'
+                                            color: (getAuthorshipScore() > 50) ? 'var(--warning)' : 'var(--success)'
                                         }}>
-                                            {results?.authorship?.aiProbability || aiAnalysis?.authorship?.aiProbability || 0}%
+                                            {getAuthorshipScore()}%
                                         </div>
                                         <div style={{ fontSize: '0.9rem' }}>
                                             Probability of AI Generation<br />
                                             <span style={{ color: 'var(--text-muted)' }}>{results.authorship?.reasoning || aiAnalysis?.authorship?.reasoning || 'No generation detected'}</span>
+                                            <br />
+                                            <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>{getAuthorshipDisclaimer()}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -528,3 +530,13 @@ function ResultsDashboard({ results, onReset, text }) {
 }
 
 export default ResultsDashboard;
+    const getAuthorshipScore = () => {
+        const candidate = results?.authorship || aiAnalysis?.authorship || {};
+        const normalized = candidate.aiProbability ?? candidate.confidence ?? 0;
+        return Number.isFinite(Number(normalized)) ? Number(normalized) : 0;
+    };
+
+    const getAuthorshipDisclaimer = () => {
+        const candidate = results?.authorship || aiAnalysis?.authorship || {};
+        return candidate.disclaimer || 'AI authorship score is a screening signal and must not be used as sole evidence.';
+    };

@@ -38,24 +38,42 @@ export async function checkAuthorshipBackend(text, apiKey) {
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-    const prompt = `Analyze this text for signs of AI generation.
-    Focus on sentence length uniformity, tone, and lack of detail.
+    const prompt = `Analyze this text for likelihood of AI-assisted writing.
+    Provide a screening estimate only, with conservative false-positive behavior.
     Text: "${text.substring(0, 1500)}"
 
     Respond with ONLY a JSON object:
     {
-        "isAI": boolean,
-        "confidence": number (0-100),
-        "reasoning": "string (max 20 words)"
+        "aiProbability": number (0-100),
+        "reasoning": "string (max 20 words)",
+        "signals": ["up to 4 concise signals"]
     }`;
 
     try {
         const result = await model.generateContent(prompt);
         const response = result.response.text();
-        return JSON.parse(response.replace(/```json|```/g, '').trim());
+        const parsed = JSON.parse(response.replace(/```json|```/g, '').trim());
+        const aiProbability = Math.max(0, Math.min(100, Number(parsed.aiProbability || parsed.confidence || 0)));
+        return {
+            aiProbability,
+            confidenceBand: aiProbability >= 70 ? 'high' : aiProbability >= 40 ? 'medium' : 'low',
+            reasoning: parsed.reasoning || 'Pattern-based estimate only.',
+            signals: Array.isArray(parsed.signals) ? parsed.signals.slice(0, 4) : [],
+            shouldReviewManually: true,
+            disclaimer: 'AI authorship score is a screening signal and must not be used as sole evidence.',
+            modelUsed: 'gemini-1.5-flash'
+        };
     } catch (e) {
         console.error("Backend Authorship Check Failed:", e);
-        return null;
+        return {
+            aiProbability: 0,
+            confidenceBand: 'low',
+            reasoning: e.message,
+            signals: [],
+            shouldReviewManually: true,
+            disclaimer: 'AI authorship score is a screening signal and must not be used as sole evidence.',
+            modelUsed: 'gemini-1.5-flash'
+        };
     }
 }
 

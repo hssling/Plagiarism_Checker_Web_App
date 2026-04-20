@@ -7,8 +7,9 @@ import { validateRequest } from './_lib/auth.js';
 import { checkRateLimit, getRateLimitHeaders, rateLimitErrorResponse } from './_lib/rateLimit.js';
 import { extractSmartPhrases, calculateShingleOverlap, calculateTFIDFSimilarity } from '../src/lib/shared/analysisShared.js';
 import { executeSearch } from '../src/lib/shared/searchShared.js';
-import { detectLanguage } from '../src/lib/shared/languageShared.js';
+import { detectLanguage, semanticTranslationCheck } from '../src/lib/shared/languageShared.js';
 import { analyzeIntentBackend, checkAuthorshipBackend, translateTextBackend } from './_lib/ai.js';
+import { calibrateSimilarityRisk } from '../src/lib/scoringCalibration.js';
 
 /**
  * Real plagiarism analysis engine for backend with Cognitive AI
@@ -34,6 +35,7 @@ async function performRealAnalysis(text, options = {}, aiKey = null) {
     for (const phrase of keyPhrases) {
         let matches = await executeSearch(phrase, {}, backendFetch);
         let isCrossLanguage = false;
+        const expansion = await semanticTranslationCheck(phrase, ['fr', 'es', 'de']);
 
         // CLD (Phase 12): If no english matches, try French or Spanish translation
         if (matches.length === 0 && aiKey && lang === 'en') {
@@ -41,6 +43,14 @@ async function performRealAnalysis(text, options = {}, aiKey = null) {
             if (translatedPhrase !== phrase) {
                 matches = await executeSearch(translatedPhrase, {}, backendFetch);
                 if (matches.length > 0) isCrossLanguage = true;
+            }
+        } else if (matches.length === 0 && expansion?.variants?.length) {
+            for (const variant of expansion.variants.slice(0, 2)) {
+                matches = await executeSearch(variant, {}, backendFetch);
+                if (matches.length > 0) {
+                    isCrossLanguage = true;
+                    break;
+                }
             }
         }
 
@@ -106,18 +116,30 @@ async function performRealAnalysis(text, options = {}, aiKey = null) {
     }
 
     // 5. Final Scoring
+    let rawOverallScore = 0;
     let overallScore = 0;
+    let riskBand = 'low';
     if (resultsSources.length > 0) {
         const topAvg = resultsSources.slice(0, 5).reduce((acc, s) => acc + s.similarity, 0) / Math.min(5, resultsSources.length);
-        overallScore = (maxMatch * 0.7) + (topAvg * 0.3);
+        rawOverallScore = (maxMatch * 0.7) + (topAvg * 0.3);
+        const calibration = calibrateSimilarityRisk(rawOverallScore, {
+            maxMatch,
+            sourceCount: resultsSources.length,
+            evidenceDensity: resultsSources.reduce((sum, s) => sum + Math.min(3, s.hits || 1), 0),
+            semanticLift: 0
+        });
+        overallScore = calibration.calibratedScore;
+        riskBand = calibration.riskBand;
     }
 
     return {
         overallScore: Math.round(overallScore * 10) / 10,
+        rawOverallScore: Math.round(rawOverallScore * 10) / 10,
         wordCount: words.length,
         uniqueWords: new Set(words.map(w => w.toLowerCase())).size,
         language: lang,
         maxMatch,
+        riskBand,
         authorship,
         sourcesChecked: potentialSources.size,
         sources: resultsSources.slice(0, 10),

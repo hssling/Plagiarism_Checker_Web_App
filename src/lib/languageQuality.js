@@ -1,4 +1,31 @@
-import { analyzeWritingStyle } from './styleAnalyzer';
+import { analyzeWritingStyle } from './styleAnalyzer.js';
+
+const QA_RULES = [
+    {
+        id: 'double_determiner',
+        category: 'grammar',
+        severity: 'medium',
+        title: 'Possible determiner stacking',
+        detail: 'Review repeated determiners (for example: "the the").',
+        pattern: /\b(the|a|an)\s+\1\b/gi
+    },
+    {
+        id: 'repeated_word',
+        category: 'clarity',
+        severity: 'low',
+        title: 'Repeated word sequence',
+        detail: 'Repeated adjacent words reduce fluency.',
+        pattern: /\b([a-zA-Z]+)\s+\1\b/gi
+    },
+    {
+        id: 'weak_hedging',
+        category: 'style',
+        severity: 'low',
+        title: 'Heavy hedging',
+        detail: 'Repeated hedging can weaken claims.',
+        pattern: /\b(might|could|perhaps|possibly|maybe)\b/gi
+    }
+];
 
 function getSentences(text) {
     return text
@@ -22,6 +49,24 @@ function collectRegexMatches(text, regex) {
     }
 
     return matches;
+}
+
+function runRuleEngine(text) {
+    const ruleIssues = [];
+    QA_RULES.forEach(rule => {
+        const matches = collectRegexMatches(text, rule.pattern);
+        if (matches.length > 0) {
+            ruleIssues.push({
+                category: rule.category,
+                severity: rule.severity,
+                title: rule.title,
+                detail: rule.detail,
+                examples: matches.slice(0, 3),
+                ruleId: rule.id
+            });
+        }
+    });
+    return ruleIssues;
 }
 
 export function analyzeLanguageQualityLocal(text) {
@@ -125,6 +170,9 @@ export function analyzeLanguageQualityLocal(text) {
         });
     }
 
+    const ruleIssues = runRuleEngine(text);
+    issues.push(...ruleIssues);
+
     const readabilityScore = clamp(100 - (longSentences.length * 8) - Math.max(0, (style.avgSentenceLength || 0) - 24) * 1.8);
     const grammarScore = clamp(96 - (agreementMatches.length * 10) - Math.max(0, issues.filter(issue => issue.category === 'grammar').length * 6));
     const clarityScore = clamp(100 - (fillerMatches.length * 7) - Math.max(0, (style.passiveVoicePercentage || 0) - 20) * 0.8);
@@ -170,6 +218,11 @@ export function analyzeLanguageQualityLocal(text) {
             avgSentenceLength: style.avgSentenceLength || 0,
             passiveVoicePercentage: style.passiveVoicePercentage || 0,
             consistencyScore: style.consistencyScore || 0
+        },
+        validation: {
+            engine: 'hybrid_rules_v1',
+            ruleHits: ruleIssues.length,
+            confidence: Math.max(0.45, Math.min(0.95, 0.55 + (issues.length * 0.05)))
         }
     };
 }

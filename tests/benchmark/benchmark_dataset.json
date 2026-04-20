@@ -1,0 +1,29 @@
+{
+  "plagiarism_cases": [
+    {
+      "id": "p1",
+      "text": "Neural language models significantly improve sequence labeling accuracy in biomedical named entity recognition tasks.",
+      "source_text": "Sequence labeling for biomedical named entity recognition has improved significantly with neural language models.",
+      "expected_min_similarity": 25
+    },
+    {
+      "id": "p2",
+      "text": "Photosynthesis converts light energy into chemical energy through chlorophyll-mediated reactions.",
+      "source_text": "Cloud orchestration platforms enable dynamic scaling for microservice deployments.",
+      "expected_max_similarity": 20
+    }
+  ],
+  "ai_authorship_schema_cases": [
+    {
+      "id": "a1",
+      "text": "This paragraph is intentionally generic and repetitive to test schema stability in authorship detection."
+    }
+  ],
+  "language_quality_cases": [
+    {
+      "id": "l1",
+      "text": "This are a sentence with agreement errors. It is very very unclear and actually quite repetitive.",
+      "expected_min_issues": 1
+    }
+  ]
+}
