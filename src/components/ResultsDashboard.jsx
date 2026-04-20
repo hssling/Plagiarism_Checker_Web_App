@@ -24,16 +24,33 @@ function ResultsDashboard({ results, onReset, text }) {
             const apiKey = localStorage.getItem('gemini_api_key');
             if (!apiKey) return;
 
-            setAILoading(true);
-            const [authorship, summary] = await Promise.all([
-                checkAIAuthorship(text),
-                generateSummary(text)
-            ]);
-            setAIAnalysis({ authorship, summary });
-            setAILoading(false);
+            try {
+                setAILoading(true);
+                const [authorship, summary] = await Promise.all([
+                    checkAIAuthorship(text),
+                    generateSummary(text)
+                ]);
+                setAIAnalysis({ authorship, summary });
+            } catch (error) {
+                console.error('AI insights failed:', error);
+                setAIAnalysis(null);
+            } finally {
+                setAILoading(false);
+            }
         };
         runAI();
     }, [text]);
+
+    const getAuthorshipScore = () => {
+        const candidate = results?.authorship || aiAnalysis?.authorship || {};
+        const normalized = candidate.aiProbability ?? candidate.confidence ?? 0;
+        return Number.isFinite(Number(normalized)) ? Number(normalized) : 0;
+    };
+
+    const getAuthorshipDisclaimer = () => {
+        const candidate = results?.authorship || aiAnalysis?.authorship || {};
+        return candidate.disclaimer || 'AI authorship score is a screening signal and must not be used as sole evidence.';
+    };
 
     const getStatusClass = (score) => {
         if (score < 10) return 'status-excellent';
@@ -530,13 +547,3 @@ function ResultsDashboard({ results, onReset, text }) {
 }
 
 export default ResultsDashboard;
-    const getAuthorshipScore = () => {
-        const candidate = results?.authorship || aiAnalysis?.authorship || {};
-        const normalized = candidate.aiProbability ?? candidate.confidence ?? 0;
-        return Number.isFinite(Number(normalized)) ? Number(normalized) : 0;
-    };
-
-    const getAuthorshipDisclaimer = () => {
-        const candidate = results?.authorship || aiAnalysis?.authorship || {};
-        return candidate.disclaimer || 'AI authorship score is a screening signal and must not be used as sole evidence.';
-    };
