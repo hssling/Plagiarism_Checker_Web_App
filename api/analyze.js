@@ -5,7 +5,7 @@
 
 import { validateRequest } from './_lib/auth.js';
 import { checkRateLimit, getRateLimitHeaders, rateLimitErrorResponse } from './_lib/rateLimit.js';
-import { extractSmartPhrases, calculateShingleOverlap, calculateTFIDFSimilarity, getShingleMatches } from '../src/lib/shared/analysisShared.js';
+import { extractSmartPhrases, calculateTFIDFSimilarity, getShingleMatches } from '../src/lib/shared/analysisShared.js';
 import { executeSearch } from '../src/lib/shared/searchShared.js';
 import { detectLanguage, semanticTranslationCheck } from '../src/lib/shared/languageShared.js';
 import { analyzeIntentBackend, checkAuthorshipBackend, translateTextBackend } from './_lib/ai.js';
@@ -75,6 +75,39 @@ function applyExclusionsToText(text, ranges = []) {
         }
     });
     return chars.join('');
+}
+
+export function scoreBackendSourceEvidence(text, source, excludedRanges, wordCount) {
+    const sourceText = source.text || '';
+    const shingleDetails = getShingleMatches(text, sourceText, 7, excludedRanges);
+    const shingleScore = shingleDetails.coverage;
+    const tfidfScore = calculateTFIDFSimilarity(text, sourceText);
+    const hitBoost = Math.min(Math.max((source.hits || 1) - 1, 0) * 3, 9);
+    const evidenceFloor = Math.max(shingleScore, tfidfScore, hitBoost);
+
+    if (evidenceFloor < 4) {
+        return {
+            similarity: 0,
+            shingleDetails,
+            shingleScore,
+            tfidfScore,
+            hitBoost,
+            evidenceFloor
+        };
+    }
+
+    let similarity = (shingleScore * 0.75) + (tfidfScore * 0.15) + hitBoost;
+    if (wordCount < 200) similarity *= 0.85;
+    similarity = Math.min(100, Math.round(similarity * 10) / 10);
+
+    return {
+        similarity,
+        shingleDetails,
+        shingleScore,
+        tfidfScore,
+        hitBoost,
+        evidenceFloor
+    };
 }
 
 /**
@@ -156,16 +189,10 @@ async function performRealAnalysis(text, options = {}, aiKey = null) {
     let maxMatch = 0;
 
     for (const source of potentialSources.values()) {
-        const shingleDetails = getShingleMatches(text, source.text, 3, normalizedExclusions);
-        const shingleScore = shingleDetails.coverage;
-        const tfidfScore = calculateTFIDFSimilarity(text, source.text);
-        const hitBoost = Math.min(source.hits * 5, 20);
+        const evidence = scoreBackendSourceEvidence(text, source, normalizedExclusions, words.length);
+        const { similarity, shingleDetails } = evidence;
 
-        let similarity = (shingleScore * 2.0) + (tfidfScore * 0.5) + hitBoost;
-        if (words.length < 200) similarity *= 1.2;
-        similarity = Math.min(100, Math.round(similarity * 10) / 10);
-
-        if (similarity > 5) {
+        if (similarity > 8) {
             // Cognitive: Analyze Intent for high-risk matches
             let intent = null;
             if (aiKey && similarity > 25) {
@@ -176,6 +203,9 @@ async function performRealAnalysis(text, options = {}, aiKey = null) {
                 ...source,
                 similarity,
                 matchedCharRanges: shingleDetails.matchedCharRanges.slice(0, 20),
+                exactMatchScore: Math.round(evidence.shingleScore * 10) / 10,
+                lexicalScore: Math.round(evidence.tfidfScore * 10) / 10,
+                evidenceBoost: evidence.hitBoost,
                 intent
             });
             if (similarity > maxMatch) maxMatch = similarity;

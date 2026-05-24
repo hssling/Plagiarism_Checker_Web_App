@@ -13,6 +13,22 @@
       "expected_max_similarity": 20
     }
   ],
+  "backend_scoring_cases": [
+    {
+      "id": "generic_academic_overlap",
+      "text": "This study examines the prevalence of dengue fever in urban communities and evaluates public health interventions for vector control. The findings suggest that community awareness and timely diagnosis are important components of prevention.",
+      "source_text": "This study examines the prevalence of malaria fever in rural communities and evaluates public health interventions for mosquito control. The findings suggest that health awareness and timely treatment are important components of prevention.",
+      "hits": 1,
+      "expected_max_similarity": 30
+    },
+    {
+      "id": "near_verbatim",
+      "text": "Community awareness and timely diagnosis are important components of dengue prevention in urban communities where vector control interventions require sustained participation.",
+      "source_text": "Community awareness and timely diagnosis are important components of dengue prevention in urban communities where vector control interventions require sustained participation.",
+      "hits": 2,
+      "expected_min_similarity": 60
+    }
+  ],
   "ai_authorship_schema_cases": [
     {
       "id": "a1",

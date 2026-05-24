@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { calculateShingleOverlap, calculateTFIDFSimilarity, getShingleMatches } from '../../src/lib/shared/analysisShared.js';
 import { analyzeLanguageQualityLocal } from '../../src/lib/languageQuality.js';
+import { scoreBackendSourceEvidence } from '../../api/analyze.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -40,6 +41,31 @@ for (const item of dataset.plagiarism_cases) {
             `plagiarism_max_${item.id}`,
             hybrid <= item.expected_max_similarity,
             { hybrid, expected: `<= ${item.expected_max_similarity}` }
+        );
+    }
+}
+
+for (const item of dataset.backend_scoring_cases) {
+    const result = scoreBackendSourceEvidence(
+        item.text,
+        { text: item.source_text, hits: item.hits || 1 },
+        [],
+        item.text.split(/\s+/).filter(Boolean).length
+    );
+
+    if (typeof item.expected_max_similarity === 'number') {
+        addCheck(
+            `backend_score_max_${item.id}`,
+            result.similarity <= item.expected_max_similarity,
+            { similarity: result.similarity, expected: `<= ${item.expected_max_similarity}` }
+        );
+    }
+
+    if (typeof item.expected_min_similarity === 'number') {
+        addCheck(
+            `backend_score_min_${item.id}`,
+            result.similarity >= item.expected_min_similarity,
+            { similarity: result.similarity, expected: `>= ${item.expected_min_similarity}` }
         );
     }
 }
