@@ -7,9 +7,18 @@
 import { cleanText } from './shared/analysisShared';
 
 const DEFAULT_STORAGE_KEY = 'plagiarism_guard_hybrid_index_v1';
+const STOP_WORDS = new Set([
+    'the', 'and', 'was', 'were', 'for', 'that', 'with', 'from', 'this', 'are', 'not', 'is', 'in',
+    'of', 'to', 'by', 'at', 'on', 'as', 'an', 'a', 'or', 'it', 'be', 'can', 'may', 'has', 'have',
+    'had', 'than', 'then', 'also', 'into', 'through', 'about', 'between', 'among'
+]);
 
 function tokenize(text) {
     return cleanText(text).split(/\s+/).filter(token => token.length > 1);
+}
+
+function meaningfulTokens(tokens) {
+    return tokens.filter(token => token.length > 2 && !STOP_WORDS.has(token));
 }
 
 function buildTermFreq(tokens) {
@@ -133,6 +142,7 @@ export class HybridRetrievalIndex {
         semanticWeight = 0.35
     } = {}) {
         const queryTokens = tokenize(queryText);
+        const uniqueQueryTokens = [...new Set(meaningfulTokens(queryTokens))];
         const lexicalScores = this.documents.map(doc => ({
             doc,
             lexicalScore: this.bm25Score(queryTokens, doc)
@@ -148,9 +158,18 @@ export class HybridRetrievalIndex {
             const semanticScore = (queryEmbedding && item.doc.embedding)
                 ? Math.max(0, cosineSimilarity(queryEmbedding, item.doc.embedding))
                 : 0;
-            const finalScore = (item.lexicalNorm * lexicalWeight) + (semanticScore * semanticWeight);
+            const matchedQueryTokens = uniqueQueryTokens.filter(token => item.doc.termFreq.has(token)).length;
+            const queryCoverage = uniqueQueryTokens.length
+                ? matchedQueryTokens / uniqueQueryTokens.length
+                : 0;
+            const absoluteLexical = item.lexicalNorm * Math.min(1, queryCoverage * 1.25);
+            const guardedSemantic = semanticScore >= 0.82 && queryCoverage >= 0.18 ? semanticScore : 0;
+            const finalScore = (absoluteLexical * lexicalWeight) + (guardedSemantic * semanticWeight);
             return {
                 ...item,
+                queryCoverage,
+                matchedQueryTokens,
+                absoluteLexical,
                 semanticScore,
                 finalScore
             };
@@ -166,7 +185,9 @@ export class HybridRetrievalIndex {
                 sourceUrl: item.doc.sourceUrl,
                 text: item.doc.text,
                 finalScore: item.finalScore * 100,
-                lexicalScore: item.lexicalNorm * 100,
+                lexicalScore: item.absoluteLexical * 100,
+                lexicalRankScore: item.lexicalNorm * 100,
+                queryCoverage: item.queryCoverage * 100,
                 semanticScore: item.semanticScore * 100
             }));
     }
@@ -203,4 +224,3 @@ export class HybridRetrievalIndex {
         }
     }
 }
-

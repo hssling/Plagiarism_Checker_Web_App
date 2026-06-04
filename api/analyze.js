@@ -79,13 +79,14 @@ function applyExclusionsToText(text, ranges = []) {
 
 export function scoreBackendSourceEvidence(text, source, excludedRanges, wordCount) {
     const sourceText = source.text || '';
+    const sourceWordCount = sourceText.split(/\s+/).filter(Boolean).length;
     const shingleDetails = getShingleMatches(text, sourceText, 7, excludedRanges);
     const shingleScore = shingleDetails.coverage;
-    const tfidfScore = calculateTFIDFSimilarity(text, sourceText);
-    const hitBoost = Math.min(Math.max((source.hits || 1) - 1, 0) * 3, 9);
+    const tfidfScore = Math.min(45, calculateTFIDFSimilarity(text, sourceText));
+    const hitBoost = sourceWordCount >= 35 ? Math.min(Math.max((source.hits || 1) - 1, 0) * 2, 6) : 0;
     const evidenceFloor = Math.max(shingleScore, tfidfScore, hitBoost);
 
-    if (evidenceFloor < 4) {
+    if (sourceWordCount < 12 || evidenceFloor < 6 || (shingleScore < 6 && tfidfScore < 18)) {
         return {
             similarity: 0,
             shingleDetails,
@@ -96,8 +97,10 @@ export function scoreBackendSourceEvidence(text, source, excludedRanges, wordCou
         };
     }
 
-    let similarity = (shingleScore * 0.75) + (tfidfScore * 0.15) + hitBoost;
+    let similarity = (shingleScore * 0.82) + (tfidfScore * 0.08) + hitBoost;
     if (wordCount < 200) similarity *= 0.85;
+    if (sourceWordCount < 35 && shingleScore < 50) similarity = Math.min(similarity, 18);
+    if (shingleScore < 10) similarity = Math.min(similarity, 22);
     similarity = Math.min(100, Math.round(similarity * 10) / 10);
 
     return {

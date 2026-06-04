@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { calculateShingleOverlap, calculateTFIDFSimilarity, getShingleMatches } from '../../src/lib/shared/analysisShared.js';
 import { analyzeLanguageQualityLocal } from '../../src/lib/languageQuality.js';
 import { scoreBackendSourceEvidence } from '../../api/analyze.js';
+import { calibrateSimilarityRisk } from '../../src/lib/scoringCalibration.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -66,6 +67,26 @@ for (const item of dataset.backend_scoring_cases) {
             `backend_score_min_${item.id}`,
             result.similarity >= item.expected_min_similarity,
             { similarity: result.similarity, expected: `>= ${item.expected_min_similarity}` }
+        );
+    }
+}
+
+for (const item of dataset.calibration_cases) {
+    const result = calibrateSimilarityRisk(item.rawScore, item.features || {});
+
+    if (typeof item.expected_max_score === 'number') {
+        addCheck(
+            `calibration_max_${item.id}`,
+            result.calibratedScore <= item.expected_max_score,
+            { calibratedScore: result.calibratedScore, expected: `<= ${item.expected_max_score}` }
+        );
+    }
+
+    if (typeof item.expected_min_score === 'number') {
+        addCheck(
+            `calibration_min_${item.id}`,
+            result.calibratedScore >= item.expected_min_score,
+            { calibratedScore: result.calibratedScore, expected: `>= ${item.expected_min_score}` }
         );
     }
 }

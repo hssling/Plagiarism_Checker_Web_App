@@ -29,6 +29,30 @@
       "expected_min_similarity": 60
     }
   ],
+  "calibration_cases": [
+    {
+      "id": "moderate_evidence_not_saturated",
+      "rawScore": 35,
+      "features": {
+        "maxMatch": 38,
+        "sourceCount": 8,
+        "evidenceDensity": 12,
+        "semanticLift": 15
+      },
+      "expected_max_score": 35
+    },
+    {
+      "id": "strong_evidence_high_risk",
+      "rawScore": 88,
+      "features": {
+        "maxMatch": 95,
+        "sourceCount": 3,
+        "evidenceDensity": 9,
+        "semanticLift": 5
+      },
+      "expected_min_score": 55
+    }
+  ],
   "ai_authorship_schema_cases": [
     {
       "id": "a1",

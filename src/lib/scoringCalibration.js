@@ -4,29 +4,40 @@
  */
 
 const DEFAULT_CALIBRATION = {
-    intercept: -3.1,
+    version: 2,
+    intercept: -3.6,
     weights: {
-        rawScore: 0.065,
-        maxMatch: 0.025,
-        sourceCount: 0.07,
-        evidenceDensity: 0.08,
-        semanticLift: 0.03
+        rawScore: 0.045,
+        maxMatch: 0.01,
+        sourceCount: 0.02,
+        evidenceDensity: 0.025,
+        semanticLift: 0.004
     }
 };
 
-const CALIBRATION_STORAGE_KEY = 'plagiarism_guard_calibration_v1';
+const CALIBRATION_STORAGE_KEY = 'plagiarism_guard_calibration_v2';
 
 function sigmoid(x) {
     return 1 / (1 + Math.exp(-x));
 }
 
+function getStorage() {
+    try {
+        return globalThis.localStorage || null;
+    } catch (error) {
+        return null;
+    }
+}
+
 export function getCalibrationConfig() {
-    if (typeof localStorage === 'undefined') return DEFAULT_CALIBRATION;
+    const storage = getStorage();
+    if (!storage) return DEFAULT_CALIBRATION;
 
     try {
-        const raw = localStorage.getItem(CALIBRATION_STORAGE_KEY);
+        const raw = storage.getItem(CALIBRATION_STORAGE_KEY);
         if (!raw) return DEFAULT_CALIBRATION;
         const parsed = JSON.parse(raw);
+        if (parsed.version !== DEFAULT_CALIBRATION.version) return DEFAULT_CALIBRATION;
         return {
             ...DEFAULT_CALIBRATION,
             ...parsed,
@@ -42,9 +53,10 @@ export function getCalibrationConfig() {
 }
 
 export function setCalibrationConfig(config) {
-    if (typeof localStorage === 'undefined') return;
+    const storage = getStorage();
+    if (!storage) return;
     try {
-        localStorage.setItem(CALIBRATION_STORAGE_KEY, JSON.stringify(config));
+        storage.setItem(CALIBRATION_STORAGE_KEY, JSON.stringify(config));
     } catch (error) {
         console.warn('Calibration config write failed:', error);
     }
@@ -52,19 +64,20 @@ export function setCalibrationConfig(config) {
 
 export function calibrateSimilarityRisk(rawScore, features = {}) {
     const cfg = getCalibrationConfig();
+    const normalizedRaw = Math.max(0, Math.min(100, Number(rawScore || 0)));
     const f = {
-        maxMatch: Number(features.maxMatch || 0),
-        sourceCount: Number(features.sourceCount || 0),
-        evidenceDensity: Number(features.evidenceDensity || 0),
-        semanticLift: Number(features.semanticLift || 0)
+        maxMatch: Math.max(0, Math.min(100, Number(features.maxMatch || 0))),
+        sourceCount: Math.max(0, Number(features.sourceCount || 0)),
+        evidenceDensity: Math.max(0, Number(features.evidenceDensity || 0)),
+        semanticLift: Math.max(0, Math.min(100, Number(features.semanticLift || 0)))
     };
 
     const logit = cfg.intercept
-        + (cfg.weights.rawScore * Number(rawScore || 0))
+        + (cfg.weights.rawScore * normalizedRaw)
         + (cfg.weights.maxMatch * f.maxMatch)
-        + (cfg.weights.sourceCount * Math.min(f.sourceCount, 20))
-        + (cfg.weights.evidenceDensity * Math.min(f.evidenceDensity, 20))
-        + (cfg.weights.semanticLift * Math.min(f.semanticLift, 100));
+        + (cfg.weights.sourceCount * Math.min(f.sourceCount, 8))
+        + (cfg.weights.evidenceDensity * Math.min(f.evidenceDensity, 12))
+        + (cfg.weights.semanticLift * f.semanticLift);
 
     const probability = sigmoid(logit) * 100;
     const calibratedScore = Math.max(0, Math.min(100, probability));
@@ -80,4 +93,3 @@ export function calibrateSimilarityRisk(rawScore, features = {}) {
         }
     };
 }
-

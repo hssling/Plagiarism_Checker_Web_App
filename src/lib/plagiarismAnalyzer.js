@@ -293,14 +293,17 @@ function buildSourcePassageMatches(passages, retrievalIndex, embeddingBundle) {
         });
 
         results.forEach(result => {
+            const verification = scorePassageEvidence(passage.text, result.text, result.queryCoverage || 0);
+            if (verification.score < 12) return;
             const sourceId = result.sourceId;
             if (!grouped.has(sourceId)) grouped.set(sourceId, []);
             grouped.get(sourceId).push({
                 passage: passage.text,
                 passageRange: { start: passage.start, end: passage.end },
-                score: Math.min(100, result.finalScore),
-                lexicalScore: Math.min(100, result.lexicalScore),
+                score: Math.min(100, Math.max(result.finalScore, verification.score)),
+                lexicalScore: Math.min(100, Math.max(result.lexicalScore, verification.lexicalScore)),
                 semanticScore: Math.min(100, result.semanticScore),
+                queryCoverage: Math.round((result.queryCoverage || 0) * 10) / 10,
                 sourceExcerpt: result.text.slice(0, 320)
             });
         });
@@ -317,6 +320,24 @@ function buildSourcePassageMatches(passages, retrievalIndex, embeddingBundle) {
     }
 
     return grouped;
+}
+
+function scorePassageEvidence(passageText, sourceText, retrievalCoverage = 0) {
+    const shingle = calculateShingleOverlap(passageText, sourceText, 6);
+    const tfidf = calculateTFIDFSimilarity(passageText, sourceText);
+    const coverage = Math.max(0, Math.min(100, retrievalCoverage));
+    const lexicalScore = (shingle * 0.7) + (Math.min(tfidf, 45) * 0.2) + (coverage * 0.1);
+    const score = shingle >= 18
+        ? lexicalScore
+        : Math.min(lexicalScore, coverage >= 35 ? 22 : 12);
+
+    return {
+        score,
+        lexicalScore,
+        shingle,
+        tfidf,
+        coverage
+    };
 }
 
 function extractEvidenceSnippet(sourceText, passageText) {
@@ -337,12 +358,14 @@ function scorePassagesAgainstSource(passages, source, embeddingBundle) {
 
     return passages
         .map((passage, index) => {
-            const lexicalScore = (calculateShingleOverlap(passage.text, sourceText, 5) * 0.6) +
-                (calculateTFIDFSimilarity(passage.text, sourceText) * 0.4);
+            const evidence = scorePassageEvidence(passage.text, sourceText);
+            const lexicalScore = evidence.lexicalScore;
             const semanticScore = sourceVector && embeddingBundle?.passageVectors?.[index]
                 ? cosineSimilarity(embeddingBundle.passageVectors[index], sourceVector) * 100
                 : lexicalScore;
-            const score = (lexicalScore * 0.45) + (semanticScore * 0.55);
+            const score = hasMeaningfulSemanticLift(evidence.shingle, semanticScore)
+                ? (lexicalScore * 0.75) + (semanticScore * 0.25)
+                : lexicalScore;
 
             return {
                 passage: passage.text,
@@ -511,21 +534,24 @@ export async function analyzePlagiarism(text, onProgress, options = { excludeCit
         const passageMatches = sourcePassageMap.get(source.id) || scorePassagesAgainstSource(passages, source, embeddingBundle);
         const topPassage = passageMatches[0];
 
-        const shingleDetail = getShingleMatches(text, sourceText, 5, results.excludedRanges);
+        const shingleDetail = getShingleMatches(text, sourceText, 6, results.excludedRanges);
         const shingleScore = shingleDetail.coverage;
-        const tfidfScore = calculateTFIDFSimilarity(text, sourceText);
+        const tfidfScore = Math.min(45, calculateTFIDFSimilarity(text, sourceText));
         const passageScore = topPassage?.score || 0;
         const semanticScore = topPassage?.semanticScore || 0;
 
-        const matchesBoost = Math.min(source.matches * 4, 16);
-        let combinedScore = (passageScore * 0.44) + (shingleScore * 0.28) + (tfidfScore * 0.14) + matchesBoost;
+        const hasVerifiedText = sourceText.split(/\s+/).filter(Boolean).length >= 35;
+        const matchesBoost = hasVerifiedText ? Math.min(Math.max(source.matches - 1, 0) * 2.5, 7.5) : 0;
+        let combinedScore = (passageScore * 0.52) + (shingleScore * 0.32) + (tfidfScore * 0.10) + matchesBoost;
         if (hasMeaningfulSemanticLift(shingleScore, semanticScore)) {
-            combinedScore += 4;
+            combinedScore += 2;
         }
+        if (!hasVerifiedText && shingleScore < 50) combinedScore = Math.min(combinedScore, 18);
+        if (shingleScore < 8 && passageScore < 20) combinedScore = Math.min(combinedScore, 15);
 
         if (combinedScore > 100) combinedScore = 100;
 
-        if (combinedScore > 8) {
+        if (combinedScore > 12) {
             results.sources.push({
                 id: source.id,
                 name: source.name,
